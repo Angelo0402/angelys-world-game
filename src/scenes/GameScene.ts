@@ -294,7 +294,7 @@ export class GameScene extends Phaser.Scene {
     const c = this.chapter.id;
     const key = `ground_${c}`;
     const meta = PROPS[key as keyof typeof PROPS];
-    const fill = c === 9 ? 0x6a1878 : c === 10 ? 0x241838 : [0, 0x3b2414, 0x2a2d3c, 0x1d1418, 0x2c3a52, 0x1c1230, 0xd8dcef, 0x1d4a5a][c];
+    const fill = c === 9 ? 0x6a1878 : [0, 0x3b2414, 0x2a2d3c, 0x1d1418, 0x2c3a52, 0x1c1230, 0xd8dcef, 0x1d4a5a][c];
     const ground = this.level.ground;
     for (const seg of ground) {
       // The art's walkable edge (top of the grass / stone) sits exactly on the segment's y.
@@ -474,21 +474,20 @@ export class GameScene extends Phaser.Scene {
   /** The collapse (ruins) or avalanche (ice) that chases Angely in chase levels. */
   private buildChaseWall() {
     const ice = this.chapter.id === 4;
-    const meteor = this.chapter.id === 10;
-    const color = meteor ? 0x1a1038 : ice ? 0xf2f8ff : 0x3a3048;
+    const color = ice ? 0xf2f8ff : 0x3a3048;
     const body = this.add.rectangle(-40, -100, 120, GAME_H + 300, color).setOrigin(0, 0);
-    const edge = this.add.image(80, GAME_H / 2, "glow").setTint(meteor ? 0xffe7a3 : ice ? 0xffffff : 0x8a7fa8).setDisplaySize(220, GAME_H * 1.6).setAlpha(0.8);
+    const edge = this.add.image(80, GAME_H / 2, "glow").setTint(ice ? 0xffffff : 0x8a7fa8).setDisplaySize(220, GAME_H * 1.6).setAlpha(0.8);
     this.chaseWall = this.add.container(0, 0, [body, edge]).setDepth(70);
     this.chaseDust = this.add
       .particles(0, 0, "dot", {
         x: { min: -20, max: 110 },
         y: { min: -40, max: GAME_H },
         speedX: { min: 40, max: 160 },
-        speedY: meteor ? { min: 30, max: 140 } : ice ? { min: 40, max: 160 } : { min: 120, max: 320 },
-        scale: { start: ice ? 1.1 : meteor ? 0.7 : 0.9, end: 0.2 },
+        speedY: ice ? { min: 40, max: 160 } : { min: 120, max: 320 },
+        scale: { start: ice ? 1.1 : 0.9, end: 0.2 },
         alpha: { start: 0.9, end: 0 },
         lifespan: 900,
-        tint: meteor ? [0xffe7a3, 0xffb45a, 0xfff6d0] : ice ? [0xffffff, 0xe6f6ff, 0xcfe8ff] : [0x6a5f80, 0x8a7a9a, 0x4a4060],
+        tint: ice ? [0xffffff, 0xe6f6ff, 0xcfe8ff] : [0x6a5f80, 0x8a7a9a, 0x4a4060],
         frequency: 16,
       })
       .setDepth(71);
@@ -502,7 +501,7 @@ export class GameScene extends Phaser.Scene {
       this.chaseOn = true;
       Audio.sfx("boss_roar");
       cam.shake(600, 0.006);
-      const rush = this.chapter.id === 4 ? "AVALANCHE!" : this.chapter.id === 10 ? "METEOR SHOWER!" : this.chapter.id === 8 ? "SANDSTORM!" : "RUN!";
+      const rush = this.chapter.id === 4 ? "AVALANCHE!" : this.chapter.id === 8 ? "SANDSTORM!" : "RUN!";
       this.game.events.emit("hud:banner", rush);
     }
     if (this.chaseOn && !this.ending && p.alive) {

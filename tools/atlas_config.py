@@ -37,7 +37,6 @@ ENEMY_PX = {  # runtime px height of the walk row, ~2.3x the in-game display hei
     "frostwolf": 168, "icewisp": 150, "penguin": 160, "yeti": 252,
     "cogmoth": 156, "gearcrab": 168, "sandwisp": 160,
     "blob": 170, "squish": 190, "toxic": 176,
-    "starling": 150, "moonhare": 176, "seedlamp": 190, "cometpup": 156,
 }
 # 30-frame enemies (chapters 6-7): 3 rows of 10 (move, attack, hurt 4 + defeat 6).
 RICH_PX = {"stormbird": 150, "thunderimp": 150, "jellyfish": 170, "anglerfish": 150}
@@ -74,7 +73,7 @@ _atlas("e_sandworm", "e_sandworm", row0_px=300)
 _atlas("portal", "portal")
 _atlas("vfx", "vfx", mask="black")
 _atlas("vfx2", "vfx2", mask="black")
-for c in range(1, 11):
+for c in (1, 2, 3, 4, 5, 6, 7, 8, 9):
     _atlas(f"props_{c}", f"props2_ch{c}")
 
 
@@ -122,7 +121,7 @@ def enemy_boxed(key, walk_fps=8, attack_fps=7):
 # The detector merges the third spark frame with the slash above it.
 SPARK = [(155, 485, 232, 562), (372, 463, 531, 572), (636, 452, 872, 586), (986, 472, 1127, 569)]
 
-FLYING = {"firefly", "ghost", "lantern", "firebat", "icewisp", "stormbird", "thunderimp", "jellyfish", "anglerfish", "cogmoth", "sandwisp", "starling"}
+FLYING = {"firefly", "ghost", "lantern", "firebat", "icewisp", "stormbird", "thunderimp", "jellyfish", "anglerfish", "cogmoth", "sandwisp"}
 
 
 def rich(key):
@@ -286,14 +285,11 @@ SHEETS: dict = {
 # slides between frames. Keep the feet baseline and pin x to the frame center.
 for _slime in ("blob", "squish"):
     SHEETS[_slime]["center_x"] = True
-# Orchard enemies bob and lunge; pin x so the body does not slide between frames.
-for _orchard in ("moonhare", "seedlamp", "cometpup"):
-    SHEETS[_orchard]["center_x"] = True
 
 # Static per-chapter props: (atlas, row, index, display width in game px).
 # The runtime image is exported at 2x the display width.
 PROPS: dict = {}
-for c in range(1, 11):
+for c in (1, 2, 3, 4, 5, 6, 7, 8, 9):
     a = f"props_{c}"
     PROPS[f"ground_{c}"] = (a, 0, 0, 640)
     PROPS[f"plat_l_{c}"] = (a, 1, 0, 190)
@@ -316,7 +312,6 @@ BACKDROPS = {
     "bg7": ("gen/bg_ch7.png", 800),
     "bg8": ("gen/bg_ch8.png", 800),
     "bg9": ("gen/bg_ch9.png", 800),
-    "bg10": ("gen/bg_ch10.png", 800),
     # Title / chapter select and chapter splashes use the original hand-supplied art.
     "title_bg": ("chapter1_enchanted_forest_background.png", 800),
     "title_splash": ("title_splash.png", 1080),
@@ -329,7 +324,6 @@ BACKDROPS = {
     "splash7": ("angelys_world_chapter7_splash.png", 720),
     "splash8": ("gen/splash_ch8b.png", 720),
     "splash9": ("gen/splash_ch9b.png", 720),
-    "splash10": ("gen/splash_ch10b.png", 720),
 }
 
 # Dialogue portraits: (source, crop box, output px). Angely's face comes from the

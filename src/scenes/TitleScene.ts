@@ -125,7 +125,7 @@ export class TitleScene extends Phaser.Scene {
     titleText(this, GAME_W / 2, 28, "CHOOSE A LEVEL", 32).setDepth(6);
     const rule = this.add.graphics().setDepth(6);
     drawRule(rule, GAME_W / 2, 52, 300);
-    const ids = (Object.keys(CHAPTERS).map((k) => Number(k)) as ChapterId[]).sort((a, b) => a - b);
+    const ids: ChapterId[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
     const nav: NavItem[] = [];
     let initial = 0;
     let picked = false;
@@ -137,24 +137,22 @@ export class TitleScene extends Phaser.Scene {
       this.cameras.main.fadeOut(300, 18, 13, 31);
       this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("Splash", { level: index }));
     };
-    const COLS = 5;
-    const CW = 242;
-    const CH = 198;
-    const GAP_X = 8;
-    const GAP_Y = 8;
-    const top = 64;
-    const gridW = COLS * CW + (COLS - 1) * GAP_X;
+    const CW = 392;
+    const CH = 156;
+    const GAP_X = 14;
+    const GAP_Y = 6;
+    const top = 62;
     ids.forEach((id, i) => {
-      const col = i % COLS;
-      const row = Math.floor(i / COLS);
-      const x = (GAME_W - gridW) / 2 + CW / 2 + col * (CW + GAP_X);
+      const col = i % 3;
+      const row = Math.floor(i / 3);
+      const x = GAME_W / 2 + (col - 1) * (CW + GAP_X);
       const y = top + CH / 2 + row * (CH + GAP_Y);
       const ch = CHAPTERS[id];
       const stages = levelsOf(id);
       const locked = stages[0].index > save.level;
       const card = this.add.container(x, y + 10).setAlpha(0);
       const frame = this.add.graphics();
-      const gold = id === 10 ? 0xc9d4ff : id === 5 ? 0xd2a4ff : 0xffd36b;
+      const gold = id === 5 ? 0xd2a4ff : 0xffd36b;
       drawPlaque(frame, -CW / 2, -CH / 2, CW, CH, {
         radius: 18,
         fill: 0x160c28,
@@ -164,17 +162,16 @@ export class TitleScene extends Phaser.Scene {
         gems: false,
       });
       const iw = CW - 20;
-      const ih = 62;
+      const ih = 50;
       const img = this.add.image(0, -CH / 2 + 5 + ih / 2, ch.splash);
       img.setScale(Math.min(iw / img.width, ih / img.height));
       if (locked) img.setTint(0x333344);
       const num = this.add
-        .text(0, -18, `CHAPTER ${id}`, { fontFamily: FONT_DISPLAY, fontSize: "12px", color: id === 10 ? "#d5deff" : id === 5 ? "#e4c2ff" : "#ffd36b", letterSpacing: 1.1 })
+        .text(0, -10, `CHAPTER ${id}`, { fontFamily: FONT_DISPLAY, fontSize: "13px", color: id === 5 ? "#e4c2ff" : "#ffd36b", letterSpacing: 1.1 })
         .setOrigin(0.5);
       const name = this.add
-        .text(0, -2, ch.name, { fontFamily: FONT, fontSize: "14px", fontStyle: "bold", color: locked ? "#8a84a0" : "#ffffff", stroke: "#2a1640", strokeThickness: 4 })
+        .text(0, 4, ch.name, { fontFamily: FONT, fontSize: "16px", fontStyle: "bold", color: locked ? "#8a84a0" : "#ffffff", stroke: "#2a1640", strokeThickness: 4 })
         .setOrigin(0.5);
-      if (name.width > CW - 28) name.setFontSize(Math.max(11, Math.floor((14 * (CW - 28)) / name.width)));
       card.add([frame, img, num, name]);
       if (locked) {
         const lock = this.add.graphics();

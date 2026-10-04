@@ -63,10 +63,6 @@ const SONGS: Record<MusicTrack, SongDef> = {
     bpm: 132, root: 67, scale: MAJOR, chords: [0, 4, 5, 3], bass: "triangle", leadWave: "square", loop: true,
     lead: [0, 4, 7, 4, 5, 4, 2, 0, 4, 7, 9, 7, 4, 2, 0, null],
   },
-  music_orchard: {
-    bpm: 104, root: 69, scale: MAJOR, chords: [0, 5, 3, 4], bass: "sine", leadWave: "triangle", loop: true,
-    lead: [7, null, 4, 7, 9, null, 7, 4, 2, null, 4, 5, 4, 2, 0, null],
-  },
   music_game_over: {
     bpm: 80, root: 57, scale: MINOR, chords: [0], bass: "triangle", leadWave: "sine", loop: false,
     lead: [4, null, 3, null, 2, null, 1, null, 0, null, null, null, null, null, null, null],

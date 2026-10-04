@@ -11,8 +11,8 @@ export function clampHearts(n: number) {
   return Math.min(MAX_HEARTS, Math.max(0, stepped));
 }
 
-export type ChapterId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
-export const LAST_CHAPTER: ChapterId = 10;
+export type ChapterId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+export const LAST_CHAPTER: ChapterId = 9;
 export type MusicTrack =
   | "music_title"
   | "music_forest"
@@ -25,7 +25,6 @@ export type MusicTrack =
   | "music_sea"
   | "music_clock"
   | "music_squish"
-  | "music_orchard"
   | "music_game_over"
   | "music_victory";
 
@@ -178,19 +177,6 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
     grip: 1,
     ambient: { color: 0xffb7e8, count: 30 },
   },
-  10: {
-    id: 10,
-    name: "The Star Orchard",
-    splash: "splash10",
-    background: "bg10",
-    music: "music_orchard",
-    enemies: ["starling", "moonhare", "seedlamp", "cometpup"],
-    maxAlive: 2,
-    spawnEvery: 1.7,
-    pitKind: "pit",
-    grip: 1,
-    ambient: { color: 0xffe7a3, count: 36 },
-  },
 };
 
 /**
@@ -262,8 +248,6 @@ export const LEVELS: LevelInfo[] = [
   { chapter: 8, stage: 2, name: "Dune Worm", mode: "run", goal: "boss", need: 0, terrain: "flat", seed: 109, pieces: [], boss: true, tip: "The sand worm rises from the dune. Hit it while it is up!" },
   { chapter: 9, stage: 1, name: "Gumdrop Trail", mode: "run", goal: "kills", need: 10, terrain: "hills", seed: 113, pieces: ["hops", "spring", "steps", "spikes", "crateWall"], weapon: "ray", tip: "Grab the Bubble Ray and zap the squishies!" },
   { chapter: 9, stage: 2, name: "Bubble Falls", mode: "run", goal: "gems", need: 6, terrain: "cliffs", seed: 127, pieces: ["hops", "movingBridge", "crumble", "spring", "spikes", "steps"], tip: "Bounce the springs and find every star gem" },
-  { chapter: 10, stage: 1, name: "Comet Grove", mode: "run", goal: "kills", need: 10, terrain: "hills", seed: 131, pieces: ["hops", "steps", "spikes", "spring", "crateWall"], tip: "Starlings dive from the branches. Jump or shoot them!" },
-  { chapter: 10, stage: 2, name: "Meteor Run", mode: "chase", goal: "reach", need: 0, terrain: "flat", seed: 139, pieces: ["hops", "crumble", "spring", "spikes", "steps", "crumble", "hops"], tip: "The sky is falling. Run for the portal!" },
 ].map((l, i) => L(l as Omit<LevelInfo, "index">, i));
 
 export const LAST_LEVEL = LEVELS.length - 1;
