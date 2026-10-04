@@ -97,9 +97,9 @@ Weapons (Angely keeps every weapon she finds; swap between them):
 Queen Umbra: walking into her arena starts a cutscene. The camera locks, she floats in, and she speaks to Angely in subtitles at the bottom (advance with tap, A, Space or Enter; SKIP or Menu skips). During the fight she cycles orb volleys, an orb rain with ground markers, a low swoop you jump over (after which she kneels, tired and open to stomps), a ground slam with shockwaves, and minion summons. At half health she gets faster. When she falls there's a farewell scene, and the portal home appears. The dialogue lives in `src/story/umbra.ts`.
 
 - Sealed portals show how many enemies or gems are left, and an arrow points to an open portal.
-- Enemies left far behind despawn so new ones spawn near Angely, so a kill goal never stalls.
-- Angely has 5 hearts. Every hit removes one, followed by 0.8 seconds of invulnerability. Heart pickups restore one.
-- Falling into a pit or lava costs a heart and respawns you at the last checkpoint flag.
+- At most two enemies stay alive near Angely. Scripted bosses are unchanged. Enemies left far behind despawn so new ones can spawn, and a kill goal never stalls.
+- Angely has 5 hearts. Every hit removes half a heart, then just over a second of invulnerability stops the next hit from landing immediately. Heart pickups restore one full heart. The HUD shows a half heart.
+- Falling into a pit or lava costs half a heart and respawns you at the last checkpoint flag.
 - Unlocked levels, weapons and the final victory are saved in `localStorage`. Older chapter saves migrate automatically.
 
 Controls: on touch screens, use the left joystick (a small push walks, a full push runs), JUMP, the weapon button (SWORD / BOW / HAMMER), SWAP, and pause. On a keyboard, use A/D or the arrow keys to move, W, Up or Space to jump, J or K to attack, Q, E or L to swap weapons, and Esc to pause. Walking into a crate pushes it.

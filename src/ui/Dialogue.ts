@@ -1,13 +1,14 @@
 import Phaser from "phaser";
 import { Audio } from "../audio/AudioManager";
-import { FONT, GAME_H, GAME_W } from "../config";
+import { FONT, FONT_DISPLAY, GAME_H, GAME_W } from "../config";
 import { Gamepad, PAD } from "../input/gamepad";
 import { SPEAKERS, type DialogueLine } from "../story/umbra";
+import { drawPlaque } from "./frame";
 
 const BAR_H = 62;
 const CPS = 44;
-const BOX = { x: 140, y: GAME_H - 182, w: GAME_W - 280, h: 150 };
-const SUB = { x: 290, y: GAME_H - 132, w: 660, h: 104 };
+const BOX = { x: 120, y: GAME_H - 198, w: GAME_W - 240, h: 166 };
+const SUB = { x: 270, y: GAME_H - 138, w: 700, h: 112 };
 
 /**
  * Cutscene letterbox plus a subtitle box: portrait, speaker name and typewriter
@@ -18,14 +19,18 @@ export class Dialogue {
   private scene: Phaser.Scene;
   private top: Phaser.GameObjects.Rectangle;
   private bottom: Phaser.GameObjects.Rectangle;
+  private topLine: Phaser.GameObjects.Rectangle;
+  private bottomLine: Phaser.GameObjects.Rectangle;
   private box: Phaser.GameObjects.Container;
   private panel: Phaser.GameObjects.Graphics;
   private portrait: Phaser.GameObjects.Image;
   private ring: Phaser.GameObjects.Graphics;
+  private ringFront: Phaser.GameObjects.Graphics;
   private name: Phaser.GameObjects.Text;
   private text: Phaser.GameObjects.Text;
   private prompt: Phaser.GameObjects.Text;
   private skip: Phaser.GameObjects.Text;
+  private skipBg: Phaser.GameObjects.Graphics;
   private catcher: Phaser.GameObjects.Rectangle;
   private lines: DialogueLine[] = [];
   private index = 0;
@@ -40,8 +45,10 @@ export class Dialogue {
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
-    this.top = scene.add.rectangle(0, -BAR_H, GAME_W, BAR_H, 0x000000).setOrigin(0).setDepth(200);
-    this.bottom = scene.add.rectangle(0, GAME_H, GAME_W, BAR_H, 0x000000).setOrigin(0).setDepth(200);
+    this.top = scene.add.rectangle(0, -BAR_H, GAME_W, BAR_H, 0x07040f).setOrigin(0).setDepth(200);
+    this.bottom = scene.add.rectangle(0, GAME_H, GAME_W, BAR_H, 0x07040f).setOrigin(0).setDepth(200);
+    this.topLine = scene.add.rectangle(0, -3, GAME_W, 3, 0xffd36b).setOrigin(0).setDepth(200);
+    this.bottomLine = scene.add.rectangle(0, GAME_H, GAME_W, 3, 0xffd36b).setOrigin(0).setDepth(200);
     this.catcher = scene.add.rectangle(0, 0, GAME_W, GAME_H, 0x000000, 0.001).setOrigin(0).setDepth(201).setVisible(false);
     this.catcher.setInteractive();
     this.catcher.on("pointerup", (p: Phaser.Input.Pointer) => {
@@ -52,14 +59,20 @@ export class Dialogue {
 
     this.panel = scene.add.graphics();
     this.ring = scene.add.graphics();
+    this.ringFront = scene.add.graphics();
     this.portrait = scene.add.image(0, 0, "portrait_umbra");
-    this.name = scene.add.text(0, 0, "", { fontFamily: FONT, fontSize: "24px", fontStyle: "bold", color: "#ffffff", stroke: "#12081f", strokeThickness: 6 });
-    this.text = scene.add.text(0, 0, "", { fontFamily: FONT, fontSize: "23px", color: "#fff8ea", lineSpacing: 6, stroke: "#12081f", strokeThickness: 3 });
-    this.prompt = scene.add.text(0, 0, "▼", { fontFamily: FONT, fontSize: "20px", color: "#ffd36b" }).setOrigin(1, 1);
-    scene.tweens.add({ targets: this.prompt, alpha: 0.25, duration: 450, yoyo: true, repeat: -1 });
-    this.box = scene.add.container(0, 0, [this.panel, this.ring, this.portrait, this.name, this.text, this.prompt]).setDepth(202).setVisible(false);
+    this.name = scene.add.text(0, 0, "", {
+      fontFamily: FONT_DISPLAY, fontSize: "22px", fontStyle: "bold", color: "#ffffff", stroke: "#12081f", strokeThickness: 4, letterSpacing: 0.6,
+    });
+    this.text = scene.add.text(0, 0, "", { fontFamily: FONT, fontSize: "22px", color: "#fff8ea", lineSpacing: 8, stroke: "#12081f", strokeThickness: 4 });
+    this.prompt = scene.add
+      .text(0, 0, "NEXT", { fontFamily: FONT, fontSize: "15px", fontStyle: "bold", color: "#ffd36b", stroke: "#2a1640", strokeThickness: 4, letterSpacing: 1.2 })
+      .setOrigin(1, 1);
+    scene.tweens.add({ targets: this.prompt, alpha: 0.3, duration: 480, yoyo: true, repeat: -1 });
+    this.box = scene.add.container(0, 0, [this.panel, this.ring, this.portrait, this.ringFront, this.name, this.text, this.prompt]).setDepth(202).setVisible(false);
+    this.skipBg = scene.add.graphics().setDepth(202).setVisible(false);
     this.skip = scene.add
-      .text(GAME_W - 24, 20, "SKIP ▸▸", { fontFamily: FONT, fontSize: "18px", fontStyle: "bold", color: "#cfc6e8" })
+      .text(GAME_W - 28, 18, "SKIP", { fontFamily: FONT, fontSize: "16px", fontStyle: "bold", color: "#f4ecff", stroke: "#12081f", strokeThickness: 4, letterSpacing: 1 })
       .setOrigin(1, 0)
       .setDepth(203)
       .setVisible(false);
@@ -82,6 +95,8 @@ export class Dialogue {
     const t = this.scene.tweens;
     t.add({ targets: this.top, y: on ? 0 : -BAR_H, duration: 450, ease: "Sine.inOut" });
     t.add({ targets: this.bottom, y: on ? GAME_H - BAR_H : GAME_H, duration: 450, ease: "Sine.inOut" });
+    t.add({ targets: this.topLine, y: on ? BAR_H - 3 : -3, duration: 450, ease: "Sine.inOut" });
+    t.add({ targets: this.bottomLine, y: on ? GAME_H - BAR_H : GAME_H, duration: 450, ease: "Sine.inOut" });
   }
 
   play(lines: DialogueLine[], done: () => void, onLine?: (line: DialogueLine) => void) {
@@ -92,7 +107,8 @@ export class Dialogue {
     this.blocking = true;
     this.openedAt = this.scene.time.now;
     this.catcher.setVisible(true);
-    this.skip.setVisible(true).setText(Gamepad.connected ? "SKIP: Menu ▸▸" : "SKIP ▸▸");
+    this.skip.setVisible(true).setText(Gamepad.connected ? "MENU  SKIP" : "SKIP");
+    this.layoutSkip();
     this.show(lines[0], BOX);
   }
 
@@ -109,17 +125,34 @@ export class Dialogue {
     const px = left ? r.x + 18 + pr / 2 : r.x + r.w - 18 - pr / 2;
     const py = r.y + r.h / 2;
     const accent = sp.accent;
-    this.panel.clear();
-    this.panel.fillStyle(0x0d0618, 0.9).fillRoundedRect(r.x, r.y, r.w, r.h, 20);
-    this.panel.lineStyle(3, accent, 1).strokeRoundedRect(r.x, r.y, r.w, r.h, 20);
-    this.portrait.setTexture(sp.portrait(line)).setPosition(px, py).setDisplaySize(pr, pr);
-    this.ring.clear().lineStyle(4, accent, 1).strokeCircle(px, py, pr / 2 + 1);
-    const tx = left ? r.x + pr + 44 : r.x + 26;
-    const tw = r.w - pr - 76;
     const small = r === SUB;
-    this.name.setText(sp.name).setColor(sp.color).setPosition(tx, r.y + (small ? 8 : 14)).setFontSize(small ? 19 : 24);
-    this.text.setPosition(tx, r.y + (small ? 36 : 50)).setFontSize(small ? 18 : 23).setWordWrapWidth(tw);
-    this.prompt.setPosition(left ? r.x + r.w - 18 : r.x + r.w - pr - 50, r.y + r.h - 12).setVisible(false);
+    this.panel.clear();
+    drawPlaque(this.panel, r.x, r.y, r.w, r.h, {
+      radius: small ? 16 : 22,
+      fill: 0x12081c,
+      fillAlpha: 0.94,
+      stroke: accent,
+      accent: 0xfff6d8,
+      gems: false,
+    });
+    this.portrait.setTexture(sp.portrait(line)).setPosition(px, py).setDisplaySize(pr, pr);
+    this.ring.clear();
+    this.ring.fillStyle(0x12081f, 1).fillCircle(px, py, pr / 2 + 1);
+    this.ring.lineStyle(4, 0x1a0c28, 1).strokeCircle(px, py, pr / 2 + 4);
+    this.ring.lineStyle(2.5, accent, 1).strokeCircle(px, py, pr / 2 + 4);
+    this.ringFront.clear().lineStyle(1.5, 0xfff6d8, 0.85).strokeCircle(px, py, pr / 2 - 3);
+    const tx = left ? r.x + pr + 44 : r.x + 28;
+    const tw = r.w - pr - 80;
+    const nameSize = small ? 16 : 22;
+    const nameY = r.y + (small ? 10 : 16);
+    this.name.setText(sp.name).setColor(sp.color).setPosition(tx, nameY).setFontSize(nameSize);
+    const plateH = small ? 22 : 30;
+    const plateW = this.name.width + 22;
+    this.panel.fillStyle(accent, 0.16).fillRoundedRect(tx - 10, nameY - 4, plateW, plateH, 9);
+    this.panel.lineStyle(1.25, accent, 0.7).strokeRoundedRect(tx - 10, nameY - 4, plateW, plateH, 9);
+    this.text.setPosition(tx, nameY + plateH + 6).setFontSize(small ? 18 : 22).setWordWrapWidth(tw);
+    this.prompt.setText(Gamepad.connected ? "A   NEXT" : "NEXT");
+    this.prompt.setPosition(left ? r.x + r.w - 22 : r.x + r.w - pr - 36, r.y + r.h - 14).setVisible(false);
     this.full = line.text;
     this.shown = 0;
     this.text.setText("");
@@ -147,10 +180,21 @@ export class Dialogue {
     this.finish();
   }
 
+  private layoutSkip() {
+    const w = this.skip.width + 28;
+    const h = 32;
+    const x = this.skip.x - this.skip.width - 14;
+    const y = this.skip.y - 6;
+    this.skipBg.clear();
+    drawPlaque(this.skipBg, x, y, w, h, { radius: 12, fill: 0x140c24, fillAlpha: 0.82, stroke: 0xc9b6e8, gems: false });
+    this.skipBg.setVisible(true);
+  }
+
   private finish() {
     this.blocking = false;
     this.catcher.setVisible(false);
     this.skip.setVisible(false);
+    this.skipBg.setVisible(false);
     this.box.setVisible(false);
     const cb = this.done;
     this.done = undefined;

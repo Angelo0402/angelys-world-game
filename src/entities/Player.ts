@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { applyOrigin, scaleForHeight } from "../assets/manifest";
 import type { SpriteKey } from "../assets/sprites.gen";
 import { Audio } from "../audio/AudioManager";
-import { MAX_HEARTS, WEAPON_ORDER, type WeaponId } from "../config";
+import { HEART_LOSS, MAX_HEARTS, clampHearts, WEAPON_ORDER, type WeaponId } from "../config";
 import type { FrameInput } from "../input/controls";
 import type { GameScene } from "../scenes/GameScene";
 
@@ -419,10 +419,10 @@ export class Player {
     this.lastGrounded = -1000;
   }
 
-  /** Damage from enemies, projectiles and hazards. Returns true if a heart was lost. */
+  /** Damage from enemies, projectiles and hazards. Returns true if health was lost. */
   hurt(fromX: number): boolean {
     if (!this.alive || this.invulnerable || this.state === "celebrate" || this.state === "pickup") return false;
-    this.hearts = Math.max(0, this.hearts - 1);
+    this.hearts = clampHearts(this.hearts - HEART_LOSS);
     this.scene.onHeartsChanged(this.hearts);
     Audio.sfx("player_hurt");
     this.scene.cameras.main.shake(160, 0.008);
@@ -443,16 +443,16 @@ export class Player {
 
   heal(): boolean {
     if (this.hearts >= MAX_HEARTS || !this.alive) return false;
-    this.hearts++;
+    this.hearts = clampHearts(this.hearts + 1);
     this.scene.onHeartsChanged(this.hearts);
     return true;
   }
 
-  /** Pit or lava: lose one heart and return to the checkpoint. */
+  /** Pit or lava: lose half a heart and return to the checkpoint. */
   fall(respawnX: number, respawnY: number) {
     if (!this.alive) return;
     Audio.sfx("fall");
-    this.hearts = Math.max(0, this.hearts - 1);
+    this.hearts = clampHearts(this.hearts - HEART_LOSS);
     this.scene.onHeartsChanged(this.hearts);
     if (this.hearts <= 0) {
       this.state = "dead";

@@ -2,12 +2,13 @@ import Phaser from "phaser";
 import { applyOrigin, scaleForHeight } from "../assets/manifest";
 import { SPRITES } from "../assets/sprites.gen";
 import { Audio } from "../audio/AudioManager";
-import { CHAPTERS, FONT, GAME_H, GAME_W, LEVELS, MAX_HEARTS, levelLabel, type WeaponId } from "../config";
+import { CHAPTERS, FONT, FONT_DISPLAY, GAME_H, GAME_W, LEVELS, MAX_HEARTS, clampHearts, levelLabel, type WeaponId } from "../config";
 import { resetTouch, touchState } from "../input/controls";
 import { Gamepad } from "../input/gamepad";
 import { PadMenu } from "../ui/padMenu";
 import { Button, titleText } from "../ui/Button";
 import { Dialogue } from "../ui/Dialogue";
+import { drawPlaque, drawRule } from "../ui/frame";
 import { useTouchUi } from "../ui/screen";
 import type { DialogueLine } from "../story/umbra";
 import { drawLock } from "./TitleScene";
@@ -37,6 +38,11 @@ interface GoalState {
 export class HudScene extends Phaser.Scene {
   private levelIndex = 0;
   private hearts: Phaser.GameObjects.Sprite[] = [];
+  private heartBacks: Phaser.GameObjects.Sprite[] = [];
+  private heartShown: number[] = [];
+  private heartAnim = 0;
+  private readonly heartPx = 24;
+  private readonly hpBarW = 150;
   private killPanel!: Phaser.GameObjects.Container;
   private killText!: Phaser.GameObjects.Text;
   private lockIcon!: Phaser.GameObjects.Graphics;
@@ -46,6 +52,8 @@ export class HudScene extends Phaser.Scene {
   private weaponSlot!: Phaser.GameObjects.Container;
   private weaponIcon!: Phaser.GameObjects.Image;
   private weaponKey!: Phaser.GameObjects.Text;
+  private toastWrap!: Phaser.GameObjects.Container;
+  private toastPlate!: Phaser.GameObjects.Graphics;
   private toastText!: Phaser.GameObjects.Text;
   private bannerText!: Phaser.GameObjects.Text;
   private overlay?: Phaser.GameObjects.Container;
@@ -78,6 +86,9 @@ export class HudScene extends Phaser.Scene {
     this.cinema = false;
     this.joyId = this.jumpId = this.attackId = -1;
     this.hearts = [];
+    this.heartBacks = [];
+    this.heartShown = [];
+    this.heartAnim = 0;
     this.lowPulse = undefined;
     this.input.addPointer(3);
     this.showTouch = useTouchUi(this) && !Gamepad.connected;
@@ -89,11 +100,11 @@ export class HudScene extends Phaser.Scene {
     this.buildTouchControls();
     this.dialogue = new Dialogue(this);
 
+    this.toastPlate = this.add.graphics();
     this.toastText = this.add
-      .text(GAME_W / 2, 112, "", { fontFamily: FONT, fontSize: "24px", fontStyle: "bold", color: "#fff4d6", stroke: "#2a1640", strokeThickness: 6, align: "center" })
-      .setOrigin(0.5)
-      .setDepth(150)
-      .setAlpha(0);
+      .text(0, 0, "", { fontFamily: FONT, fontSize: "22px", fontStyle: "bold", color: "#fff4d6", stroke: "#2a1640", strokeThickness: 5, align: "center", letterSpacing: 0.4 })
+      .setOrigin(0.5);
+    this.toastWrap = this.add.container(GAME_W / 2, 124, [this.toastPlate, this.toastText]).setDepth(150).setAlpha(0);
     this.bannerText = titleText(this, GAME_W / 2, GAME_H / 2 - 60, "", 64, "#9ff5ff").setAlpha(0).setDepth(150);
 
     const reg = this.registry.events;
@@ -143,59 +154,84 @@ export class HudScene extends Phaser.Scene {
   // ---------------------------------------------------------------- top bar
 
   private buildTopBar() {
+    ensureHalfHeart(this);
     const panel = this.add.graphics();
-    panel.fillStyle(0x14082a, 0.62).fillRoundedRect(14, 10, 292, 62, 22);
-    panel.lineStyle(3, 0x7a4dff, 0.85).strokeRoundedRect(14, 10, 292, 62, 22);
-    const face = this.add.image(46, 41, "portrait_angely").setDisplaySize(46, 46);
+    drawPlaque(panel, 12, 8, 328, 74, { radius: 20, fill: 0x14082a, fillAlpha: 0.78, stroke: 0xc9a24a, accent: 0xfff6d8, gems: false });
+    const face = this.add.image(50, 45, "portrait_angely").setDisplaySize(48, 48);
     const ring = this.add.graphics();
-    ring.lineStyle(3, 0xff7ad9, 1).strokeCircle(46, 41, 25);
+    ring.lineStyle(3, 0x2a1640, 1).strokeCircle(50, 45, 26);
+    ring.lineStyle(2.5, 0xff7ad9, 1).strokeCircle(50, 45, 26);
+    ring.lineStyle(1.25, 0xfff6d8, 0.85).strokeCircle(50, 45, 21);
+    const heartY = 30;
+    const heartX0 = 90;
+    const heartGap = 30;
+    const base = scaleForHeight("heart", this.heartPx);
     for (let i = 0; i < MAX_HEARTS; i++) {
-      const h = this.add.sprite(86 + i * 28, 30, "heart", SPRITES.heart.anims.glow.start);
-      h.setScale(scaleForHeight("heart", 22));
+      const x = heartX0 + i * heartGap;
+      const back = this.add.sprite(x, heartY, "heart", 0).setScale(base);
+      applyOrigin(back, "heart");
+      back.setTint(0x6a5878).setAlpha(0.92).setVisible(false);
+      this.heartBacks.push(back);
+      const h = this.add.sprite(x, heartY, "heart", SPRITES.heart.anims.glow.start).setScale(base);
       applyOrigin(h, "heart");
+      h.play("heart:glow");
       this.hearts.push(h);
     }
-    this.add.rectangle(86, 52, 150, 8, 0x2a1648).setOrigin(0, 0.5);
-    this.hpFill = this.add.rectangle(86, 52, 150, 8, 0xff4d8d).setOrigin(0, 0.5);
+    const barX = 90;
+    const barY = 58;
+    this.add.rectangle(barX, barY, this.hpBarW, 9, 0x2a1648).setOrigin(0, 0.5).setStrokeStyle(1, 0xffd36b, 0.45);
+    this.hpFill = this.add.rectangle(barX, barY, this.hpBarW, 5, 0xff4d8d).setOrigin(0, 0.5);
+    const ticks = this.add.graphics();
+    for (let i = 1; i < MAX_HEARTS; i++) ticks.fillStyle(0x140820, 0.7).fillRect(barX + (this.hpBarW * i) / MAX_HEARTS, barY - 4, 1.5, 8);
     void face;
     void ring;
 
     const kp = this.add.graphics();
-    kp.fillStyle(0x1b0f2e, 0.55).fillRoundedRect(GAME_W / 2 - 150, 12, 300, 54, 18);
+    drawPlaque(kp, GAME_W / 2 - 180, 8, 360, 74, { radius: 18, fill: 0x1b0f2e, fillAlpha: 0.74, stroke: 0xffd36b, gems: false });
     this.killText = this.add
-      .text(GAME_W / 2 + 18, 39, "", { fontFamily: FONT, fontSize: "26px", fontStyle: "bold", color: "#fff4d6", stroke: "#2a1640", strokeThickness: 5 })
+      .text(GAME_W / 2 + 16, 32, "", { fontFamily: FONT, fontSize: "24px", fontStyle: "bold", color: "#fff4d6", stroke: "#2a1640", strokeThickness: 5, letterSpacing: 0.6 })
       .setOrigin(0.5);
     this.lockIcon = this.add.graphics();
     const lvl = this.add
-      .text(GAME_W / 2, 74, `LEVEL ${levelLabel(LEVELS[this.levelIndex])}  •  ${LEVELS[this.levelIndex].name.toUpperCase()}`, {
-        fontFamily: FONT, fontSize: "14px", fontStyle: "bold", color: "#e8dcff", stroke: "#1b0f2e", strokeThickness: 4,
+      .text(GAME_W / 2, 62, `LEVEL ${levelLabel(LEVELS[this.levelIndex])}   •   ${LEVELS[this.levelIndex].name.toUpperCase()}`, {
+        fontFamily: FONT, fontSize: "13px", fontStyle: "bold", color: "#e8dcff", stroke: "#1b0f2e", strokeThickness: 4, letterSpacing: 0.6,
       })
-      .setOrigin(0.5, 0);
+      .setOrigin(0.5);
     this.killPanel = this.add.container(0, 0, [kp, this.killText, this.lockIcon, lvl]);
 
-    const pause = this.add.container(GAME_W - 46, 40);
+    const pause = this.add.container(GAME_W - 48, 44);
     const pg = this.add.graphics();
-    pg.fillStyle(0x1b0f2e, 0.6).fillCircle(0, 0, 28).lineStyle(3, 0xffd36b, 1).strokeCircle(0, 0, 28);
+    pg.fillStyle(0x14082a, 0.78).fillCircle(0, 0, 28);
+    pg.lineStyle(2.5, 0xffd36b, 1).strokeCircle(0, 0, 28);
+    pg.lineStyle(1.25, 0xfff6d8, 0.55).strokeCircle(0, 0, 22);
     pg.fillStyle(0xfff4d6, 1).fillRoundedRect(-10, -12, 7, 24, 2).fillRoundedRect(3, -12, 7, 24, 2);
     pause.add(pg).setSize(64, 64).setInteractive({ useHandCursor: true });
+    pause.on("pointerdown", () => pause.setScale(0.92));
+    pause.on("pointerout", () => pause.setScale(1));
     pause.on("pointerup", () => {
+      pause.setScale(1);
       if (this.overlay || this.cinema) return;
       Audio.sfx("button");
       this.game.events.emit("pause-request");
     });
 
-    const mute = this.add.container(GAME_W - 114, 40);
+    const mute = this.add.container(GAME_W - 116, 44);
     const mg = this.add.graphics();
     const drawMute = () => {
       mg.clear();
-      mg.fillStyle(0x1b0f2e, 0.6).fillCircle(0, 0, 24).lineStyle(3, 0xffd36b, 1).strokeCircle(0, 0, 24);
+      mg.fillStyle(0x14082a, 0.78).fillCircle(0, 0, 24);
+      mg.lineStyle(2.5, 0xffd36b, 1).strokeCircle(0, 0, 24);
+      mg.lineStyle(1.25, 0xfff6d8, 0.5).strokeCircle(0, 0, 18);
       mg.fillStyle(0xfff4d6, 1).fillRect(-11, -5, 7, 10).fillTriangle(-6, -5, 4, -13, 4, 13).fillTriangle(-6, 5, 4, -13, 4, 13);
       if (!Audio.musicOn && !Audio.sfxOn) mg.lineStyle(4, 0xff5a5a, 1).lineBetween(-14, -14, 14, 14);
       else mg.lineStyle(3, 0xfff4d6, 1).beginPath().arc(6, 0, 9, -0.9, 0.9).strokePath();
     };
     drawMute();
     mute.add(mg).setSize(56, 56).setInteractive({ useHandCursor: true });
+    mute.on("pointerdown", () => mute.setScale(0.92));
+    mute.on("pointerout", () => mute.setScale(1));
     mute.on("pointerup", () => {
+      mute.setScale(1);
       const on = !(Audio.musicOn || Audio.sfxOn);
       Audio.setMusic(on);
       Audio.setSfx(on);
@@ -205,17 +241,16 @@ export class HudScene extends Phaser.Scene {
   }
 
   private buildBossBar() {
-    const w = 520;
+    const w = 540;
     const g = this.add.graphics();
-    g.fillStyle(0x0d0618, 0.75).fillRoundedRect(GAME_W / 2 - w / 2, 10, w, 64, 18);
-    g.lineStyle(3, 0xb57cff, 1).strokeRoundedRect(GAME_W / 2 - w / 2, 10, w, 64, 18);
+    drawPlaque(g, GAME_W / 2 - w / 2, 8, w, 74, { radius: 18, fill: 0x0d0618, fillAlpha: 0.82, stroke: 0xb57cff, accent: 0xf0d8ff, gems: false });
     const name = this.add
-      .text(GAME_W / 2, 16, "QUEEN UMBRA", { fontFamily: FONT, fontSize: "18px", fontStyle: "bold", color: "#e0b8ff", stroke: "#12081f", strokeThickness: 5 })
+      .text(GAME_W / 2, 16, "QUEEN UMBRA", { fontFamily: FONT_DISPLAY, fontSize: "16px", fontStyle: "bold", color: "#e0b8ff", stroke: "#12081f", strokeThickness: 4, letterSpacing: 1.4 })
       .setOrigin(0.5, 0);
-    const back = this.add.rectangle(GAME_W / 2 - 230, 50, 460, 16, 0x2a1640).setOrigin(0, 0.5);
-    this.bossChip = this.add.rectangle(GAME_W / 2 - 230, 50, 460, 16, 0xffffff).setOrigin(0, 0.5);
-    this.bossFill = this.add.rectangle(GAME_W / 2 - 230, 50, 460, 16, 0xb57cff).setOrigin(0, 0.5);
-    const frame = this.add.rectangle(GAME_W / 2, 50, 462, 18).setStrokeStyle(2, 0xffffff, 0.6);
+    const back = this.add.rectangle(GAME_W / 2 - 230, 52, 460, 14, 0x2a1640).setOrigin(0, 0.5);
+    this.bossChip = this.add.rectangle(GAME_W / 2 - 230, 52, 460, 14, 0xffffff).setOrigin(0, 0.5);
+    this.bossFill = this.add.rectangle(GAME_W / 2 - 230, 52, 460, 14, 0xb57cff).setOrigin(0, 0.5);
+    const frame = this.add.rectangle(GAME_W / 2, 52, 462, 16).setStrokeStyle(1.5, 0xfff6d8, 0.55);
     this.bossPanel = this.add.container(0, 0, [g, name, back, this.bossChip, this.bossFill, frame]).setVisible(false);
   }
 
@@ -239,12 +274,15 @@ export class HudScene extends Phaser.Scene {
 
   private buildWeaponSlot() {
     const g = this.add.graphics();
-    g.fillStyle(0x14082a, 0.7).fillRoundedRect(-30, -30, 60, 60, 16).lineStyle(3, 0x3ecbff, 1).strokeRoundedRect(-30, -30, 60, 60, 16);
+    g.fillStyle(0x07040f, 0.35).fillRoundedRect(-27, -26, 60, 60, 16);
+    g.fillStyle(0x14082a, 0.84).fillRoundedRect(-30, -30, 60, 60, 16);
+    g.lineStyle(2.5, 0x3ecbff, 1).strokeRoundedRect(-30, -30, 60, 60, 16);
+    g.lineStyle(1.25, 0xfff6d8, 0.45).strokeRoundedRect(-24, -24, 48, 48, 12);
     this.weaponIcon = this.add.image(0, -2, "icon_sword");
     this.weaponKey = this.add
       .text(30, 30, "", { fontFamily: FONT, fontSize: "14px", fontStyle: "bold", color: "#ffffff", backgroundColor: "#7a5aa8", padding: { x: 5, y: 1 } })
       .setOrigin(1, 1);
-    this.weaponSlot = this.add.container(46, 108, [g, this.weaponIcon, this.weaponKey]).setVisible(false);
+    this.weaponSlot = this.add.container(50, 118, [g, this.weaponIcon, this.weaponKey]).setVisible(false);
     this.weaponSlot.setSize(68, 68).setInteractive({ useHandCursor: true });
     this.weaponSlot.on("pointerup", () => {
       if (!this.overlay && !this.cinema) touchState.swapQueued = true;
@@ -268,21 +306,66 @@ export class HudScene extends Phaser.Scene {
   }
 
   private setHearts(n: number) {
-    this.hearts.forEach((h, i) => {
-      const full = i < n;
-      h.setTint(full ? 0xffffff : 0x3a3450).setAlpha(full ? 1 : 0.6);
-      if (!full && h.getData("full") !== false) {
-        this.tweens.add({ targets: h, scale: { from: h.scale * 1.5, to: h.scale }, duration: 250 });
+    const safe = clampHearts(n);
+    const base = scaleForHeight("heart", this.heartPx);
+    const token = ++this.heartAnim;
+    const popping: Phaser.GameObjects.Sprite[] = [];
+    this.hearts.forEach((front, i) => {
+      const back = this.heartBacks[i];
+      const fill = safe - i >= 1 ? 1 : safe - i >= 0.5 ? 0.5 : 0;
+      const prev = this.heartShown[i];
+      if (prev !== undefined && fill !== prev) popping.push(front, back);
+      this.heartShown[i] = fill;
+      this.tweens.killTweensOf(front);
+      this.tweens.killTweensOf(back);
+      const half = front.getData("half") === true;
+      if (fill === 1) {
+        if (half || front.texture.key !== "heart") {
+          front.setTexture("heart", 0);
+          applyOrigin(front, "heart");
+          front.play("heart:glow");
+        }
+        front.setData("half", false).clearTint().setAlpha(1).setVisible(true);
+        back.setVisible(false);
+      } else if (fill === 0.5) {
+        if (!half) {
+          front.anims.stop();
+          front.setTexture("heart_half");
+          front.setOrigin(SPRITES.heart.originX, SPRITES.heart.originY);
+          front.setData("half", true);
+        }
+        front.clearTint().setAlpha(1).setVisible(true);
+        back.setVisible(true);
+      } else {
+        front.setVisible(false).setData("half", false);
+        back.setVisible(true);
       }
-      h.setData("full", full);
+      front.setScale(base);
+      back.setScale(base);
     });
     this.lowPulse?.stop();
-    const base = scaleForHeight("heart", 22);
-    this.hearts.forEach((h) => h.setScale(base));
-    if (this.hpFill) this.hpFill.width = 150 * (n / MAX_HEARTS);
-    if (n === 1) {
-      this.lowPulse = this.tweens.add({ targets: this.hearts[0], scale: base * 1.25, duration: 350, yoyo: true, repeat: -1 });
+    this.lowPulse = undefined;
+    if (this.hpFill) {
+      this.tweens.killTweensOf(this.hpFill);
+      this.hpFill.setFillStyle(safe > 0 && safe <= 1 ? 0xff6b8a : 0xff4d8d);
+      this.tweens.add({ targets: this.hpFill, width: this.hpBarW * (safe / MAX_HEARTS), duration: 180, ease: "Quad.out" });
     }
+    const pulse = () => {
+      if (token !== this.heartAnim || safe <= 0 || safe > 1) return;
+      const targets = [this.hearts[0], this.heartBacks[0]].filter((s) => s.visible);
+      if (!targets.length) return;
+      this.lowPulse = this.tweens.add({ targets, scale: base * 1.14, duration: 420, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+    };
+    if (popping.length) {
+      popping.forEach((s) => s.setScale(base * 1.35));
+      this.tweens.add({
+        targets: popping,
+        scale: base,
+        duration: 200,
+        ease: "Quad.out",
+        onComplete: pulse,
+      });
+    } else pulse();
   }
 
   private setGoal(g: GoalState) {
@@ -291,12 +374,12 @@ export class HudScene extends Phaser.Scene {
     this.lockIcon.clear();
     const x = GAME_W / 2 - 122;
     if (g.kind === "reach") {
-      this.killText.setText(info.mode === "climb" ? "CLIMB TO THE TOP!" : info.mode === "chase" ? "RUN TO THE PORTAL!" : "REACH THE PORTAL").setFontSize(23);
-      this.killText.setX(GAME_W / 2 + 14).setColor("#9ff5ff");
+    this.killText.setText(info.mode === "climb" ? "CLIMB TO THE TOP!" : info.mode === "chase" ? "RUN TO THE PORTAL!" : "REACH THE PORTAL").setFontSize(20);
+    this.killText.setX(GAME_W / 2 + 14).setColor("#9ff5ff");
       this.lockIcon.fillStyle(0x9ff5ff, 1).fillTriangle(x - 10, 46, x + 12, 39, x - 10, 30);
       return;
     }
-    this.killText.setFontSize(26).setX(GAME_W / 2 + 18).setColor("#fff4d6");
+    this.killText.setFontSize(24).setX(GAME_W / 2 + 16).setColor("#fff4d6");
     this.killText.setText(`${g.kind === "gems" ? "GEMS" : "ENEMIES"} ${String(shown).padStart(2, "0")} / ${g.need}`);
     const k = g.have;
     const goal = g.need;
@@ -416,7 +499,7 @@ export class HudScene extends Phaser.Scene {
   private onDown(ptr: Phaser.Input.Pointer) {
     if (this.overlay || this.cinema || !this.showTouch) return;
     const p = this.logical(ptr);
-    if (p.y < 80 && (p.x > GAME_W - 150 || p.x < 260)) return;
+    if (p.y < 90 && (p.x > GAME_W - 170 || p.x < 350)) return;
     if (p.x < 100 && p.y < 160) return;
     const d = (b: { x: number; y: number }) => Phaser.Math.Distance.Between(p.x, p.y, b.x, b.y);
     if (d(JUMP) < JUMP.r + 18 && this.jumpId < 0) {
@@ -495,16 +578,21 @@ export class HudScene extends Phaser.Scene {
     this.resetJoy();
     this.syncTouchVisibility();
     this.tweens.add({ targets: [this.weaponSlot], alpha: on ? 0 : 1, duration: 300 });
-    if (on) this.toastText.setAlpha(0);
+    if (on) this.toastWrap.setAlpha(0);
   }
 
   private toast(text: string) {
     if (this.cinema) return;
-    this.tweens.killTweensOf(this.toastText);
-    const y = this.bossPanel.visible ? 128 : 124;
-    this.toastText.setText(text).setAlpha(0).setY(y + 12);
-    this.tweens.add({ targets: this.toastText, alpha: 1, y, duration: 220 });
-    this.tweens.add({ targets: this.toastText, alpha: 0, delay: 2600, duration: 400 });
+    this.tweens.killTweensOf(this.toastWrap);
+    this.toastText.setText(text);
+    const w = Math.min(780, this.toastText.width + 56);
+    const h = this.toastText.height + 26;
+    this.toastPlate.clear();
+    drawPlaque(this.toastPlate, -w / 2, -h / 2, w, h, { radius: 16, fill: 0x140c24, fillAlpha: 0.9, stroke: 0xffd36b, gems: false });
+    const y = this.bossPanel.visible ? 132 : 124;
+    this.toastWrap.setAlpha(0).setY(y + 10);
+    this.tweens.add({ targets: this.toastWrap, alpha: 1, y, duration: 220, ease: "Quad.out" });
+    this.tweens.add({ targets: this.toastWrap, alpha: 0, delay: 2600, duration: 400 });
   }
 
   private banner(text: string) {
@@ -521,10 +609,15 @@ export class HudScene extends Phaser.Scene {
     this.joyId = this.jumpId = this.attackId = -1;
     this.resetJoy();
     const c = this.add.container(0, 0).setDepth(100);
-    const dim = this.add.rectangle(0, 0, GAME_W, GAME_H, 0x0b0716, 0.72).setOrigin(0).setInteractive();
+    const dim = this.add.rectangle(0, 0, GAME_W, GAME_H, 0x0b0716, 0.74).setOrigin(0).setInteractive();
     const panel = this.add.graphics();
-    panel.fillStyle(0x1b0f2e, 0.94).fillRoundedRect(GAME_W / 2 - 300, GAME_H / 2 - height / 2, 600, height, 28);
-    panel.lineStyle(4, 0xffd36b, 1).strokeRoundedRect(GAME_W / 2 - 300, GAME_H / 2 - height / 2, 600, height, 28);
+    drawPlaque(panel, GAME_W / 2 - 320, GAME_H / 2 - height / 2, 640, height, {
+      radius: 26,
+      fill: 0x1b0f2e,
+      fillAlpha: 0.96,
+      stroke: 0xffd36b,
+      gems: true,
+    });
     c.add([dim, panel]);
     c.setAlpha(0);
     this.tweens.add({ targets: c, alpha: 1, duration: 200 });
@@ -549,26 +642,29 @@ export class HudScene extends Phaser.Scene {
 
   private showPause() {
     if (this.overlay) return;
-    const c = this.openOverlay(440);
-    const top = GAME_H / 2 - 220;
-    c.add(titleText(this, GAME_W / 2, top + 50, "PAUSED", 46));
-    const resume = new Button(this, GAME_W / 2, top + 125, "RESUME", () => {
+    const c = this.openOverlay(460);
+    const top = GAME_H / 2 - 230;
+    c.add(titleText(this, GAME_W / 2, top + 48, "PAUSED", 42));
+    const rule = this.add.graphics();
+    drawRule(rule, GAME_W / 2, top + 78, 180);
+    c.add(rule);
+    const resume = new Button(this, GAME_W / 2, top + 132, "RESUME", () => {
       this.closeOverlay();
       Audio.duck(false);
       this.scene.resume("Game");
     }, { width: 300, height: 58 });
-    const restart = new Button(this, GAME_W / 2 - 130, top + 200, "RESTART", () => this.restartLevel(), { width: 230, height: 52, fontSize: 22, color: 0x7a5aa8 });
-    const select = new Button(this, GAME_W / 2 + 130, top + 200, "LEVELS", () => this.toChapterSelect(), { width: 230, height: 52, fontSize: 22, color: 0x7a5aa8 });
-    const music = new Button(this, GAME_W / 2 - 130, top + 275, `MUSIC: ${Audio.musicOn ? "ON" : "OFF"}`, () => {
+    const restart = new Button(this, GAME_W / 2 - 130, top + 208, "RESTART", () => this.restartLevel(), { width: 230, height: 52, fontSize: 22, color: 0x7a5aa8 });
+    const select = new Button(this, GAME_W / 2 + 130, top + 208, "LEVELS", () => this.toChapterSelect(), { width: 230, height: 52, fontSize: 22, color: 0x7a5aa8 });
+    const music = new Button(this, GAME_W / 2 - 130, top + 284, `MUSIC: ${Audio.musicOn ? "ON" : "OFF"}`, () => {
       Audio.setMusic(!Audio.musicOn);
       music.setText(`MUSIC: ${Audio.musicOn ? "ON" : "OFF"}`);
     }, { width: 230, height: 52, fontSize: 22, color: 0x3f8f6a });
-    const sfx = new Button(this, GAME_W / 2 + 130, top + 275, `SFX: ${Audio.sfxOn ? "ON" : "OFF"}`, () => {
+    const sfx = new Button(this, GAME_W / 2 + 130, top + 284, `SFX: ${Audio.sfxOn ? "ON" : "OFF"}`, () => {
       Audio.setSfx(!Audio.sfxOn);
       sfx.setText(`SFX: ${Audio.sfxOn ? "ON" : "OFF"}`);
     }, { width: 230, height: 52, fontSize: 22, color: 0x3f8f6a });
     const help = this.add
-      .text(GAME_W / 2, top + 352, this.controlsHelp(), { fontFamily: FONT, fontSize: "15px", color: "#cfc6e8", align: "center", wordWrap: { width: 560 } })
+      .text(GAME_W / 2, top + 372, this.controlsHelp(), { fontFamily: FONT, fontSize: "15px", color: "#d9d0ee", align: "center", wordWrap: { width: 540 }, lineSpacing: 4 })
       .setOrigin(0.5);
     c.add([resume, restart, select, music, sfx, help]);
     this.menu = new PadMenu(this, [resume, restart, select, music, sfx], { back: () => resume.activate(), menuIsBack: true });
@@ -717,6 +813,20 @@ function drawWeaponIcon(g: Phaser.GameObjects.Graphics, w: WeaponId) {
   g.fillRect(-3, -8, 6, 22);
   g.fillStyle(0xffd36b, 1).fillRect(-14, 6, 28, 6);
   g.fillStyle(0xc9843a, 1).fillRect(-3, 12, 6, 10);
+}
+
+/** Left half of the heart sheet, same frame size so it lines up on the empty heart behind it. */
+function ensureHalfHeart(scene: Phaser.Scene) {
+  if (scene.textures.exists("heart_half")) return;
+  const img = scene.textures.get("heart").getSourceImage() as CanvasImageSource;
+  const fw = SPRITES.heart.frameWidth;
+  const fh = SPRITES.heart.frameHeight;
+  const tex = scene.textures.createCanvas("heart_half", fw, fh);
+  if (!tex) return;
+  const ctx = tex.getContext();
+  ctx.clearRect(0, 0, fw, fh);
+  ctx.drawImage(img, 0, 0, fw / 2, fh, 0, 0, fw / 2, fh);
+  tex.refresh();
 }
 
 /** Crystal sword icon for the weapon slot (the sword has no standalone sprite). */
