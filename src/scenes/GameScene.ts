@@ -627,7 +627,7 @@ export class GameScene extends Phaser.Scene {
     if (!frozen && !this.info.boss) this.spawnTick(time);
     this.updatePortalArrow(time);
 
-    if (this.player.hearts === 1 && this.player.alive && time - this.lastLowHealth > 4000) {
+    if (this.player.hearts > 0 && this.player.hearts <= 1 && this.player.alive && time - this.lastLowHealth > 4000) {
       this.lastLowHealth = time;
       Audio.sfx("low_health");
     }
@@ -1355,9 +1355,10 @@ export class GameScene extends Phaser.Scene {
     const killsGoal = this.goal.kind === "kills";
     if (killsGoal && this.portal.isOpen) return;
     const p = this.player;
-    // Waiting at a sealed portal: enemies come faster so the count never stalls.
+    // Waiting at a sealed portal: the next enemy arrives sooner so a kill goal never stalls.
+    // The alive cap stays put (worm adds stay at 1) so fights don't fill the screen.
     const urgent = killsGoal && Math.abs(p.x - this.portal.cx) < 1200;
-    const max = wormFight ? 1 : this.chapter.maxAlive + (urgent ? 1 : 0);
+    const max = wormFight ? 1 : this.chapter.maxAlive;
     if (time < this.nextSpawn || this.enemies.length >= max) return;
     if (!p.alive || (!wormFight && this.level.mode !== "climb" && p.x < 500)) {
       this.nextSpawn = time + 500;

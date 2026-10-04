@@ -2,6 +2,14 @@ export const GAME_W = 1280;
 export const GAME_H = 576;
 export const GROUND_Y = 500;
 export const MAX_HEARTS = 5;
+/** Health removed by one hit, including a pit or lava fall. Heart pickups restore 1. */
+export const HEART_LOSS = 0.5;
+
+/** Snap to half-hearts and keep the value inside 0…MAX_HEARTS. */
+export function clampHearts(n: number) {
+  const stepped = Math.round(n * 2) / 2;
+  return Math.min(MAX_HEARTS, Math.max(0, stepped));
+}
 
 export type ChapterId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 export const LAST_CHAPTER: ChapterId = 9;
@@ -39,6 +47,7 @@ export interface ChapterDef {
   background: string;
   music: MusicTrack;
   enemies: string[];
+  /** Enemies allowed alive near Angely at once. Scripted bosses do not use this. */
   maxAlive: number;
   spawnEvery: number;
   pitKind: "pit" | "lava";
@@ -57,7 +66,7 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
     background: "bg1",
     music: "music_forest",
     enemies: ["mushroom", "beetle", "leafimp", "firefly"],
-    maxAlive: 4,
+    maxAlive: 2,
     spawnEvery: 1.7,
     pitKind: "pit",
     grip: 1,
@@ -70,7 +79,7 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
     background: "bg2",
     music: "music_ruins",
     enemies: ["golem", "ghost", "lantern", "skeleton"],
-    maxAlive: 4,
+    maxAlive: 2,
     spawnEvery: 1.85,
     pitKind: "pit",
     grip: 1,
@@ -83,7 +92,7 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
     background: "bg3",
     music: "music_volcano",
     enemies: ["firebat", "lavablob", "crab", "magmagolem"],
-    maxAlive: 4,
+    maxAlive: 2,
     spawnEvery: 1.75,
     pitKind: "lava",
     grip: 1,
@@ -96,7 +105,7 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
     background: "bg4",
     music: "music_frozen",
     enemies: ["frostwolf", "icewisp", "penguin", "yeti"],
-    maxAlive: 4,
+    maxAlive: 2,
     spawnEvery: 1.7,
     pitKind: "pit",
     grip: 0.22,
@@ -109,7 +118,7 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
     background: "bg5",
     music: "music_shadow",
     enemies: ["skeleton", "ghost", "frostwolf", "firebat", "magmagolem", "icewisp"],
-    maxAlive: 4,
+    maxAlive: 2,
     spawnEvery: 1.6,
     pitKind: "pit",
     grip: 1,
@@ -123,7 +132,7 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
     background: "bg6",
     music: "music_sky",
     enemies: ["stormbird", "thunderimp", "stormbird", "golem"],
-    maxAlive: 4,
+    maxAlive: 2,
     spawnEvery: 1.6,
     pitKind: "pit",
     grip: 1,
@@ -136,7 +145,7 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
     background: "bg7",
     music: "music_sea",
     enemies: ["jellyfish", "anglerfish", "crab", "jellyfish"],
-    maxAlive: 4,
+    maxAlive: 2,
     spawnEvery: 1.8,
     pitKind: "pit",
     grip: 1,
@@ -149,7 +158,7 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
     background: "bg8",
     music: "music_clock",
     enemies: ["cogmoth", "gearcrab", "sandwisp", "gearcrab"],
-    maxAlive: 4,
+    maxAlive: 2,
     spawnEvery: 1.7,
     pitKind: "pit",
     grip: 1,
@@ -162,7 +171,7 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
     background: "bg9",
     music: "music_squish",
     enemies: ["squish", "blob", "toxic", "squish"],
-    maxAlive: 4,
+    maxAlive: 2,
     spawnEvery: 1.7,
     pitKind: "pit",
     grip: 1,
@@ -254,4 +263,5 @@ export function weaponsBefore(index: number): WeaponId[] {
   return LEVELS.filter((l) => l.index < index && l.weapon).map((l) => l.weapon!);
 }
 
-export const FONT = '"Trebuchet MS", "Segoe UI", system-ui, sans-serif';
+export const FONT = '"Nunito", "Trebuchet MS", "Segoe UI", system-ui, sans-serif';
+export const FONT_DISPLAY = '"Cinzel", Palatino, Georgia, serif';
