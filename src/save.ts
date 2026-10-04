@@ -23,6 +23,9 @@ function migrate(raw: Record<string, unknown>): SaveData {
   if (!Array.isArray(raw.weapons)) out.weapons = out.sword ? ["sword"] : [];
   // A finished save from before chapter 8 stopped at Coral Palace (index 13).
   if (out.cleared && out.level < 14) out.level = 14;
+  // A finished save from before chapter 10 stopped on Bubble Falls (index 17).
+  // Umbra and the dune worm also set cleared, so only that old finale index moves forward.
+  if (out.cleared && out.level === 17) out.level = 18;
   delete out.unlocked;
   delete out.sword;
   return out;

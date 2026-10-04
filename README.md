@@ -57,7 +57,7 @@ Handy URL flags:
 
 ## Gameplay
 
-Seven chapters, two levels each. Levels differ in how they play, not just in their obstacles:
+Ten chapters, two levels each. Levels differ in how they play, not just in their obstacles:
 
 - **Modes:** `run` (free side-scrolling), `chase` (the screen scrolls by itself while a collapse or an avalanche chases Angely), `climb` (a one-screen-wide vertical tower) and `swim` (underwater: JUMP is a swim stroke).
 - **Goals:** defeat N enemies, collect N star gems, or just reach the (already open) portal.
@@ -80,7 +80,11 @@ Seven chapters, two levels each. Levels differ in how they play, not just in the
 | 7-1 | Sunken Temple | swim / 10 enemies | Swimming, spiky urchins, gates; Star Wand |
 | 7-2 | Coral Palace | swim / 8 gems | Swim the palace and collect every star gem |
 | 8-1 | Cog Dunes | run / 12 enemies | Clockwork Desert: moths, armored gear crabs, sand wisps |
-| 8-2 | Sandstorm Run | chase / reach | A sandstorm chases Angely across the dunes |
+| 8-2 | Dune Worm | boss | The sand worm. Hit it while it is above the dune |
+| 9-1 | Gumdrop Trail | run / 10 enemies | Squishy Valley; the Bubble Ray |
+| 9-2 | Bubble Falls | run / 6 gems | Springs, cliffs, and star gems |
+| 10-1 | Comet Grove | run / 10 enemies | Star Orchard: starlings, moonhares, seed lamps, comet pups |
+| 10-2 | Meteor Run | chase / reach | A meteor shower chases Angely to the portal |
 
 Part two of 5-2 is a cutscene where Angely doesn't fight. A giant golem rises, her dad Angelo (blue hoodie) arrives through a blue portal, defeats it, talks with her and leaves ("Angely, I'll be watching you. I'll be back. I have stuff to do, but be careful."). His frames come from the character sheet in `art/source/angelo_reference_sheet.png`. The lines are in `src/story/angelo.ts`.
 
@@ -135,7 +139,7 @@ Every sound is currently a WebAudio synth placeholder (`src/audio/AudioManager.t
 src/
   main.ts                 Phaser config (Scale.FIT, variable-step Arcade physics)
   render.ts               device-resolution canvas, camera zoom, adaptive quality
-  config.ts               chapters, the 10 levels and their set pieces, weapons
+  config.ts               chapters, the 20 levels and their set pieces, weapons
   scenes/                 Boot, Title (level select), Splash, Game, Hud
   entities/               Player, Enemy (idle > patrol/chase > windup > attack > hurt > dead), enemyTypes, Boss (Queen Umbra)
   world/level.ts          deterministic level layout assembled from set pieces

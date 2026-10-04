@@ -142,6 +142,24 @@ export const ENEMY_TYPES: Record<string, EnemyType> = {
     projectile: { sheet: "fx_dust", speed: 280, aimed: true, tint: 0xffd27a, scale: 0.36 },
     attackSfx: "puff_attack", body: [0.5, 0.6], keepDistance: 240, heartDrop: 0.2,
   },
+  // Chapter 10: The Star Orchard
+  starling: {
+    key: "starling", height: 64, hp: 1, speed: 112, flying: true, attack: "dive", range: 280, cooldown: 2200, windup: 460,
+    attackSfx: "bat_dive", body: [0.55, 0.6],
+  },
+  moonhare: {
+    key: "moonhare", height: 74, hp: 2, speed: 102, attack: "lunge", range: 140, cooldown: 1500, windup: 360,
+    attackSfx: "skeleton_swing", body: [0.5, 0.75],
+  },
+  seedlamp: {
+    key: "seedlamp", height: 86, hp: 2, speed: 48, attack: "shoot", range: 380, cooldown: 2100, windup: 500,
+    projectile: { sheet: "fx_orb", speed: 260, aimed: true, tint: 0xffe7a3, scale: 0.34 },
+    attackSfx: "lantern_bolt", body: [0.5, 0.8], keepDistance: 180,
+  },
+  cometpup: {
+    key: "cometpup", height: 62, hp: 2, speed: 78, attack: "roll", range: 340, cooldown: 2400, windup: 520,
+    attackSfx: "bat_dive", body: [0.6, 0.7], heartDrop: 0.2,
+  },
   anglerfish: {
     key: "anglerfish", height: 70, hp: 2, speed: 75, flying: true, attack: "shoot", range: 460, cooldown: 2200, windup: 560,
     projectile: { sheet: "fx_orb", speed: 280, aimed: true, tint: 0xfff27a, scale: 0.36 },
