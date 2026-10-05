@@ -127,9 +127,9 @@ export class TitleScene extends Phaser.Scene {
     // ---- vertical scroll list (Angelo: scroll de arriba para abajo) ----
     const LIST_TOP = 60;
     const LIST_H = GAME_H - LIST_TOP - 10;
-    const CW = 560;
-    const CH = 118;
-    const GAP = 12;
+    const CW = 1100;
+    const CH = 200;
+    const GAP = 16;
     const list = this.add.container(GAME_W / 2, LIST_TOP);
     const maskG = this.add.graphics().fillRect(0, LIST_TOP, GAME_W, LIST_H);
     list.setMask(maskG.createGeometryMask());
@@ -142,64 +142,74 @@ export class TitleScene extends Phaser.Scene {
       const card = this.add.container(x, y);
       const frame = this.add.graphics();
       const gold = id === 5 ? 0xd2a4ff : 0xffd36b;
-      frame.fillStyle(0x1b0f2e, 0.74).fillRoundedRect(-CW / 2, -CH / 2, CW, CH, 22);
-      frame.lineStyle(4, locked ? 0x5a5470 : gold, 1).strokeRoundedRect(-CW / 2, -CH / 2, CW, CH, 22);
-      const iw = CW - 16;
-      const ih = 34;
-      const img = this.add.image(0, -CH / 2 + 4 + ih / 2, ch.splash);
-      img.setScale(Math.min(iw / img.width, ih / img.height));
+      frame.fillStyle(0x1b0f2e, 0.88).fillRoundedRect(-CW / 2, -CH / 2, CW, CH, 24);
+      frame.lineStyle(4, locked ? 0x5a5470 : gold, 1).strokeRoundedRect(-CW / 2, -CH / 2, CW, CH, 24);
+      // thumbnail on left
+      const TW = 360, TH = 168;
+      const tx = -CW / 2 + 16 + TW / 2;
+      const img = this.add.image(tx, 0, ch.splash);
+      img.setScale(Math.max(TW / img.width, TH / img.height));
+      img.setCrop((img.width - TW / img.scale) / 2, (img.height - TH / img.scale) / 2, TW / img.scale, TH / img.scale);
       if (locked) img.setTint(0x333344);
-      const num = this.add.text(0, -14, `CHAPTER ${id}`, { fontFamily: FONT, fontSize: "10px", fontStyle: "bold", color: id === 5 ? "#d2a4ff" : "#ffd36b" }).setOrigin(0.5);
-      const name = this.add
-        .text(0, -1, ch.name, { fontFamily: FONT, fontSize: "13px", fontStyle: "bold", color: locked ? "#8a84a0" : "#ffffff", stroke: "#2a1640", strokeThickness: 3 })
-        .setOrigin(0.5);
-      if (name.width > CW - 20) name.setScale((CW - 20) / name.width, 1);
-      card.add([frame, img, num, name]);
+      const thumbFrame = this.add.graphics();
+      thumbFrame.lineStyle(3, locked ? 0x5a5470 : gold, 0.9).strokeRoundedRect(tx - TW / 2, -TH / 2, TW, TH, 12);
+      card.add([img, thumbFrame]);
       if (locked) {
         const lock = this.add.graphics();
-        drawLock(lock, 0, -CH / 2 + 9 + ih / 2, 0.8);
+        drawLock(lock, tx, 0, 1.1);
         card.add(lock);
       }
+      // chapter info on right
+      const infoX = -CW / 2 + 16 + TW + 28;
+      const num = this.add.text(infoX, -CH / 2 + 36, `CHAPTER ${id}`, {
+        fontFamily: FONT, fontSize: "20px", fontStyle: "bold",
+        color: id === 5 ? "#e4c5ff" : "#ffe08a", stroke: "#120c28", strokeThickness: 3,
+      }).setOrigin(0, 0.5);
+      const name = this.add.text(infoX, -CH / 2 + 68, ch.name, {
+        fontFamily: FONT, fontSize: "28px", fontStyle: "bold",
+        color: locked ? "#bbb4d0" : "#ffffff", stroke: "#120c28", strokeThickness: 5,
+      }).setOrigin(0, 0.5);
+      card.add([num, name]);
       stages.forEach((l, k) => {
-        const ly = 18 + k * 22;
+        const pw = 280, ph = 56;
+        const px = infoX + k * (pw + 16);
+        const py = 52;
         const open = l.index <= save.level;
-        const pill = this.add.container(0, ly);
+        const pill = this.add.container(px + pw / 2, py);
         const g = this.add.graphics();
         const draw = (focus: boolean) => {
           g.clear();
-          g.fillStyle(open ? (l.boss ? 0x5a2a8a : 0x3a2560) : 0x241a36, 0.95).fillRoundedRect(-CW / 2 + 8, -11, CW - 16, 22, 8);
-          g.lineStyle(focus ? 3 : 2, focus ? 0xfff4a8 : open ? gold : 0x4a4460, 1).strokeRoundedRect(-CW / 2 + 8, -11, CW - 16, 22, 8);
+          g.fillStyle(open ? (l.boss ? 0x5a2a8a : 0x3a2560) : 0x241a36, 0.95).fillRoundedRect(-pw / 2, -ph / 2, pw, ph, 14);
+          g.lineStyle(focus ? 4 : 2, focus ? 0xfff4a8 : open ? gold : 0x4a4460, 1).strokeRoundedRect(-pw / 2, -ph / 2, pw, ph, 14);
         };
         draw(false);
         const kind = l.boss ? "BOSS" : l.mode === "climb" ? "VERTICAL" : l.mode === "swim" ? "SWIM" : l.goal === "gems" ? "GEMS" : "";
-        const tag = this.add.text(-CW / 2 + 16, 0, kind ? `${levelLabel(l)} • ${kind}` : levelLabel(l), {
-          fontFamily: FONT, fontSize: "11px", fontStyle: "bold", color: open ? (l.boss ? "#e0b8ff" : "#ffd36b") : "#6a6480",
-        }).setOrigin(0, 0.5);
-        const nm = this.add.text(0, 0, l.name, {
-          fontFamily: FONT, fontSize: "12px", fontStyle: "bold", color: open ? "#ffffff" : "#6a6480",
-        }).setOrigin(0, 0.5);
-        tag.setY(0);
-        nm.setY(0).setX(tag.x + tag.width + 12);
-        const room = CW / 2 - 34 - nm.x;
-        if (nm.width > room) nm.setFontSize(Math.max(11, Math.floor((15 * room) / nm.width)));
-        pill.add([g, tag, nm]);
+        const label = this.add.text(0, -12, kind ? `${levelLabel(l)} • ${kind}` : levelLabel(l), {
+          fontFamily: FONT, fontSize: "18px", fontStyle: "bold",
+          color: open ? (l.boss ? "#e0b8ff" : "#ffe08a") : "#aaa2c0", stroke: "#241a36", strokeThickness: 3,
+        }).setOrigin(0.5);
+        const nm = this.add.text(0, 12, l.name, {
+          fontFamily: FONT, fontSize: "15px", fontStyle: "bold",
+          color: open ? "#ffffff" : "#aaa2c0", stroke: "#241a36", strokeThickness: 2,
+        }).setOrigin(0.5);
+        pill.add([g, label, nm]);
         if (open && l.index < save.level) {
-          const star = this.add.text(CW / 2 - 24, 0, "★", { fontFamily: FONT, fontSize: "20px", color: "#ffd36b" }).setOrigin(1, 0.5);
+          const star = this.add.text(pw / 2 - 14, -ph / 2 + 13, "★", { fontFamily: FONT, fontSize: "22px", color: "#ffd36b" }).setOrigin(0.5);
           pill.add(star);
         }
         if (!open) {
           const lk = this.add.graphics();
-          drawLock(lk, CW / 2 - 36, -2, 0.42);
+          drawLock(lk, pw / 2 - 20, 0, 0.5);
           pill.add(lk);
         }
         card.add(pill);
         if (!open) return;
-        pill.setSize(CW - 16, 28).setInteractive({ useHandCursor: true });
+        pill.setSize(pw, ph).setInteractive({ useHandCursor: true });
         pill.on("pointerover", () => draw(true));
         pill.on("pointerout", () => draw(false));
         pill.on("pointerup", () => start(l.index));
         if (l.index === save.level) initial = nav.length;
-        nav.push({ x: GAME_W / 2, y: LIST_TOP + y + ly, focus: (on) => draw(on), activate: () => start(l.index) });
+        nav.push({ x: GAME_W / 2 + px + pw / 2, y: LIST_TOP + y + py, focus: (on) => draw(on), activate: () => start(l.index) });
       });
       list.add(card);
       y += CH + GAP;
