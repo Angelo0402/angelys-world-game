@@ -14,7 +14,9 @@ import { KeyboardInput, NO_INPUT, resetTouch, touchState, type FrameInput } from
 import { Gamepad } from "../input/gamepad";
 import { addWeapon, loadSave, unlockLevel, updateSave } from "../save";
 import { angeloCutscene, angeloPraise } from "../story/angeloScene";
+import { KnightBoss } from "../entities/KnightBoss";
 import { Sandworm } from "../entities/Sandworm";
+import { SOVEREIGN_DEFEAT, SOVEREIGN_INTRO, SOVEREIGN_NAME, SOVEREIGN_PHASE } from "../story/sovereign";
 import { WORM_INTRO, WORM_NAME } from "../story/worm";
 import { UMBRA_DEFEAT, UMBRA_INTRO, UMBRA_PHASE2, type DialogueLine } from "../story/umbra";
 import { useTouchUi } from "../ui/screen";
@@ -56,7 +58,7 @@ export class GameScene extends Phaser.Scene {
   player!: Player;
   enemies: Enemy[] = [];
   kills = 0;
-  boss?: Boss | Sandworm;
+  boss?: Boss | Sandworm | KnightBoss;
   mech!: Mechanics;
   portal!: Portal;
   cutscene = false;
@@ -74,6 +76,8 @@ export class GameScene extends Phaser.Scene {
   private far!: Phaser.GameObjects.Image;
   private hearts: Pickup[] = [];
   private gems: Pickup[] = [];
+  private stars: Pickup[] = [];
+  private shieldShown = -1;
   private checkpoints: { spot: Spot; sprite: Phaser.GameObjects.Sprite; active: boolean }[] = [];
   private respawn: Spot = { x: 160, y: GROUND_Y - 80 };
   private portalArrow!: Phaser.GameObjects.Container;
@@ -116,6 +120,8 @@ export class GameScene extends Phaser.Scene {
     this.kills = 0;
     this.hearts = [];
     this.gems = [];
+    this.stars = [];
+    this.shieldShown = -1;
     this.checkpoints = [];
     this.platformTops = [];
     this.swordStone = undefined;
@@ -294,7 +300,10 @@ export class GameScene extends Phaser.Scene {
     const c = this.chapter.id;
     const key = `ground_${c}`;
     const meta = PROPS[key as keyof typeof PROPS];
-    const fill = c === 9 ? 0x6a1878 : [0, 0x3b2414, 0x2a2d3c, 0x1d1418, 0x2c3a52, 0x1c1230, 0xd8dcef, 0x1d4a5a][c];
+    const fill = ({
+      1: 0x3b2414, 2: 0x2a2d3c, 3: 0x1d1418, 4: 0x2c3a52, 5: 0x1c1230, 6: 0xd8dcef, 7: 0x1d4a5a,
+      8: 0x3a2a14, 9: 0x6a1878, 10: 0x1c3a16, 11: 0x1a1438, 12: 0x1d1418, 13: 0x0d3048,
+    } as Record<number, number>)[c] ?? 0x1b0f2e;
     const ground = this.level.ground;
     for (const seg of ground) {
       // The art's walkable edge (top of the grass / stone) sits exactly on the segment's y.
@@ -378,13 +387,8 @@ export class GameScene extends Phaser.Scene {
     }
 
     for (const h of L.hearts) this.addHeart(h.x, h.y);
-    ensureGemTexture(this);
-    for (const g of L.gems) {
-      const spr = this.add.sprite(g.x, g.y, "gem").setDepth(50).setScale(0.8);
-      this.tweens.add({ targets: spr, y: g.y - 10, duration: 800, yoyo: true, repeat: -1, ease: "Sine.inOut" });
-      this.tweens.add({ targets: spr, scaleX: 0.55, duration: 600, yoyo: true, repeat: -1, ease: "Sine.inOut" });
-      this.gems.push({ sprite: spr, baseY: g.y, taken: false });
-    }
+    for (const g of L.gems) this.gems.push(this.addBobber("stargem", g.x, g.y, 46));
+    for (const s of L.stars) this.stars.push(this.addBobber("starshield", s.x, s.y, 52));
 
     this.portal = new Portal(this, L.portal.x, !this.info.boss, L.portal.y);
     if (this.info.goal === "reach") this.portal.open(true);
@@ -610,6 +614,11 @@ export class GameScene extends Phaser.Scene {
 
     this.player.pushing = this.mech.pushCheck(this.player, input.axis);
     this.player.update(time, delta, input);
+    const shield = this.player.shieldLeft() > 0 ? Math.ceil(this.player.shieldLeft() / 1000) : 0;
+    if (shield !== this.shieldShown) {
+      this.shieldShown = shield;
+      this.registry.set("shield", shield);
+    }
     const frozen = this.aiFrozen || this.cutscene;
     for (const e of this.enemies) e.update(time, frozen);
     this.enemies = this.enemies.filter((e) => e.alive);
@@ -718,6 +727,20 @@ export class GameScene extends Phaser.Scene {
       this.setGoal(have);
       if (have < this.goal.need) this.toast(`Star gem ${have} / ${this.goal.need}`);
     }
+
+    for (const s of this.stars) {
+      if (s.taken) continue;
+      const sb = new Phaser.Geom.Rectangle(s.sprite.x - 24, s.sprite.y - 24, 48, 48);
+      if (!Phaser.Geom.Rectangle.Overlaps(pb, sb)) continue;
+      s.taken = true;
+      Audio.sfx("heart_pickup");
+      this.player.grantShield();
+      this.tweens.killTweensOf(s.sprite);
+      this.tweens.add({ targets: s.sprite, scale: s.sprite.scale * 1.8, alpha: 0, y: s.sprite.y - 36, duration: 380, onComplete: () => s.sprite.destroy() });
+      this.fx("fx_spark", "hit", s.sprite.x, s.sprite.y, 0.45, 0xfff27a);
+      this.toast("Star Shield! Nothing can touch you for 15 seconds.");
+    }
+    this.stars = this.stars.filter((s) => !s.taken);
 
     for (const c of this.checkpoints) {
       if (!c.active && Math.abs(this.player.x - c.spot.x) < 40 && Math.abs(this.player.body.bottom - c.spot.y) < 30 && this.player.alive) {
@@ -1192,9 +1215,64 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(1400, () => this.toast("The stone arch leads to the squishies. Angelo took the blue gate."));
   }
 
+  private async knightIntro() {
+    const arena = this.level.arena!;
+    const cam = this.cameras.main;
+    this.cutscene = true;
+    cam.stopFollow();
+    Audio.stopMusic();
+    this.cinema(true, 700);
+    this.mech.addBarrier(arena.x0 - 20);
+    this.mech.addBarrier(arena.x1 + 20);
+    await this.wait(500);
+    Audio.sfx("boss_roar");
+    cam.shake(700, 0.006);
+    const boss = new KnightBoss(this, arena.x1 + 40, arena);
+    boss.sprite.setAlpha(0);
+    this.boss = boss;
+    this.tweens.add({ targets: boss.sprite, alpha: 1, duration: 400 });
+    this.tweens.add({ targets: boss, x: arena.x1 - 260, duration: 1400, ease: "Sine.out" });
+    await this.wait(1500);
+    this.player.facing = 1;
+    await this.say(SOVEREIGN_INTRO);
+    this.cinema(false, 500);
+    this.registry.set("boss", { name: SOVEREIGN_NAME, hp: boss.hp, max: boss.maxHp });
+    this.game.events.emit("hud:banner", SOVEREIGN_NAME);
+    Audio.music("music_boss");
+    boss.begin();
+    this.cutscene = false;
+  }
+
+  private async knightOutro() {
+    this.cutscene = true;
+    this.registry.set("boss", null);
+    for (const e of this.enemies) e.remove();
+    this.projectiles.clear(true, true);
+    Audio.stopMusic();
+    await this.wait(700);
+    this.cinema(true, 500);
+    this.player.facing = this.boss!.x > this.player.x ? 1 : -1;
+    await this.say(SOVEREIGN_DEFEAT);
+    this.boss?.vanish();
+    this.cameras.main.flash(500, 180, 140, 255);
+    await this.wait(600);
+    this.portal.appear();
+    this.portal.open();
+    Audio.sfx("portal_unlock");
+    Audio.music("music_title");
+    this.cinema(false, 500);
+    this.game.events.emit("hud:banner", "THE VEIL IS OPEN");
+    this.cutscene = false;
+    this.time.delayedCall(1200, () => this.toast("The arch leads on to the ember cliffs."));
+  }
+
   private async bossIntro() {
     if (this.info.chapter === 8) {
       await this.wormIntro();
+      return;
+    }
+    if (this.info.chapter === 11) {
+      await this.knightIntro();
       return;
     }
     const arena = this.level.arena!;
@@ -1251,7 +1329,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   onBossHp(hp: number, max: number, dmg: number) {
-    const name = this.info.chapter === 8 ? WORM_NAME : BOSS_NAME;
+    const name = this.info.chapter === 8 ? WORM_NAME : this.info.chapter === 11 ? SOVEREIGN_NAME : BOSS_NAME;
     this.registry.set("boss", { name, hp, max });
     this.cameras.main.shake(90, 0.005);
     this.bossDamage += dmg;
@@ -1264,6 +1342,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   onBossPhase2() {
+    if (this.info.chapter === 11) {
+      this.cameras.main.flash(300, 160, 120, 255);
+      this.game.events.emit("hud:subtitle", SOVEREIGN_PHASE);
+      return;
+    }
     this.cameras.main.flash(300, 200, 120, 255);
     this.game.events.emit("hud:subtitle", UMBRA_PHASE2);
     if (this.bossShade) this.tweens.add({ targets: this.bossShade, fillAlpha: 0.55, duration: 800 });
@@ -1277,6 +1360,10 @@ export class GameScene extends Phaser.Scene {
   private async bossOutro() {
     if (this.info.chapter === 8) {
       await this.wormOutro();
+      return;
+    }
+    if (this.info.chapter === 11) {
+      await this.knightOutro();
       return;
     }
     this.cutscene = true;
@@ -1510,6 +1597,15 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  private addBobber(sheet: "stargem" | "starshield", x: number, y: number, height: number): Pickup {
+    const spr = this.add.sprite(x, y, sheet).setDepth(50);
+    spr.setScale(scaleForHeight(sheet, height));
+    applyOrigin(spr, sheet);
+    spr.play(`${sheet}:glow`);
+    this.tweens.add({ targets: spr, y: y - 12, duration: 700, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+    return { sprite: spr, baseY: y, taken: false };
+  }
+
   toast(text: string) {
     this.game.events.emit("hud:toast", text);
   }
@@ -1517,22 +1613,4 @@ export class GameScene extends Phaser.Scene {
   get label() {
     return levelLabel(this.info);
   }
-}
-
-function ensureGemTexture(scene: Phaser.Scene) {
-  if (scene.textures.exists("gem")) return;
-  const g = scene.make.graphics({}, false);
-  const c = 32;
-  const pts: Phaser.Math.Vector2[] = [];
-  for (let i = 0; i < 10; i++) {
-    const r = i % 2 ? 13 : 28;
-    const a = -Math.PI / 2 + (i * Math.PI) / 5;
-    pts.push(new Phaser.Math.Vector2(c + Math.cos(a) * r, c + Math.sin(a) * r));
-  }
-  g.fillStyle(0x1b0f2e, 1).fillPoints(pts.map((p) => new Phaser.Math.Vector2(c + (p.x - c) * 1.15, c + (p.y - c) * 1.15)), true);
-  g.fillStyle(0x5ee7ff, 1).fillPoints(pts, true);
-  g.fillStyle(0xd8fbff, 1).fillCircle(c - 5, c - 6, 6);
-  g.fillStyle(0xffffff, 1).fillCircle(c - 7, c - 8, 2.5);
-  g.generateTexture("gem", 64, 64);
-  g.destroy();
 }

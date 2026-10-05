@@ -75,6 +75,18 @@ _atlas("vfx", "vfx", mask="black")
 _atlas("vfx2", "vfx2", mask="black")
 for c in (1, 2, 3, 4, 5, 6, 7, 8, 9):
     _atlas(f"props_{c}", f"props2_ch{c}")
+_atlas("props_10", "props_ch10", mask="alpha")
+_atlas("props_11", "props_ch11", mask="alpha")
+
+# 4x5 black-background sheets. row0_px is the idle-row height in the runtime sheet.
+GRID_PX = {
+    "leafslime": 156, "candywitch": 176, "shardknight": 210, "voidwraith": 188,
+    "galaxmaw": 168, "stormgolem": 240, "fireimp": 164, "emberdrake": 156,
+    "brassgolem": 228, "abyssjaw": 148, "crownjelly": 186, "sovereign": 300,
+}
+GRID_FLY = {"candywitch", "voidwraith", "galaxmaw", "abyssjaw", "crownjelly"}
+for e, px in GRID_PX.items():
+    _atlas(f"e_{e}", f"e_{e}", mask="grid", row0_px=px)
 
 
 def N(atlas, row, n, first, last, fps=8, repeat=-1):
@@ -82,8 +94,11 @@ def N(atlas, row, n, first, last, fps=8, repeat=-1):
     return {"atlas": atlas, "rown": (row, n, first, last), "fps": fps, "repeat": repeat}
 
 
-def G(atlas, row, first, last, fps=8, repeat=-1):
-    return {"atlas": atlas, "auto": (row, first, last), "fps": fps, "repeat": repeat}
+def G(atlas, row, first, last, fps=8, repeat=-1, keep=False):
+    spec = {"atlas": atlas, "auto": (row, first, last), "fps": fps, "repeat": repeat}
+    if keep:
+        spec["keep"] = True
+    return spec
 
 
 def B(atlas, boxes, fps=8, repeat=-1):
@@ -122,6 +137,17 @@ def enemy_boxed(key, walk_fps=8, attack_fps=7):
 SPARK = [(155, 485, 232, 562), (372, 463, 531, 572), (636, 452, 872, 586), (986, 472, 1127, 569)]
 
 FLYING = {"firefly", "ghost", "lantern", "firebat", "icewisp", "stormbird", "thunderimp", "jellyfish", "anglerfish", "cogmoth", "sandwisp"}
+
+
+def grid_enemy(key, walk_fps=10, attack_fps=14):
+    a = f"e_{key}"
+    return {
+        "idle": G(a, 0, 0, 4, max(6, walk_fps - 2), keep=True),
+        "walk": G(a, 1, 0, 4, walk_fps, keep=True),
+        "attack": G(a, 2, 0, 4, attack_fps, 0, keep=True),
+        "hurt": G(a, 3, 0, 0, 10, 0, keep=True),
+        "dead": G(a, 3, 1, 4, 8, 0, keep=True),
+    }
 
 
 def rich(key):
@@ -249,6 +275,7 @@ SHEETS: dict = {
     # walk/dead slice must not overwrite that custom cut.
     **{k: {"anchor": "center" if k in FLYING else "feet", "anims": enemy(k)} for k in ENEMY_PX if k not in ROW1 and k != "toxic"},
     **{k: {"anchor": "center" if k in FLYING else "feet", "anims": enemy_boxed(k)} for k in ROW1},
+    **{k: {"anchor": "center" if k in GRID_FLY else "feet", "center_x": True, "anims": grid_enemy(k)} for k in GRID_PX},
     # ---------------- Projectiles / VFX ----------------
     "fx_fireball": {"anchor": "center", "scale": 0.7, "anims": {
         "fly": G("vfx", 0, 0, 3, 12), "impact": B("vfx", SPARK[1:3], 14, 0)}},
@@ -302,6 +329,36 @@ for c in (1, 2, 3, 4, 5, 6, 7, 8, 9):
 PROPS["spikes_6"] = ("props_6", (370, 432, 854, 670), None, 100)
 PROPS["block_6"] = ("props_6", (914, 453, 1239, 680), None, 84)
 
+# Mosswood and Crystal Veil platforms are loose sheets (ground, three floats, hazard),
+# not the old 3-row prop layout. Crates and blocks are cut from the solid deck.
+_LOOSE = {
+    10: {
+        "ground": ((17, 21, 1008, 358), 640),
+        "plat_l": ((85, 379, 938, 706), 250),
+        "plat_m": ((247, 725, 777, 973), 168),
+        "plat_s": ((329, 998, 695, 1218), 112),
+        "spikes": ((161, 1230, 862, 1485), 150),
+        "crate": ((200, 150, 310, 260), 84),
+        "block": ((560, 140, 670, 250), 84),
+    },
+    11: {
+        "ground": ((10, 29, 1014, 375), 640),
+        "plat_l": ((170, 380, 852, 665), 240),
+        "plat_m": ((268, 721, 754, 953), 160),
+        "plat_s": ((354, 1002, 666, 1202), 108),
+        "spikes": ((111, 1231, 914, 1499), 160),
+        "crate": ((250, 160, 360, 270), 84),
+        "block": ((620, 150, 730, 260), 84),
+    },
+}
+for _c, _parts in _LOOSE.items():
+    for _name, (_box, _w) in _parts.items():
+        PROPS[f"{_name}_{_c}"] = (f"props_{_c}", _box, None, _w)
+# Ember Roost reuses the volcanic stone; Glass Tide reuses the sunken temple stone.
+for _name in ("ground", "plat_l", "plat_m", "plat_s", "spikes", "crate", "block"):
+    PROPS[f"{_name}_12"] = PROPS[f"{_name}_3"]
+    PROPS[f"{_name}_13"] = PROPS[f"{_name}_7"]
+
 BACKDROPS = {
     "bg1": ("gen/bg_ch1.png", 800),
     "bg2": ("gen/bg_ch2.png", 800),
@@ -312,6 +369,10 @@ BACKDROPS = {
     "bg7": ("gen/bg_ch7.png", 800),
     "bg8": ("gen/bg_ch8.png", 800),
     "bg9": ("gen/bg_ch9.png", 800),
+    "bg10": ("gen/bg_ch10.png", 800),
+    "bg11": ("gen/bg_ch11.png", 800),
+    "bg12": ("gen/bg_ch12.png", 800),
+    "bg13": ("gen/bg_ch13.png", 800),
     # Title / chapter select and chapter splashes use the original hand-supplied art.
     "title_bg": ("chapter1_enchanted_forest_background.png", 800),
     "title_splash": ("title_splash.png", 1080),
@@ -324,6 +385,10 @@ BACKDROPS = {
     "splash7": ("angelys_world_chapter7_splash.png", 720),
     "splash8": ("gen/splash_ch8b.png", 720),
     "splash9": ("gen/splash_ch9b.png", 720),
+    "splash10": ("gen/splash_ch10.png", 720),
+    "splash11": ("gen/splash_ch11.png", 720),
+    "splash12": ("gen/splash_ch12.png", 720),
+    "splash13": ("gen/splash_ch13.png", 720),
 }
 
 # Dialogue portraits: (source, crop box, output px). Angely's face comes from the

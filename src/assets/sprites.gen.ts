@@ -135,6 +135,96 @@ export const SPRITES = {
       }
     }
   },
+  "toxic": {
+    "file": "assets/runtime/toxic.webp",
+    "frameWidth": 240,
+    "frameHeight": 219,
+    "originX": 0.3708,
+    "originY": 0.9817,
+    "bodyHeight": 211,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 3,
+        "fps": 6,
+        "repeat": -1,
+        "h": 188
+      },
+      "walk": {
+        "start": 4,
+        "end": 7,
+        "fps": 8,
+        "repeat": -1,
+        "h": 188
+      },
+      "attack": {
+        "start": 8,
+        "end": 9,
+        "fps": 10,
+        "repeat": 0,
+        "h": 185
+      },
+      "hurt": {
+        "start": 10,
+        "end": 10,
+        "fps": 8,
+        "repeat": 0,
+        "h": 166
+      },
+      "dead": {
+        "start": 11,
+        "end": 11,
+        "fps": 6,
+        "repeat": 0,
+        "h": 156
+      }
+    }
+  },
+  "sandworm": {
+    "file": "assets/runtime/sandworm.webp",
+    "frameWidth": 341,
+    "frameHeight": 295,
+    "originX": 0.588,
+    "originY": 0.9864,
+    "bodyHeight": 287,
+    "anims": {
+      "rise": {
+        "start": 0,
+        "end": 3,
+        "fps": 8,
+        "repeat": 0,
+        "h": 271
+      },
+      "idle": {
+        "start": 4,
+        "end": 4,
+        "fps": 1,
+        "repeat": -1,
+        "h": 284
+      },
+      "spit": {
+        "start": 5,
+        "end": 6,
+        "fps": 10,
+        "repeat": 0,
+        "h": 192
+      },
+      "hurt": {
+        "start": 7,
+        "end": 7,
+        "fps": 8,
+        "repeat": 0,
+        "h": 221
+      },
+      "dive": {
+        "start": 8,
+        "end": 9,
+        "fps": 8,
+        "repeat": 0,
+        "h": 208
+      }
+    }
+  },
   "umbra": {
     "file": "assets/runtime/umbra.webp",
     "frameWidth": 298,
@@ -647,6 +737,40 @@ export const SPRITES = {
         "fps": 1,
         "repeat": -1,
         "h": 392
+      }
+    }
+  },
+  "weapon_ray": {
+    "file": "assets/runtime/weapon_ray.webp",
+    "frameWidth": 352,
+    "frameHeight": 258,
+    "originX": 0.5,
+    "originY": 0.5,
+    "bodyHeight": 250,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 0,
+        "fps": 1,
+        "repeat": -1,
+        "h": 250
+      }
+    }
+  },
+  "fx_ray": {
+    "file": "assets/runtime/fx_ray.webp",
+    "frameWidth": 255,
+    "frameHeight": 119,
+    "originX": 0.5,
+    "originY": 0.5,
+    "bodyHeight": 111,
+    "anims": {
+      "fly": {
+        "start": 0,
+        "end": 3,
+        "fps": 16,
+        "repeat": -1,
+        "h": 111
       }
     }
   },
@@ -1479,6 +1603,96 @@ export const SPRITES = {
       }
     }
   },
+  "blob": {
+    "file": "assets/runtime/blob.webp",
+    "frameWidth": 242,
+    "frameHeight": 234,
+    "originX": 0.5,
+    "originY": 0.9829,
+    "bodyHeight": 194,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 3,
+        "fps": 5,
+        "repeat": -1,
+        "h": 172
+      },
+      "walk": {
+        "start": 4,
+        "end": 7,
+        "fps": 8,
+        "repeat": -1,
+        "h": 172
+      },
+      "attack": {
+        "start": 8,
+        "end": 9,
+        "fps": 7,
+        "repeat": 0,
+        "h": 185
+      },
+      "hurt": {
+        "start": 10,
+        "end": 10,
+        "fps": 8,
+        "repeat": 0,
+        "h": 173
+      },
+      "dead": {
+        "start": 11,
+        "end": 12,
+        "fps": 6,
+        "repeat": 0,
+        "h": 159
+      }
+    }
+  },
+  "squish": {
+    "file": "assets/runtime/squish.webp",
+    "frameWidth": 229,
+    "frameHeight": 246,
+    "originX": 0.5,
+    "originY": 0.9837,
+    "bodyHeight": 212,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 3,
+        "fps": 5,
+        "repeat": -1,
+        "h": 192
+      },
+      "walk": {
+        "start": 4,
+        "end": 7,
+        "fps": 8,
+        "repeat": -1,
+        "h": 192
+      },
+      "attack": {
+        "start": 8,
+        "end": 9,
+        "fps": 7,
+        "repeat": 0,
+        "h": 229
+      },
+      "hurt": {
+        "start": 10,
+        "end": 10,
+        "fps": 8,
+        "repeat": 0,
+        "h": 184
+      },
+      "dead": {
+        "start": 11,
+        "end": 12,
+        "fps": 6,
+        "repeat": 0,
+        "h": 151
+      }
+    }
+  },
   "frostwolf": {
     "file": "assets/runtime/frostwolf.webp",
     "frameWidth": 282,
@@ -1656,6 +1870,546 @@ export const SPRITES = {
         "fps": 6,
         "repeat": 0,
         "h": 192
+      }
+    }
+  },
+  "leafslime": {
+    "file": "assets/runtime/leafslime.webp",
+    "frameWidth": 315,
+    "frameHeight": 198,
+    "originX": 0.5,
+    "originY": 0.9798,
+    "bodyHeight": 138,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 4,
+        "fps": 8,
+        "repeat": -1,
+        "h": 134
+      },
+      "walk": {
+        "start": 5,
+        "end": 9,
+        "fps": 10,
+        "repeat": -1,
+        "h": 128
+      },
+      "attack": {
+        "start": 10,
+        "end": 14,
+        "fps": 14,
+        "repeat": 0,
+        "h": 167
+      },
+      "hurt": {
+        "start": 15,
+        "end": 15,
+        "fps": 10,
+        "repeat": 0,
+        "h": 166
+      },
+      "dead": {
+        "start": 16,
+        "end": 19,
+        "fps": 8,
+        "repeat": 0,
+        "h": 140
+      }
+    }
+  },
+  "candywitch": {
+    "file": "assets/runtime/candywitch.webp",
+    "frameWidth": 237,
+    "frameHeight": 185,
+    "originX": 0.5,
+    "originY": 0.5,
+    "bodyHeight": 177,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 4,
+        "fps": 8,
+        "repeat": -1,
+        "h": 176
+      },
+      "walk": {
+        "start": 5,
+        "end": 9,
+        "fps": 10,
+        "repeat": -1,
+        "h": 152
+      },
+      "attack": {
+        "start": 10,
+        "end": 14,
+        "fps": 14,
+        "repeat": 0,
+        "h": 144
+      },
+      "hurt": {
+        "start": 15,
+        "end": 15,
+        "fps": 10,
+        "repeat": 0,
+        "h": 141
+      },
+      "dead": {
+        "start": 16,
+        "end": 19,
+        "fps": 8,
+        "repeat": 0,
+        "h": 157
+      }
+    }
+  },
+  "shardknight": {
+    "file": "assets/runtime/shardknight.webp",
+    "frameWidth": 277,
+    "frameHeight": 221,
+    "originX": 0.5,
+    "originY": 0.9819,
+    "bodyHeight": 213,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 4,
+        "fps": 8,
+        "repeat": -1,
+        "h": 210
+      },
+      "walk": {
+        "start": 5,
+        "end": 9,
+        "fps": 10,
+        "repeat": -1,
+        "h": 193
+      },
+      "attack": {
+        "start": 10,
+        "end": 14,
+        "fps": 14,
+        "repeat": 0,
+        "h": 195
+      },
+      "hurt": {
+        "start": 15,
+        "end": 15,
+        "fps": 10,
+        "repeat": 0,
+        "h": 204
+      },
+      "dead": {
+        "start": 16,
+        "end": 19,
+        "fps": 8,
+        "repeat": 0,
+        "h": 202
+      }
+    }
+  },
+  "voidwraith": {
+    "file": "assets/runtime/voidwraith.webp",
+    "frameWidth": 239,
+    "frameHeight": 196,
+    "originX": 0.5,
+    "originY": 0.5,
+    "bodyHeight": 188,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 4,
+        "fps": 8,
+        "repeat": -1,
+        "h": 188
+      },
+      "walk": {
+        "start": 5,
+        "end": 9,
+        "fps": 10,
+        "repeat": -1,
+        "h": 168
+      },
+      "attack": {
+        "start": 10,
+        "end": 14,
+        "fps": 14,
+        "repeat": 0,
+        "h": 154
+      },
+      "hurt": {
+        "start": 15,
+        "end": 15,
+        "fps": 10,
+        "repeat": 0,
+        "h": 163
+      },
+      "dead": {
+        "start": 16,
+        "end": 19,
+        "fps": 8,
+        "repeat": 0,
+        "h": 161
+      }
+    }
+  },
+  "galaxmaw": {
+    "file": "assets/runtime/galaxmaw.webp",
+    "frameWidth": 237,
+    "frameHeight": 182,
+    "originX": 0.5,
+    "originY": 0.5,
+    "bodyHeight": 169,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 4,
+        "fps": 8,
+        "repeat": -1,
+        "h": 168
+      },
+      "walk": {
+        "start": 5,
+        "end": 9,
+        "fps": 10,
+        "repeat": -1,
+        "h": 157
+      },
+      "attack": {
+        "start": 10,
+        "end": 14,
+        "fps": 14,
+        "repeat": 0,
+        "h": 153
+      },
+      "hurt": {
+        "start": 15,
+        "end": 15,
+        "fps": 10,
+        "repeat": 0,
+        "h": 168
+      },
+      "dead": {
+        "start": 16,
+        "end": 19,
+        "fps": 8,
+        "repeat": 0,
+        "h": 147
+      }
+    }
+  },
+  "stormgolem": {
+    "file": "assets/runtime/stormgolem.webp",
+    "frameWidth": 311,
+    "frameHeight": 235,
+    "originX": 0.5,
+    "originY": 0.983,
+    "bodyHeight": 227,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 4,
+        "fps": 8,
+        "repeat": -1,
+        "h": 225
+      },
+      "walk": {
+        "start": 5,
+        "end": 9,
+        "fps": 10,
+        "repeat": -1,
+        "h": 219
+      },
+      "attack": {
+        "start": 10,
+        "end": 14,
+        "fps": 14,
+        "repeat": 0,
+        "h": 218
+      },
+      "hurt": {
+        "start": 15,
+        "end": 15,
+        "fps": 10,
+        "repeat": 0,
+        "h": 220
+      },
+      "dead": {
+        "start": 16,
+        "end": 19,
+        "fps": 8,
+        "repeat": 0,
+        "h": 207
+      }
+    }
+  },
+  "fireimp": {
+    "file": "assets/runtime/fireimp.webp",
+    "frameWidth": 204,
+    "frameHeight": 172,
+    "originX": 0.5,
+    "originY": 0.9767,
+    "bodyHeight": 164,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 4,
+        "fps": 8,
+        "repeat": -1,
+        "h": 164
+      },
+      "walk": {
+        "start": 5,
+        "end": 9,
+        "fps": 10,
+        "repeat": -1,
+        "h": 137
+      },
+      "attack": {
+        "start": 10,
+        "end": 14,
+        "fps": 14,
+        "repeat": 0,
+        "h": 130
+      },
+      "hurt": {
+        "start": 15,
+        "end": 15,
+        "fps": 10,
+        "repeat": 0,
+        "h": 144
+      },
+      "dead": {
+        "start": 16,
+        "end": 19,
+        "fps": 8,
+        "repeat": 0,
+        "h": 141
+      }
+    }
+  },
+  "emberdrake": {
+    "file": "assets/runtime/emberdrake.webp",
+    "frameWidth": 226,
+    "frameHeight": 164,
+    "originX": 0.5,
+    "originY": 0.9756,
+    "bodyHeight": 156,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 4,
+        "fps": 8,
+        "repeat": -1,
+        "h": 156
+      },
+      "walk": {
+        "start": 5,
+        "end": 9,
+        "fps": 10,
+        "repeat": -1,
+        "h": 144
+      },
+      "attack": {
+        "start": 10,
+        "end": 14,
+        "fps": 14,
+        "repeat": 0,
+        "h": 138
+      },
+      "hurt": {
+        "start": 15,
+        "end": 15,
+        "fps": 10,
+        "repeat": 0,
+        "h": 134
+      },
+      "dead": {
+        "start": 16,
+        "end": 19,
+        "fps": 8,
+        "repeat": 0,
+        "h": 148
+      }
+    }
+  },
+  "brassgolem": {
+    "file": "assets/runtime/brassgolem.webp",
+    "frameWidth": 300,
+    "frameHeight": 236,
+    "originX": 0.5,
+    "originY": 0.9831,
+    "bodyHeight": 228,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 4,
+        "fps": 8,
+        "repeat": -1,
+        "h": 228
+      },
+      "walk": {
+        "start": 5,
+        "end": 9,
+        "fps": 10,
+        "repeat": -1,
+        "h": 225
+      },
+      "attack": {
+        "start": 10,
+        "end": 14,
+        "fps": 14,
+        "repeat": 0,
+        "h": 212
+      },
+      "hurt": {
+        "start": 15,
+        "end": 15,
+        "fps": 10,
+        "repeat": 0,
+        "h": 223
+      },
+      "dead": {
+        "start": 16,
+        "end": 19,
+        "fps": 8,
+        "repeat": 0,
+        "h": 193
+      }
+    }
+  },
+  "abyssjaw": {
+    "file": "assets/runtime/abyssjaw.webp",
+    "frameWidth": 218,
+    "frameHeight": 160,
+    "originX": 0.5,
+    "originY": 0.5,
+    "bodyHeight": 150,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 4,
+        "fps": 8,
+        "repeat": -1,
+        "h": 148
+      },
+      "walk": {
+        "start": 5,
+        "end": 9,
+        "fps": 10,
+        "repeat": -1,
+        "h": 133
+      },
+      "attack": {
+        "start": 10,
+        "end": 14,
+        "fps": 14,
+        "repeat": 0,
+        "h": 138
+      },
+      "hurt": {
+        "start": 15,
+        "end": 15,
+        "fps": 10,
+        "repeat": 0,
+        "h": 146
+      },
+      "dead": {
+        "start": 16,
+        "end": 19,
+        "fps": 8,
+        "repeat": 0,
+        "h": 148
+      }
+    }
+  },
+  "crownjelly": {
+    "file": "assets/runtime/crownjelly.webp",
+    "frameWidth": 242,
+    "frameHeight": 194,
+    "originX": 0.5,
+    "originY": 0.5,
+    "bodyHeight": 186,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 4,
+        "fps": 8,
+        "repeat": -1,
+        "h": 186
+      },
+      "walk": {
+        "start": 5,
+        "end": 9,
+        "fps": 10,
+        "repeat": -1,
+        "h": 164
+      },
+      "attack": {
+        "start": 10,
+        "end": 14,
+        "fps": 14,
+        "repeat": 0,
+        "h": 167
+      },
+      "hurt": {
+        "start": 15,
+        "end": 15,
+        "fps": 10,
+        "repeat": 0,
+        "h": 184
+      },
+      "dead": {
+        "start": 16,
+        "end": 19,
+        "fps": 8,
+        "repeat": 0,
+        "h": 174
+      }
+    }
+  },
+  "sovereign": {
+    "file": "assets/runtime/sovereign.webp",
+    "frameWidth": 314,
+    "frameHeight": 250,
+    "originX": 0.5,
+    "originY": 0.984,
+    "bodyHeight": 242,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 4,
+        "fps": 8,
+        "repeat": -1,
+        "h": 240
+      },
+      "walk": {
+        "start": 5,
+        "end": 9,
+        "fps": 10,
+        "repeat": -1,
+        "h": 218
+      },
+      "attack": {
+        "start": 10,
+        "end": 14,
+        "fps": 14,
+        "repeat": 0,
+        "h": 203
+      },
+      "hurt": {
+        "start": 15,
+        "end": 15,
+        "fps": 10,
+        "repeat": 0,
+        "h": 230
+      },
+      "dead": {
+        "start": 16,
+        "end": 19,
+        "fps": 8,
+        "repeat": 0,
+        "h": 230
       }
     }
   },
@@ -1925,217 +2679,37 @@ export const SPRITES = {
       }
     }
   },
-  "sandworm": {
-    "file": "assets/runtime/sandworm.webp",
-    "frameWidth": 341,
-    "frameHeight": 295,
-    "originX": 0.588,
-    "originY": 0.9864,
-    "bodyHeight": 287,
-    "anims": {
-      "rise": {
-        "start": 0,
-        "end": 3,
-        "fps": 8,
-        "repeat": 0,
-        "h": 271
-      },
-      "idle": {
-        "start": 4,
-        "end": 4,
-        "fps": 1,
-        "repeat": -1,
-        "h": 284
-      },
-      "spit": {
-        "start": 5,
-        "end": 6,
-        "fps": 10,
-        "repeat": 0,
-        "h": 192
-      },
-      "hurt": {
-        "start": 7,
-        "end": 7,
-        "fps": 8,
-        "repeat": 0,
-        "h": 221
-      },
-      "dive": {
-        "start": 8,
-        "end": 9,
-        "fps": 8,
-        "repeat": 0,
-        "h": 208
-      }
-    }
-  },
-  "blob": {
-    "file": "assets/runtime/blob.webp",
-    "frameWidth": 242,
-    "frameHeight": 234,
-    "originX": 0.5,
-    "originY": 0.9829,
-    "bodyHeight": 194,
-    "anims": {
-      "idle": {
-        "start": 0,
-        "end": 3,
-        "fps": 5,
-        "repeat": -1,
-        "h": 172
-      },
-      "walk": {
-        "start": 4,
-        "end": 7,
-        "fps": 8,
-        "repeat": -1,
-        "h": 172
-      },
-      "attack": {
-        "start": 8,
-        "end": 9,
-        "fps": 7,
-        "repeat": 0,
-        "h": 185
-      },
-      "hurt": {
-        "start": 10,
-        "end": 10,
-        "fps": 8,
-        "repeat": 0,
-        "h": 173
-      },
-      "dead": {
-        "start": 11,
-        "end": 12,
-        "fps": 6,
-        "repeat": 0,
-        "h": 159
-      }
-    }
-  },
-  "squish": {
-    "file": "assets/runtime/squish.webp",
-    "frameWidth": 229,
-    "frameHeight": 246,
-    "originX": 0.5,
-    "originY": 0.9837,
-    "bodyHeight": 212,
-    "anims": {
-      "idle": {
-        "start": 0,
-        "end": 3,
-        "fps": 5,
-        "repeat": -1,
-        "h": 192
-      },
-      "walk": {
-        "start": 4,
-        "end": 7,
-        "fps": 8,
-        "repeat": -1,
-        "h": 192
-      },
-      "attack": {
-        "start": 8,
-        "end": 9,
-        "fps": 7,
-        "repeat": 0,
-        "h": 229
-      },
-      "hurt": {
-        "start": 10,
-        "end": 10,
-        "fps": 8,
-        "repeat": 0,
-        "h": 184
-      },
-      "dead": {
-        "start": 11,
-        "end": 12,
-        "fps": 6,
-        "repeat": 0,
-        "h": 151
-      }
-    }
-  },
-  "toxic": {
-    "file": "assets/runtime/toxic.webp",
-    "frameWidth": 240,
-    "frameHeight": 219,
-    "originX": 0.3708,
-    "originY": 0.9817,
-    "bodyHeight": 211,
-    "anims": {
-      "idle": {
-        "start": 0,
-        "end": 3,
-        "fps": 6,
-        "repeat": -1,
-        "h": 188
-      },
-      "walk": {
-        "start": 4,
-        "end": 7,
-        "fps": 8,
-        "repeat": -1,
-        "h": 188
-      },
-      "attack": {
-        "start": 8,
-        "end": 9,
-        "fps": 10,
-        "repeat": 0,
-        "h": 185
-      },
-      "hurt": {
-        "start": 10,
-        "end": 10,
-        "fps": 8,
-        "repeat": 0,
-        "h": 166
-      },
-      "dead": {
-        "start": 11,
-        "end": 11,
-        "fps": 6,
-        "repeat": 0,
-        "h": 156
-      }
-    }
-  },
-  "weapon_ray": {
-    "file": "assets/runtime/weapon_ray.webp",
-    "frameWidth": 352,
-    "frameHeight": 258,
+  "stargem": {
+    "file": "assets/runtime/stargem.webp",
+    "frameWidth": 268,
+    "frameHeight": 248,
     "originX": 0.5,
     "originY": 0.5,
-    "bodyHeight": 250,
+    "bodyHeight": 248,
     "anims": {
-      "idle": {
+      "glow": {
         "start": 0,
-        "end": 0,
-        "fps": 1,
+        "end": 7,
+        "fps": 12,
         "repeat": -1,
-        "h": 250
+        "h": 248
       }
     }
   },
-  "fx_ray": {
-    "file": "assets/runtime/fx_ray.webp",
-    "frameWidth": 255,
-    "frameHeight": 119,
+  "starshield": {
+    "file": "assets/runtime/starshield.webp",
+    "frameWidth": 268,
+    "frameHeight": 238,
     "originX": 0.5,
     "originY": 0.5,
-    "bodyHeight": 111,
+    "bodyHeight": 238,
     "anims": {
-      "fly": {
+      "glow": {
         "start": 0,
-        "end": 3,
-        "fps": 16,
+        "end": 7,
+        "fps": 12,
         "repeat": -1,
-        "h": 111
+        "h": 238
       }
     }
   }
@@ -2519,6 +3093,174 @@ export const PROPS = {
     "width": 84,
     "height": 74.2,
     "surface": 0.02
+  },
+  "ground_10": {
+    "file": "assets/runtime/props/ground_10.webp",
+    "width": 640,
+    "height": 217.6,
+    "surface": 0.297
+  },
+  "plat_l_10": {
+    "file": "assets/runtime/props/plat_l_10.webp",
+    "width": 250,
+    "height": 95.8,
+    "surface": 0.167
+  },
+  "plat_m_10": {
+    "file": "assets/runtime/props/plat_m_10.webp",
+    "width": 168,
+    "height": 78.8,
+    "surface": 0.184
+  },
+  "plat_s_10": {
+    "file": "assets/runtime/props/plat_s_10.webp",
+    "width": 112,
+    "height": 67.4,
+    "surface": 0.178
+  },
+  "spikes_10": {
+    "file": "assets/runtime/props/spikes_10.webp",
+    "width": 150,
+    "height": 54.6,
+    "surface": 0.376
+  },
+  "crate_10": {
+    "file": "assets/runtime/props/crate_10.webp",
+    "width": 84,
+    "height": 84.0,
+    "surface": 0.0
+  },
+  "block_10": {
+    "file": "assets/runtime/props/block_10.webp",
+    "width": 84,
+    "height": 84.0,
+    "surface": 0.0
+  },
+  "ground_11": {
+    "file": "assets/runtime/props/ground_11.webp",
+    "width": 640,
+    "height": 218.0,
+    "surface": 0.319
+  },
+  "plat_l_11": {
+    "file": "assets/runtime/props/plat_l_11.webp",
+    "width": 240,
+    "height": 99.6,
+    "surface": 0.327
+  },
+  "plat_m_11": {
+    "file": "assets/runtime/props/plat_m_11.webp",
+    "width": 160,
+    "height": 75.7,
+    "surface": 0.258
+  },
+  "plat_s_11": {
+    "file": "assets/runtime/props/plat_s_11.webp",
+    "width": 108,
+    "height": 68.5,
+    "surface": 0.241
+  },
+  "spikes_11": {
+    "file": "assets/runtime/props/spikes_11.webp",
+    "width": 160,
+    "height": 53.2,
+    "surface": 0.368
+  },
+  "crate_11": {
+    "file": "assets/runtime/props/crate_11.webp",
+    "width": 84,
+    "height": 84.0,
+    "surface": 0.0
+  },
+  "block_11": {
+    "file": "assets/runtime/props/block_11.webp",
+    "width": 84,
+    "height": 84.0,
+    "surface": 0.0
+  },
+  "ground_12": {
+    "file": "assets/runtime/props/ground_12.webp",
+    "width": 640,
+    "height": 60.1,
+    "surface": 0.008
+  },
+  "ground_13": {
+    "file": "assets/runtime/props/ground_13.webp",
+    "width": 640,
+    "height": 69.6,
+    "surface": 0.029
+  },
+  "plat_l_12": {
+    "file": "assets/runtime/props/plat_l_12.webp",
+    "width": 190,
+    "height": 89.5,
+    "surface": 0.006
+  },
+  "plat_l_13": {
+    "file": "assets/runtime/props/plat_l_13.webp",
+    "width": 190,
+    "height": 98.3,
+    "surface": 0.005
+  },
+  "plat_m_12": {
+    "file": "assets/runtime/props/plat_m_12.webp",
+    "width": 145,
+    "height": 74.6,
+    "surface": 0.007
+  },
+  "plat_m_13": {
+    "file": "assets/runtime/props/plat_m_13.webp",
+    "width": 145,
+    "height": 94.2,
+    "surface": 0.005
+  },
+  "plat_s_12": {
+    "file": "assets/runtime/props/plat_s_12.webp",
+    "width": 100,
+    "height": 53.2,
+    "surface": 0.009
+  },
+  "plat_s_13": {
+    "file": "assets/runtime/props/plat_s_13.webp",
+    "width": 100,
+    "height": 67.3,
+    "surface": 0.007
+  },
+  "spikes_12": {
+    "file": "assets/runtime/props/spikes_12.webp",
+    "width": 100,
+    "height": 45.2,
+    "surface": 0.556
+  },
+  "spikes_13": {
+    "file": "assets/runtime/props/spikes_13.webp",
+    "width": 100,
+    "height": 48.4,
+    "surface": 0.495
+  },
+  "crate_12": {
+    "file": "assets/runtime/props/crate_12.webp",
+    "width": 84,
+    "height": 73.7,
+    "surface": 0.027
+  },
+  "crate_13": {
+    "file": "assets/runtime/props/crate_13.webp",
+    "width": 84,
+    "height": 74.3,
+    "surface": 0.034
+  },
+  "block_12": {
+    "file": "assets/runtime/props/block_12.webp",
+    "width": 84,
+    "height": 59.8,
+    "surface": 0.017
+  },
+  "block_13": {
+    "file": "assets/runtime/props/block_13.webp",
+    "width": 84,
+    "height": 64.8,
+    "surface": 0.023
   }
 } as const;
 
@@ -2531,6 +3273,11 @@ export const BACKDROPS = {
   "bg6": "assets/runtime/backdrops/bg6.jpg",
   "bg7": "assets/runtime/backdrops/bg7.jpg",
   "bg8": "assets/runtime/backdrops/bg8.jpg",
+  "bg9": "assets/runtime/backdrops/bg9.jpg",
+  "bg10": "assets/runtime/backdrops/bg10.jpg",
+  "bg11": "assets/runtime/backdrops/bg11.jpg",
+  "bg12": "assets/runtime/backdrops/bg12.jpg",
+  "bg13": "assets/runtime/backdrops/bg13.jpg",
   "title_bg": "assets/runtime/backdrops/title_bg.jpg",
   "title_splash": "assets/runtime/backdrops/title_splash.jpg",
   "splash1": "assets/runtime/backdrops/splash1.jpg",
@@ -2541,13 +3288,16 @@ export const BACKDROPS = {
   "splash6": "assets/runtime/backdrops/splash6.jpg",
   "splash7": "assets/runtime/backdrops/splash7.jpg",
   "splash8": "assets/runtime/backdrops/splash8.jpg",
+  "splash9": "assets/runtime/backdrops/splash9.jpg",
+  "splash10": "assets/runtime/backdrops/splash10.jpg",
+  "splash11": "assets/runtime/backdrops/splash11.jpg",
+  "splash12": "assets/runtime/backdrops/splash12.jpg",
+  "splash13": "assets/runtime/backdrops/splash13.jpg",
   "portrait_angely": "assets/runtime/backdrops/portrait_angely.webp",
   "portrait_angely_wow": "assets/runtime/backdrops/portrait_angely_wow.webp",
   "portrait_angely_happy": "assets/runtime/backdrops/portrait_angely_happy.webp",
   "portrait_umbra": "assets/runtime/backdrops/portrait_umbra.webp",
-  "portrait_angelo": "assets/runtime/backdrops/portrait_angelo.webp",
-  "bg9": "assets/runtime/backdrops/bg9.jpg",
-  "splash9": "assets/runtime/backdrops/splash9.jpg"
+  "portrait_angelo": "assets/runtime/backdrops/portrait_angelo.webp"
 } as const;
 
 export type SpriteKey = keyof typeof SPRITES;

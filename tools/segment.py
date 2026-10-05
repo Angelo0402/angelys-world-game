@@ -123,6 +123,89 @@ def mask_black_bg(a: np.ndarray) -> np.ndarray:
     return a[..., :3].max(axis=2) > 28
 
 
+def _grid_cuts(length: int, n: int, score: np.ndarray, search: int = 28) -> list[int]:
+    """Even slices, nudged onto the empty gutter nearest each expected line."""
+    step = length / n
+    out = [0]
+    for k in range(1, n):
+        c = int(round(k * step))
+        lo = max(out[-1] + 8, c - search)
+        hi = min(length - 8, c + search)
+        seg = score[lo:hi]
+        pen = np.abs(np.arange(lo, hi) - c) * 0.15
+        out.append(lo + int(np.argmin(seg + pen)))
+    out.append(length)
+    return out
+
+
+def slice_grid(rgb: np.ndarray, cols: int = 5, rows: int = 4):
+    """Cut a black-background contact sheet into tight frame boxes.
+
+    Sheets are 4 rows (idle, move, attack, defeat) by 5 frames. Gutters are thin
+    and some frames nearly touch, so the cut follows the empty column nearest an
+    even grid instead of blob-merging a projectile into the next cell.
+    """
+    h, w = rgb.shape[:2]
+    mx = rgb[..., :3].max(axis=2).astype(np.float32)
+    xs = _grid_cuts(w, cols, (mx > 22).mean(axis=0))
+    ys = _grid_cuts(h, rows, (mx > 22).mean(axis=1))
+    rgba = np.zeros((h, w, 4), np.uint8)
+    mask = np.zeros((h, w), bool)
+    grid: list[list[tuple[int, int, int, int]]] = []
+    for r in range(rows):
+        row_boxes = []
+        for c in range(cols):
+            y0, y1 = ys[r] + 2, ys[r + 1] - 1
+            x0, x1 = xs[c] + 2, xs[c + 1] - 1
+            cell = rgb[y0:y1, x0:x1, :3].astype(np.float32)
+            cmx = cell.max(axis=2)
+            sat = cell.max(2) - cell.min(2)
+            dark = cmx < 18
+            line = (cmx > 210) & (sat < 40)
+            seed = dark | line
+            labels, _n = ndi.label(seed)
+            border = np.zeros(seed.shape, bool)
+            border[0, :] = border[-1, :] = border[:, 0] = border[:, -1] = True
+            ids = np.unique(labels[border & seed])
+            ids = ids[ids > 0]
+            bg = np.isin(labels, ids) if len(ids) else np.zeros(seed.shape, bool)
+            fg = ndi.binary_opening(~bg & ~line, iterations=1)
+            labels, n = ndi.label(fg)
+            if n:
+                areas = ndi.sum(fg, labels, index=np.arange(1, n + 1))
+                main = int(np.argmax(areas)) + 1
+                keep = np.zeros(n + 1, bool)
+                ch, cw = fg.shape
+                touch = np.zeros(n + 1, bool)
+                for i, sl in enumerate(ndi.find_objects(labels)):
+                    if sl is None:
+                        continue
+                    touch[i + 1] = sl[0].start == 0 or sl[0].stop == ch or sl[1].start == 0 or sl[1].stop == cw
+                for i, area in enumerate(areas, start=1):
+                    if area < areas[main - 1] * 0.02:
+                        continue
+                    if touch[i] and area < areas[main - 1] * 0.18:
+                        continue
+                    keep[i] = True
+                keep[main] = True
+                fg = keep[labels]
+            alpha = np.clip((cmx - 12) * 3.0, 0, 255)
+            solid = fg & (cmx > 36)
+            alpha[solid] = np.maximum(alpha[solid], 210)
+            alpha[~fg] = 0
+            color = np.clip(cell * (255.0 / np.maximum(alpha[..., None], 1)), 0, 255)
+            rgba[y0:y1, x0:x1, :3] = np.where(alpha[..., None] > 0, color, 0).astype(np.uint8)
+            rgba[y0:y1, x0:x1, 3] = alpha.astype(np.uint8)
+            mask[y0:y1, x0:x1] = alpha > 24
+            ys_i, xs_i = np.nonzero(mask[y0:y1, x0:x1])
+            if len(xs_i) == 0:
+                row_boxes.append((x0, y0, x0 + 4, y0 + 4))
+            else:
+                row_boxes.append((x0 + int(xs_i.min()), y0 + int(ys_i.min()), x0 + int(xs_i.max()) + 1, y0 + int(ys_i.max()) + 1))
+        grid.append(row_boxes)
+    return rgba, mask, grid
+
+
 def detect_frames(mask: np.ndarray, min_area: int = 1500):
     """Frame boxes for generated sheets, as rows of (x0, y0, x1, y1) in reading order."""
     blobs = find_blobs(mask, link=4, min_area=min_area, attach_radius=60)

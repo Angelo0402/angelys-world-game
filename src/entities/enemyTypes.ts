@@ -147,4 +147,59 @@ export const ENEMY_TYPES: Record<string, EnemyType> = {
     projectile: { sheet: "fx_orb", speed: 280, aimed: true, tint: 0xfff27a, scale: 0.36 },
     attackSfx: "ghost_orb", body: [0.55, 0.55], keepDistance: 240, heartDrop: 0.2,
   },
+  // Chapter 10: Mosswood
+  leafslime: {
+    key: "leafslime", height: 62, hp: 2, speed: 54, attack: "shoot", range: 340, cooldown: 2400, windup: 520,
+    projectile: { sheet: "fx_orb", speed: 200, aimed: false, tint: 0xb6ff4a, scale: 0.34 },
+    attackSfx: "puff_attack", body: [0.55, 0.62], keepDistance: 150,
+  },
+  candywitch: {
+    key: "candywitch", height: 86, hp: 2, speed: 78, flying: true, attack: "shoot", range: 460, cooldown: 2300, windup: 560,
+    projectile: { sheet: "fx_orb", speed: 250, aimed: true, tint: 0xff6ad5, scale: 0.34 },
+    attackSfx: "ghost_orb", body: [0.5, 0.55], keepDistance: 230, heartDrop: 0.2,
+  },
+  // Chapter 11: The Crystal Veil
+  shardknight: {
+    key: "shardknight", height: 96, hp: 3, speed: 72, attack: "lunge", range: 130, cooldown: 1800, windup: 460,
+    attackSfx: "skeleton_swing", body: [0.42, 0.82],
+  },
+  voidwraith: {
+    key: "voidwraith", height: 88, hp: 2, speed: 80, flying: true, attack: "shoot", range: 480, cooldown: 2200, windup: 540,
+    projectile: { sheet: "fx_bolt", speed: 340, aimed: true, tint: 0xc59bff, scale: 0.34 },
+    attackSfx: "lantern_bolt", body: [0.48, 0.6], keepDistance: 250,
+  },
+  galaxmaw: {
+    key: "galaxmaw", height: 78, hp: 2, speed: 70, flying: true, attack: "shoot", range: 460, cooldown: 2400, windup: 560,
+    projectile: { sheet: "fx_orb", speed: 230, aimed: true, tint: 0x7a4dff, scale: 0.4 },
+    attackSfx: "ghost_orb", body: [0.55, 0.55], keepDistance: 240, heartDrop: 0.15,
+  },
+  stormgolem: {
+    key: "stormgolem", height: 108, hp: 4, speed: 40, attack: "slam", range: 150, cooldown: 2800, windup: 780,
+    attackSfx: "ground_slam", body: [0.52, 0.82], heartDrop: 0.3,
+  },
+  // Chapter 12: Ember Roost
+  fireimp: {
+    key: "fireimp", height: 70, hp: 2, speed: 86, attack: "shoot", range: 380, cooldown: 2000, windup: 460,
+    projectile: { sheet: "fx_fireball", speed: 280, aimed: true, scale: 0.32 },
+    attackSfx: "fire_spit", body: [0.45, 0.75], keepDistance: 170,
+  },
+  emberdrake: {
+    key: "emberdrake", height: 74, hp: 3, speed: 64, attack: "shoot", range: 400, cooldown: 2200, windup: 520,
+    projectile: { sheet: "fx_fireball", speed: 260, aimed: false, scale: 0.38 },
+    attackSfx: "fire_spit", body: [0.55, 0.7], keepDistance: 180, heartDrop: 0.2,
+  },
+  brassgolem: {
+    key: "brassgolem", height: 104, hp: 4, speed: 46, attack: "slam", range: 155, cooldown: 2600, windup: 760,
+    attackSfx: "ground_slam", body: [0.5, 0.84], heartDrop: 0.3,
+  },
+  // Chapter 13: Glass Tide
+  abyssjaw: {
+    key: "abyssjaw", height: 68, hp: 2, speed: 88, flying: true, attack: "dive", range: 240, cooldown: 2100, windup: 420,
+    attackSfx: "bat_dive", body: [0.55, 0.5],
+  },
+  crownjelly: {
+    key: "crownjelly", height: 90, hp: 2, speed: 52, flying: true, attack: "shoot", range: 420, cooldown: 2300, windup: 540,
+    projectile: { sheet: "fx_orb", speed: 220, aimed: true, tint: 0xff7ad9, scale: 0.32 },
+    attackSfx: "lantern_bolt", body: [0.48, 0.55], keepDistance: 180, heartDrop: 0.2,
+  },
 };

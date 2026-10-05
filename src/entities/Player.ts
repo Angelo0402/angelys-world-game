@@ -25,6 +25,8 @@ const STOMP_BOUNCE = 560;
 const COYOTE_MS = 150;
 const BUFFER_MS = 160;
 const INVULN_MS = 1100;
+const SHIELD_MS = 15000;
+const SHIELD_TINTS = [0xfff27a, 0xff6ad5, 0x7af0ff, 0xffffff, 0xb6ff6a, 0xff9a3d];
 const HEIGHT = 112;
 
 type PState = "normal" | "attack" | "hurt" | "pickup" | "dead" | "celebrate" | "frozen";
@@ -64,6 +66,8 @@ export class Player {
   private jumpBufferedAt = -1000;
   private jumpCut = false;
   private invulnUntil = 0;
+  private shieldUntil = 0;
+  private shieldWas = false;
   private stateUntil = 0;
   private attackStart = 0;
   private attackHits = new Set<unknown>();
@@ -116,8 +120,19 @@ export class Player {
   get grounded() {
     return this.body.blocked.down || this.body.touching.down;
   }
+  get shielded() {
+    return this.scene.time.now < this.shieldUntil;
+  }
   get invulnerable() {
-    return this.scene.time.now < this.invulnUntil;
+    return this.shielded || this.scene.time.now < this.invulnUntil;
+  }
+  /** Star Shield: nothing can take a heart for 15 seconds. Picking another one refreshes it. */
+  grantShield() {
+    this.shieldUntil = this.scene.time.now + SHIELD_MS;
+    return SHIELD_MS;
+  }
+  shieldLeft() {
+    return Math.max(0, this.shieldUntil - this.scene.time.now);
   }
 
   get hasSword() {
@@ -448,9 +463,15 @@ export class Player {
     return true;
   }
 
-  /** Pit or lava: lose one heart and return to the checkpoint. */
+  /** Pit or lava: lose one heart and return to the checkpoint. A Star Shield skips the heart. */
   fall(respawnX: number, respawnY: number) {
     if (!this.alive) return;
+    if (this.shielded) {
+      this.body.reset(respawnX, respawnY);
+      this.body.setVelocity(0, 0);
+      this.state = "normal";
+      return;
+    }
     Audio.sfx("fall");
     this.hearts = Math.max(0, this.hearts - 1);
     this.scene.onHeartsChanged(this.hearts);
@@ -512,7 +533,17 @@ export class Player {
     const tilt = swimSheet && s.anims.currentAnim?.key === "angely_swim:swim" ? Phaser.Math.Clamp(this.body.velocity.y / 900, -0.35, 0.35) * this.facing : 0;
     s.rotation = Phaser.Math.Linear(s.rotation, tilt, 0.2);
     s.setFlipX(this.facing < 0);
-    s.setAlpha(this.invulnerable && this.alive && Math.floor(time / 70) % 2 ? 0.35 : 1);
+    if (this.shielded && this.alive) {
+      this.shieldWas = true;
+      s.setTint(SHIELD_TINTS[Math.floor(time / 90) % SHIELD_TINTS.length]);
+      s.setAlpha(Math.floor(time / 80) % 2 ? 1 : 0.45);
+    } else {
+      if (this.shieldWas) {
+        this.shieldWas = false;
+        s.clearTint();
+      }
+      s.setAlpha(this.invulnerable && this.alive && Math.floor(time / 70) % 2 ? 0.35 : 1);
+    }
     this.prevBottom = this.body.bottom;
     const surface = this.scene.surfaceBelow(this.x, this.body.bottom);
     if (surface === null || !s.visible) {

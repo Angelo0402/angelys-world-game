@@ -38,7 +38,7 @@ export class BootScene extends Phaser.Scene {
     const ch = Number(params.get("chapter"));
     let index = -1;
     if (lv) {
-      const m = /^(\d)-(\d)$/.exec(lv);
+      const m = /^(\d+)-(\d+)$/.exec(lv);
       index = m ? LEVELS.findIndex((l) => l.chapter === Number(m[1]) && l.stage === Number(m[2])) : Number(lv);
     } else if (ch >= 1 && ch <= LAST_CHAPTER) index = (ch - 1) * 2;
     if (index >= 0 && index < LEVELS.length) {

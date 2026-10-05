@@ -72,6 +72,8 @@ export interface LevelDef {
   targets: TargetDef[];
   mines: MineDef[];
   gems: Spot[];
+  /** Star Shield pickups: 15 seconds where nothing can hurt Angely. */
+  stars: Spot[];
   portal: Spot;
   weapon?: { x: number; y: number; kind: WeaponId };
   arena?: { x0: number; x1: number };
@@ -98,16 +100,32 @@ function rng(seed: number) {
 function emptyLevel(mode: LevelMode): LevelDef {
   return {
     mode, width: 0, top: 0, ground: [], platforms: [], landings: [], hearts: [], checkpoints: [], spikes: [], walls: [], crates: [],
-    springs: [], movers: [], crumbles: [], targets: [], mines: [], gems: [], portal: { x: 0, y: GROUND_Y },
+    springs: [], movers: [], crumbles: [], targets: [], mines: [], gems: [], stars: [], portal: { x: 0, y: GROUND_Y },
   };
 }
 
 export function buildLevel(info: LevelInfo): LevelDef {
   const r = rng(info.seed);
-  if (info.boss && info.chapter === 8) return duneArena(emptyLevel("run"));
-  if (info.boss) return bossLevel(emptyLevel("run"));
-  if (info.mode === "climb") return buildClimb(info, r);
-  return buildSide(info, r);
+  const L = info.boss && info.chapter === 8 ? duneArena(emptyLevel("run"))
+    : info.boss ? bossLevel(emptyLevel("run"))
+    : info.mode === "climb" ? buildClimb(info, r)
+    : buildSide(info, r);
+  placeStars(L);
+  return L;
+}
+
+/** Two Star Shields on open ground, clear of spikes. */
+function placeStars(L: LevelDef) {
+  const grounds = L.ground.filter((g) => g.x1 - g.x0 > 320);
+  if (!grounds.length) return;
+  const n = L.mode === "climb" ? 3 : 2;
+  for (let i = 0; i < n; i++) {
+    const g = grounds[Math.min(grounds.length - 1, Math.floor(((i + 0.35) * grounds.length) / n))];
+    const x = Math.round(g.x0 + (g.x1 - g.x0) * (i % 2 ? 0.62 : 0.4));
+    if (L.spikes.some((s) => Math.abs(s.x - x) < 90)) continue;
+    if (L.stars.some((s) => Math.abs(s.x - x) < 160)) continue;
+    L.stars.push({ x, y: g.y - 96 });
+  }
 }
 
 /**

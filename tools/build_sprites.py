@@ -14,7 +14,7 @@ from PIL import Image
 from scipy import ndimage as ndi
 
 from atlas_config import ATLASES, BACKDROPS, GEN_TS, OUT, PLAYER_HAIR, PORTRAITS, PROPS, ROOT, SHEETS
-from segment import detect_frames, load_rgba, mask_alpha, mask_black_bg, mask_flat_bg, mask_gradient
+from segment import detect_frames, load_rgba, mask_alpha, mask_black_bg, mask_flat_bg, mask_gradient, slice_grid
 
 PAD = 4
 _cache: dict = {}
@@ -26,6 +26,12 @@ def atlas(key):
     cfg = ATLASES[key]
     a = load_rgba(f"{ROOT}/{cfg['src']}")
     kind = cfg["mask"]
+    if kind == "grid":
+        rgba8, mask, rows = slice_grid(a, cfg.get("cols", 5), cfg.get("rows", 4))
+        out = {"rgba": rgba8, "mask": mask, "rows": rows}
+        out["k"] = atlas_scale(cfg, a, out)
+        _cache[key] = out
+        return out
     if kind == "alpha":
         m = mask_alpha(a, 40)
         alpha = np.where(m, np.maximum(a[..., 3], 0), 0)
@@ -147,8 +153,8 @@ def largest_group(mask):
     return mask & keep
 
 
-def _frame(rgba, sub_m, ox, oy):
-    fm = largest_group(sub_m)
+def _frame(rgba, sub_m, ox, oy, keep_all=False):
+    fm = sub_m if keep_all else largest_group(sub_m)
     ys, xs = np.nonzero(fm)
     if len(xs) == 0:
         return None
@@ -176,18 +182,20 @@ def extract_frames(spec):
         sub_m = mask[y0:y1, x0:x1]
         for i, (cx0, cx1) in enumerate(split_columns(sub_m, n)):
             if first <= i <= last:
-                f = _frame(rgba, sub_m[:, cx0:cx1], x0 + cx0, y0)
+                f = _frame(rgba, sub_m[:, cx0:cx1], x0 + cx0, y0, spec.get("keep", False))
                 if f:
                     frames.append(f)
         return frames
     if "auto" in spec:
         row, first, last = spec["auto"]
         boxes = at["rows"][row][first:last + 1]
-        assert len(boxes) == last - first + 1, (spec, len(at["rows"][row]))
+        assert len(boxes) == last - first + 1, (spec, len(at["rows"][row]), len(boxes))
     if boxes:
+        keep = spec.get("keep", False)
         for x0, y0, x1, y1 in boxes:
-            x0, y0 = max(0, x0 - 3), max(0, y0 - 3)
-            f = _frame(rgba, mask[y0:y1 + 3, x0:x1 + 3], x0, y0)
+            pad = 0 if keep else 3
+            x0, y0 = max(0, x0 - pad), max(0, y0 - pad)
+            f = _frame(rgba, mask[y0:y1 + pad, x0:x1 + pad], x0, y0, keep)
             if f:
                 frames.append(flip(f) if ATLASES[spec["atlas"]].get("flip") else f)
         return frames
@@ -346,6 +354,10 @@ def main():
     if "--preview" in sys.argv:
         os.makedirs("/tmp/aw", exist_ok=True)
         preview(index)
+    # Star gem and Star Shield are painted icons animated here, not grid sheets.
+    from pack_pickups import build as build_pickups, splice
+    splice(build_pickups())
+    print("packed stargem + starshield")
 
 
 if __name__ == "__main__":

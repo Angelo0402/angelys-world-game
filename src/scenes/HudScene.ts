@@ -37,6 +37,8 @@ interface GoalState {
 export class HudScene extends Phaser.Scene {
   private levelIndex = 0;
   private hearts: Phaser.GameObjects.Sprite[] = [];
+  private shieldText!: Phaser.GameObjects.Text;
+  private gemIcon?: Phaser.GameObjects.Sprite;
   private killPanel!: Phaser.GameObjects.Container;
   private killText!: Phaser.GameObjects.Text;
   private lockIcon!: Phaser.GameObjects.Graphics;
@@ -102,6 +104,7 @@ export class HudScene extends Phaser.Scene {
       if (key === "goal") this.setGoal(value as GoalState);
       if (key === "weapon" || key === "weapons") this.refreshWeapon();
       if (key === "boss") this.setBoss(value as { name: string; hp: number; max: number } | null);
+      if (key === "shield") this.setShield(value as number);
     };
     reg.on("changedata", onData);
     const ge = this.game.events;
@@ -131,6 +134,7 @@ export class HudScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, offPad);
 
     this.setHearts(this.registry.get("hearts") ?? MAX_HEARTS);
+    this.setShield(this.registry.get("shield") ?? 0);
     this.setGoal(this.registry.get("goal") ?? { kind: "kills", have: 0, need: 0 });
     this.setBoss(this.registry.get("boss") ?? null);
     this.refreshWeapon();
@@ -157,6 +161,10 @@ export class HudScene extends Phaser.Scene {
     }
     this.add.rectangle(86, 52, 150, 8, 0x2a1648).setOrigin(0, 0.5);
     this.hpFill = this.add.rectangle(86, 52, 150, 8, 0xff4d8d).setOrigin(0, 0.5);
+    this.shieldText = this.add
+      .text(250, 52, "", { fontFamily: FONT, fontSize: "13px", fontStyle: "bold", color: "#fff27a", stroke: "#2a1640", strokeThickness: 4 })
+      .setOrigin(0, 0.5)
+      .setVisible(false);
     void face;
     void ring;
 
@@ -285,10 +293,19 @@ export class HudScene extends Phaser.Scene {
     }
   }
 
+  private setShield(seconds: number) {
+    const on = seconds > 0;
+    this.shieldText.setVisible(on);
+    if (!on) return;
+    const colors = ["#fff27a", "#ff6ad5", "#7af0ff", "#ffffff", "#b6ff6a"];
+    this.shieldText.setText(`★ ${seconds}s`).setColor(colors[seconds % colors.length]);
+  }
+
   private setGoal(g: GoalState) {
     const info = LEVELS[this.levelIndex];
     const shown = Math.min(g.have, g.need);
     this.lockIcon.clear();
+    this.gemIcon?.setVisible(false);
     const x = GAME_W / 2 - 122;
     if (g.kind === "reach") {
       this.killText.setText(info.mode === "climb" ? "CLIMB TO THE TOP!" : info.mode === "chase" ? "RUN TO THE PORTAL!" : "REACH THE PORTAL").setFontSize(23);
@@ -301,8 +318,15 @@ export class HudScene extends Phaser.Scene {
     const k = g.have;
     const goal = g.need;
     if (k < goal) {
-      if (g.kind === "gems") this.lockIcon.fillStyle(0x5ee7ff, 1).fillTriangle(x, 24, x + 12, 39, x, 54).fillTriangle(x, 24, x - 12, 39, x, 54);
-      else drawLock(this.lockIcon, x, 36, 0.55);
+      if (g.kind === "gems") {
+        if (!this.gemIcon) {
+          this.gemIcon = this.add.sprite(x, 39, "stargem").setDepth(40);
+          this.gemIcon.setScale(scaleForHeight("stargem", 40));
+          applyOrigin(this.gemIcon, "stargem");
+          this.gemIcon.play("stargem:glow");
+        }
+        this.gemIcon.setPosition(x, 39).setVisible(true);
+      } else drawLock(this.lockIcon, x, 36, 0.55);
     } else {
       this.lockIcon.fillStyle(0x9ff5ff, 1).fillCircle(x, 39, 13);
       this.lockIcon.lineStyle(4, 0x2a1640, 1).beginPath().moveTo(x - 6, 39).lineTo(x - 1, 45).lineTo(x + 7, 32).strokePath();
@@ -589,7 +613,12 @@ export class HudScene extends Phaser.Scene {
       );
       const g = d.goal;
       const line =
-        g.kind === "boss" ? (info.chapter === 8 ? "The dune is still moving... get back up, Angely!" : "Queen Umbra is waiting... don't give up, Angely!")
+        g.kind === "boss"
+          ? info.chapter === 8
+            ? "The dune is still moving... get back up, Angely!"
+            : info.chapter === 11
+              ? "The Veil Sovereign is still standing. Try again, Angely!"
+              : "Queen Umbra is waiting... don't give up, Angely!"
           : g.kind === "reach" ? "So close! Try again, Angely!"
             : `${g.kind === "gems" ? "Star gems" : "Enemies defeated"}: ${Math.min(g.have, g.need)} / ${g.need}`;
       c.add(this.add.text(GAME_W / 2, top + 200, line, { fontFamily: FONT, fontSize: "21px", fontStyle: "bold", color: "#9ff5ff" }).setOrigin(0.5));
