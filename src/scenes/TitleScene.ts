@@ -124,16 +124,18 @@ export class TitleScene extends Phaser.Scene {
       this.cameras.main.fadeOut(300, 18, 13, 31);
       this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("Splash", { level: index }));
     };
-    const CW = 292;
+    // ---- vertical scroll list (Angelo: scroll de arriba para abajo) ----
+    const LIST_TOP = 60;
+    const LIST_H = GAME_H - LIST_TOP - 10;
+    const CW = 560;
     const CH = 118;
-    const cols = 4;
-    const gapX = 14;
-    const x0 = (GAME_W - (cols * CW + (cols - 1) * gapX)) / 2 + CW / 2;
-    ids.forEach((id, i) => {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const x = x0 + col * (CW + gapX);
-      const y = 96 + row * (CH + 6);
+    const GAP = 12;
+    const list = this.add.container(GAME_W / 2, LIST_TOP);
+    const maskG = this.add.graphics().fillRect(0, LIST_TOP, GAME_W, LIST_H);
+    list.setMask(maskG.createGeometryMask());
+    let y = CH / 2;
+    ids.forEach((id) => {
+      const x = 0;
       const ch = CHAPTERS[id];
       const stages = levelsOf(id);
       const locked = stages[0].index > save.level;
@@ -169,7 +171,7 @@ export class TitleScene extends Phaser.Scene {
           g.lineStyle(focus ? 3 : 2, focus ? 0xfff4a8 : open ? gold : 0x4a4460, 1).strokeRoundedRect(-CW / 2 + 8, -11, CW - 16, 22, 8);
         };
         draw(false);
-        const kind = l.boss ? "BOSS" : l.mode === "climb" ? "VERTICAL" : l.mode === "chase" ? "CHASE" : l.mode === "swim" ? "SWIM" : l.goal === "gems" ? "GEMS" : "";
+        const kind = l.boss ? "BOSS" : l.mode === "climb" ? "VERTICAL" : l.mode === "swim" ? "SWIM" : l.goal === "gems" ? "GEMS" : "";
         const tag = this.add.text(-CW / 2 + 16, 0, kind ? `${levelLabel(l)} • ${kind}` : levelLabel(l), {
           fontFamily: FONT, fontSize: "11px", fontStyle: "bold", color: open ? (l.boss ? "#e0b8ff" : "#ffd36b") : "#6a6480",
         }).setOrigin(0, 0.5);
@@ -197,9 +199,23 @@ export class TitleScene extends Phaser.Scene {
         pill.on("pointerout", () => draw(false));
         pill.on("pointerup", () => start(l.index));
         if (l.index === save.level) initial = nav.length;
-        nav.push({ x, y: y + ly, focus: (on) => draw(on), activate: () => start(l.index) });
+        nav.push({ x: GAME_W / 2, y: LIST_TOP + y + ly, focus: (on) => draw(on), activate: () => start(l.index) });
       });
+      list.add(card);
+      y += CH + GAP;
     });
+    const contentH = y - GAP + CH / 2;
+    // drag to scroll
+    let dragY = 0;
+    let scrolling = false;
+    this.input.on("pointerdown", (p: Phaser.Input.Pointer) => { dragY = p.y; scrolling = true; });
+    this.input.on("pointermove", (p: Phaser.Input.Pointer) => {
+      if (!scrolling || !p.isDown) return;
+      const dy = p.y - dragY;
+      dragY = p.y;
+      if (Math.abs(dy) > 2) list.y = Phaser.Math.Clamp(list.y + dy, LIST_TOP + LIST_H - contentH, LIST_TOP);
+    });
+    this.input.on("pointerup", () => { scrolling = false; });
     if (save.level > 0 || save.weapons.length) {
       const reset = new Button(this, GAME_W - 78, 18, "RESET", () => {
         if (window.confirm("Reset all progress? Unlocked levels and weapons will be lost.")) {
