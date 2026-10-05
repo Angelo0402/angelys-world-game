@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Angely\'s World</string>
+    <string name="title_activity_main">Angely\'s World</string>
+    <string name="package_name">com.angelysworld.game</string>
+    <string name="custom_url_scheme">com.angelysworld.game</string>
+</resources>

@@ -1,0 +1,30 @@
+{
+  "name": "angelys-world",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "sprites": "PYTHONPATH=tools python3 tools/build_sprites.py",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:open": "npx cap open android",
+    "apk": "npm run android:sync && cd android && ./gradlew assembleDebug",
+    "apk:release": "npm run android:sync && cd android && ./gradlew assembleRelease"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.4.3",
+    "typescript": "~6.0.2",
+    "vite": "^8.3.0"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/app": "^7.1.0",
+    "@capacitor/core": "^7.4.3",
+    "@capacitor/splash-screen": "^7.0.3",
+    "@capacitor/status-bar": "^7.0.3",
+    "phaser": "^3.90.0"
+  }
+}
