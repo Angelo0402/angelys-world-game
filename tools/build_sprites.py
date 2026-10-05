@@ -367,7 +367,10 @@ def main():
         preview(index)
     # Star gem and Star Shield are painted icons animated here, not grid sheets.
     from pack_pickups import build as build_pickups, splice
-    splice(build_pickups())
+    extra = build_pickups()
+    from pack_crystalveil import build as build_veil
+    extra.update(build_veil())
+    splice(extra)
     print("packed stargem + starshield")
 
 

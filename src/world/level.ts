@@ -107,7 +107,7 @@ function emptyLevel(mode: LevelMode): LevelDef {
 export function buildLevel(info: LevelInfo): LevelDef {
   const r = rng(info.seed);
   const L = info.boss && info.chapter === 8 ? duneArena(emptyLevel("run"))
-    : info.boss ? bossLevel(emptyLevel("run"))
+    : info.boss ? bossLevel(emptyLevel("run"), info.chapter)
     : info.mode === "climb" ? buildClimb(info, r)
     : buildSide(info, r);
   placeStars(L);
@@ -455,7 +455,7 @@ function duneArena(L: LevelDef): LevelDef {
 }
 
 /** A short approach, then a one-screen arena where Queen Umbra waits. */
-function bossLevel(L: LevelDef): LevelDef {
+function bossLevel(L: LevelDef, chapter?: number): LevelDef {
   const x0 = 1700;
   const x1 = x0 + 1280;
   L.ground.push({ x0: -200, x1: x1 + 600, y: GROUND_Y });
@@ -465,6 +465,9 @@ function bossLevel(L: LevelDef): LevelDef {
     { x: x0 + 270, y: GROUND_Y - 150, prop: "plat_medium" },
     { x: x1 - 270, y: GROUND_Y - 150, prop: "plat_medium" },
   );
+  if (chapter === 11) {
+    L.platforms.push({ x: (x0 + x1) / 2, y: GROUND_Y - 268, prop: "plat_float" });
+  }
   L.hearts.push({ x: 1050, y: GROUND_Y - 290 }, { x: 1400, y: GROUND_Y - 40 });
   L.arena = { x0, x1 };
   L.portal = { x: (x0 + x1) / 2, y: GROUND_Y };

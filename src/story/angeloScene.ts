@@ -21,7 +21,7 @@ type Tween = Phaser.Types.Tweens.TweenBuilderConfig;
  * squashed (elliptical) container, a soft halo, a floor glow and sparks that stream
  * into the centre. Built from shapes, so nothing is ever cropped.
  */
-class Rift {
+export class Rift {
   readonly x: number;
   readonly y: number;
   private scene: GameScene;

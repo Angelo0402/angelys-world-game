@@ -47,6 +47,7 @@ export class HudScene extends Phaser.Scene {
   private bossPanel!: Phaser.GameObjects.Container;
   private bossFill!: Phaser.GameObjects.Rectangle;
   private bossChip!: Phaser.GameObjects.Rectangle;
+  private bossName!: Phaser.GameObjects.Text;
   private weaponSlot!: Phaser.GameObjects.Container;
   private weaponIcon!: Phaser.GameObjects.Image;
   private weaponKey!: Phaser.GameObjects.Text;
@@ -219,9 +220,9 @@ export class HudScene extends Phaser.Scene {
     const g = this.add.graphics();
     g.fillStyle(0x0d0618, 0.75).fillRoundedRect(GAME_W / 2 - w / 2, 10, w, 64, 18);
     g.lineStyle(3, 0xb57cff, 1).strokeRoundedRect(GAME_W / 2 - w / 2, 10, w, 64, 18);
-    const name = this.add
-      .text(GAME_W / 2, 16, "QUEEN UMBRA", { fontFamily: FONT, fontSize: "18px", fontStyle: "bold", color: "#e0b8ff", stroke: "#12081f", strokeThickness: 5 })
-      .setOrigin(0.5, 0);
+    const name = (this.bossName = this.add
+      .text(GAME_W / 2, 16, "", { fontFamily: FONT, fontSize: "18px", fontStyle: "bold", color: "#e0b8ff", stroke: "#12081f", strokeThickness: 5 })
+      .setOrigin(0.5, 0));
     const back = this.add.rectangle(GAME_W / 2 - 230, 50, 460, 16, 0x2a1640).setOrigin(0, 0.5);
     this.bossChip = this.add.rectangle(GAME_W / 2 - 230, 50, 460, 16, 0xffffff).setOrigin(0, 0.5);
     this.bossFill = this.add.rectangle(GAME_W / 2 - 230, 50, 460, 16, 0xb57cff).setOrigin(0, 0.5);
@@ -240,6 +241,7 @@ export class HudScene extends Phaser.Scene {
       this.bossPanel.setVisible(true).setAlpha(0);
       this.tweens.add({ targets: this.bossPanel, alpha: 1, duration: 400 });
     }
+    this.bossName.setText(b.name);
     const k = Phaser.Math.Clamp(b.hp / b.max, 0, 1);
     this.bossFill.width = 460 * k;
     this.bossFill.setFillStyle(k > 0.5 ? 0xb57cff : 0xff5ad1);

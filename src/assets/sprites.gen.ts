@@ -2712,6 +2712,262 @@ export const SPRITES = {
         "h": 238
       }
     }
+  },
+  "crystalveil": {
+    "file": "assets/runtime/crystalveil.webp",
+    "frameWidth": 337,
+    "frameHeight": 267,
+    "originX": 0.4854,
+    "originY": 0.9146,
+    "bodyHeight": 241,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 9,
+        "fps": 8,
+        "repeat": -1,
+        "h": 219
+      },
+      "walk": {
+        "start": 10,
+        "end": 19,
+        "fps": 10,
+        "repeat": -1,
+        "h": 198
+      },
+      "claw": {
+        "start": 20,
+        "end": 23,
+        "fps": 12,
+        "repeat": 0,
+        "h": 211
+      },
+      "slam": {
+        "start": 24,
+        "end": 29,
+        "fps": 11,
+        "repeat": 0,
+        "h": 195
+      },
+      "summon": {
+        "start": 30,
+        "end": 35,
+        "fps": 10,
+        "repeat": 0,
+        "h": 246
+      },
+      "shoot": {
+        "start": 36,
+        "end": 37,
+        "fps": 8,
+        "repeat": 0,
+        "h": 225
+      },
+      "charge": {
+        "start": 38,
+        "end": 38,
+        "fps": 1,
+        "repeat": -1,
+        "h": 204
+      },
+      "erupt": {
+        "start": 39,
+        "end": 40,
+        "fps": 6,
+        "repeat": 0,
+        "h": 205
+      },
+      "hurt": {
+        "start": 41,
+        "end": 42,
+        "fps": 10,
+        "repeat": 0,
+        "h": 174
+      },
+      "stagger": {
+        "start": 43,
+        "end": 44,
+        "fps": 5,
+        "repeat": 0,
+        "h": 181
+      },
+      "enrage": {
+        "start": 45,
+        "end": 46,
+        "fps": 6,
+        "repeat": -1,
+        "h": 204
+      },
+      "dead": {
+        "start": 47,
+        "end": 51,
+        "fps": 6,
+        "repeat": 0,
+        "h": 153
+      }
+    }
+  },
+  "crystalveil_beam": {
+    "file": "assets/runtime/crystalveil_beam.webp",
+    "frameWidth": 738,
+    "frameHeight": 225,
+    "originX": 0.3173,
+    "originY": 0.96,
+    "bodyHeight": 213,
+    "anims": {
+      "beam": {
+        "start": 0,
+        "end": 1,
+        "fps": 10,
+        "repeat": -1,
+        "h": 214
+      }
+    }
+  },
+  "crystalveil_fx": {
+    "file": "assets/runtime/crystalveil_fx.webp",
+    "frameWidth": 237,
+    "frameHeight": 239,
+    "originX": 0.4961,
+    "originY": 0.959,
+    "bodyHeight": 226,
+    "anims": {
+      "spikes": {
+        "start": 0,
+        "end": 0,
+        "fps": 1,
+        "repeat": 0,
+        "h": 195
+      },
+      "ring": {
+        "start": 1,
+        "end": 1,
+        "fps": 1,
+        "repeat": 0,
+        "h": 228
+      }
+    }
+  },
+  "crystal_shot": {
+    "file": "assets/runtime/crystal_shot.webp",
+    "frameWidth": 579,
+    "frameHeight": 268,
+    "originX": 0.5191,
+    "originY": 0.5273,
+    "bodyHeight": 138,
+    "anims": {
+      "form": {
+        "start": 0,
+        "end": 4,
+        "fps": 14,
+        "repeat": 0,
+        "h": 200
+      },
+      "fly": {
+        "start": 5,
+        "end": 13,
+        "fps": 16,
+        "repeat": -1,
+        "h": 195
+      },
+      "impact": {
+        "start": 14,
+        "end": 18,
+        "fps": 18,
+        "repeat": 0,
+        "h": 256
+      }
+    }
+  },
+  "angelo_cell": {
+    "file": "assets/runtime/angelo_cell.webp",
+    "frameWidth": 128,
+    "frameHeight": 179,
+    "originX": 0.4727,
+    "originY": 0.9553,
+    "bodyHeight": 168,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 3,
+        "fps": 5,
+        "repeat": -1,
+        "h": 172
+      },
+      "walk": {
+        "start": 4,
+        "end": 11,
+        "fps": 11,
+        "repeat": -1,
+        "h": 172
+      },
+      "worried": {
+        "start": 12,
+        "end": 13,
+        "fps": 4,
+        "repeat": -1,
+        "h": 137
+      },
+      "grip": {
+        "start": 14,
+        "end": 15,
+        "fps": 6,
+        "repeat": -1,
+        "h": 137
+      },
+      "cheer": {
+        "start": 16,
+        "end": 17,
+        "fps": 6,
+        "repeat": -1,
+        "h": 137
+      }
+    }
+  },
+  "angelo_cage": {
+    "file": "assets/runtime/angelo_cage.webp",
+    "frameWidth": 129,
+    "frameHeight": 290,
+    "originX": 0.4922,
+    "originY": 0.9724,
+    "bodyHeight": 279,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 9,
+        "fps": 6,
+        "repeat": -1,
+        "h": 140
+      },
+      "look": {
+        "start": 10,
+        "end": 19,
+        "fps": 7,
+        "repeat": -1,
+        "h": 141
+      },
+      "grip": {
+        "start": 20,
+        "end": 29,
+        "fps": 8,
+        "repeat": -1,
+        "h": 282
+      },
+      "shake": {
+        "start": 30,
+        "end": 39,
+        "fps": 10,
+        "repeat": -1,
+        "h": 144
+      },
+      "cheer": {
+        "start": 40,
+        "end": 45,
+        "fps": 7,
+        "repeat": -1,
+        "h": 133
+      }
+    }
   }
 } as const;
 
