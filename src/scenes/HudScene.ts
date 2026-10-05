@@ -13,8 +13,10 @@ import type { DialogueLine } from "../story/umbra";
 import { drawLock } from "./TitleScene";
 import { fitCamera } from "../render";
 
-const JOY_R = 78;
-const JOY_HOME = { x: 132, y: GAME_H - 124 };
+const JOY_R = 60;
+const KNOB_R = 22;
+const DEAD_ZONE = 0.08;
+const JOY_HOME = { x: 112, y: GAME_H - 104 };
 const JUMP = { x: GAME_W - 96, y: GAME_H - 108, r: 68 };
 const ATTACK = { x: GAME_W - 228, y: GAME_H - 96, r: 50 };
 const SWAP = { x: GAME_W - 168, y: GAME_H - 198, r: 32 };
@@ -378,16 +380,16 @@ export class HudScene extends Phaser.Scene {
     const c = this.add.container(x, y);
     const g = this.add.graphics();
     const r = JOY_R;
-    g.lineStyle(10, 0x7ec8ff, 0.95).strokeCircle(0, 0, r);
-    g.lineStyle(3, 0xffffff, 0.45).strokeCircle(0, 0, r - 9);
+    g.lineStyle(8, 0x7ec8ff, 0.95).strokeCircle(0, 0, r);
+    g.lineStyle(3, 0xffffff, 0.45).strokeCircle(0, 0, r - 8);
     for (const a of [-Math.PI / 2, 0, Math.PI / 2, Math.PI]) {
-      const d = r - 20;
+      const d = r - 17;
       const cx = Math.cos(a);
       const sy = Math.sin(a);
       const nx = -sy;
       const ny = cx;
       g.fillStyle(0xd7eeff, 0.95);
-      g.fillTriangle(cx * (d + 11), sy * (d + 11), cx * (d - 4) + nx * 7, sy * (d - 4) + ny * 7, cx * (d - 4) - nx * 7, sy * (d - 4) - ny * 7);
+      g.fillTriangle(cx * (d + 9), sy * (d + 9), cx * (d - 3) + nx * 6, sy * (d - 3) + ny * 6, cx * (d - 3) - nx * 6, sy * (d - 3) - ny * 6);
     }
     c.add(g);
     return c;
@@ -396,10 +398,10 @@ export class HudScene extends Phaser.Scene {
   private knob(x: number, y: number) {
     const c = this.add.container(x, y);
     const g = this.add.graphics();
-    g.fillStyle(0x9eb0c4, 1).fillCircle(3, 4, 28);
-    g.fillStyle(0xffffff, 1).fillCircle(0, 0, 28);
-    g.fillStyle(0xffffff, 0.95).fillEllipse(-7, -9, 18, 11);
-    g.lineStyle(2, 0xd7e4f2, 1).strokeCircle(0, 0, 28);
+    g.fillStyle(0x9eb0c4, 1).fillCircle(2, 3, KNOB_R);
+    g.fillStyle(0xffffff, 1).fillCircle(0, 0, KNOB_R);
+    g.fillStyle(0xffffff, 0.95).fillEllipse(-5, -7, 14, 9);
+    g.lineStyle(2, 0xd7e4f2, 1).strokeCircle(0, 0, KNOB_R);
     c.add(g);
     return c;
   }
@@ -481,9 +483,9 @@ export class HudScene extends Phaser.Scene {
     const len = Math.min(JOY_R, Math.hypot(dx, dy));
     const ang = Math.atan2(dy, dx);
     this.joyKnob.setPosition(this.joyOrigin.x + Math.cos(ang) * len, this.joyOrigin.y + Math.sin(ang) * len);
-    // Analog: a small push walks, a full push runs. Small dead zone so resting thumbs don't drift.
+    // Analog: a small push walks, a full push runs. The dead zone only absorbs thumb jitter.
     const ax = Phaser.Math.Clamp(dx / JOY_R, -1, 1);
-    const mag = Math.abs(ax) < 0.2 ? 0 : Math.min(1, (Math.abs(ax) - 0.2) / 0.55);
+    const mag = Math.abs(ax) < DEAD_ZONE ? 0 : Math.min(1, (Math.abs(ax) - DEAD_ZONE) / 0.5);
     touchState.axis = Math.sign(ax) * (mag === 0 ? 0 : 0.45 + 0.55 * mag);
   }
 

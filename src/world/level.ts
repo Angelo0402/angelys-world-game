@@ -114,17 +114,20 @@ export function buildLevel(info: LevelInfo): LevelDef {
   return L;
 }
 
-/** Two Star Shields on open ground, clear of spikes. */
+/** One Star Shield per level, on open ground near the middle and clear of spikes. */
 function placeStars(L: LevelDef) {
   const grounds = L.ground.filter((g) => g.x1 - g.x0 > 320);
   if (!grounds.length) return;
-  const n = L.mode === "climb" ? 3 : 2;
-  for (let i = 0; i < n; i++) {
-    const g = grounds[Math.min(grounds.length - 1, Math.floor(((i + 0.35) * grounds.length) / n))];
-    const x = Math.round(g.x0 + (g.x1 - g.x0) * (i % 2 ? 0.62 : 0.4));
-    if (L.spikes.some((s) => Math.abs(s.x - x) < 90)) continue;
-    if (L.stars.some((s) => Math.abs(s.x - x) < 160)) continue;
-    L.stars.push({ x, y: g.y - 96 });
+  const mid = Math.floor(grounds.length / 2);
+  const order = grounds.map((_, i) => i).sort((a, b) => Math.abs(a - mid) - Math.abs(b - mid));
+  for (const i of order) {
+    const g = grounds[i];
+    for (const f of [0.5, 0.35, 0.65]) {
+      const x = Math.round(g.x0 + (g.x1 - g.x0) * f);
+      if (L.spikes.some((s) => Math.abs(s.x - x) < 90)) continue;
+      L.stars.push({ x, y: g.y - 96 });
+      return;
+    }
   }
 }
 

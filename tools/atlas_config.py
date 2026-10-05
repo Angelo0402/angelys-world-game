@@ -25,7 +25,7 @@ def _atlas(key, src, mask="flat", **kw):
 
 
 for p in ["idle2", "walk_a", "run_a", "start_stop", "jump8", "hurt_land", "celebrate", "sword_idle", "slash",
-          "jump_attack", "pickup_hurt", "defeat", "push", "bow", "hammer", "boomerang", "wand", "ray", "run_legs"]:
+          "jump_attack", "pickup_hurt", "defeat", "push", "bow", "hammer", "boomerang", "wand", "ray", "run_legs", "walk_cycle", "run_cycle"]:
     _atlas(f"p_{p}", f"p_{p}", norm="hair", holes=p == "bow", glow=p == "bow")
 
 # The game expects right-facing art. These enemy sheets came out facing left.
@@ -94,10 +94,13 @@ def N(atlas, row, n, first, last, fps=8, repeat=-1):
     return {"atlas": atlas, "rown": (row, n, first, last), "fps": fps, "repeat": repeat}
 
 
-def G(atlas, row, first, last, fps=8, repeat=-1, keep=False):
+def G(atlas, row, first, last, fps=8, repeat=-1, keep=False, torso=False):
     spec = {"atlas": atlas, "auto": (row, first, last), "fps": fps, "repeat": repeat}
     if keep:
         spec["keep"] = True
+    if torso:
+        # Gait cycles: pin the hips, not the feet, so swinging legs don't drag the body back and forth.
+        spec["torso"] = True
     return spec
 
 
@@ -167,9 +170,8 @@ SHEETS: dict = {
         "anchor": "feet",
         "anims": {
             "idle": G("p_idle2", 0, 0, 3, 5),
-            # 30 movement frames: walk 8, run 8, start 3, stop 3, jump 4, air 1, fall 2, land 1.
-            "walk": G("p_walk_a", 0, 0, 7, 12),
-            "run": G("p_run_legs", 0, 0, 7, 14),
+            "walk": G("p_walk_cycle", 0, 0, 5, 9, torso=True),
+            "run": G("p_run_cycle", 0, 0, 7, 14, torso=True),
             "start": G("p_start_stop", 0, 0, 2, 18, 0),
             "stop": G("p_start_stop", 0, 3, 5, 14, 0),
             "jump": G("p_jump8", 0, 0, 3, 20, 0),

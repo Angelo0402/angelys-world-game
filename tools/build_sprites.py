@@ -166,7 +166,9 @@ def _frame(rgba, sub_m, ox, oy, keep_all=False):
     h = local.shape[0]
     fx = np.nonzero(local[int(h * 0.85):])[1]
     anchor_x = float(np.median(fx)) if len(fx) else local.shape[1] / 2
-    return {"img": img, "ax": anchor_x, "ay": float(h)}
+    hips = np.nonzero(local[int(h * 0.5):int(h * 0.62)])[1]
+    hip_x = (float(hips.min() + hips.max()) / 2) if len(hips) else anchor_x
+    return {"img": img, "ax": anchor_x, "ay": float(h), "hx": hip_x}
 
 
 def extract_frames(spec):
@@ -209,7 +211,8 @@ def extract_frames(spec):
 
 
 def flip(f):
-    return {"img": f["img"][:, ::-1].copy(), "ax": f["img"].shape[1] - f["ax"], "ay": f["ay"]}
+    w = f["img"].shape[1]
+    return {"img": f["img"][:, ::-1].copy(), "ax": w - f["ax"], "ay": f["ay"], "hx": w - f.get("hx", f["ax"])}
 
 
 def downscale(f, k):
@@ -219,7 +222,7 @@ def downscale(f, k):
     h, w = f["img"].shape[:2]
     nw, nh = max(1, round(w * k)), max(1, round(h * k))
     img = np.array(Image.fromarray(f["img"]).resize((nw, nh), Image.LANCZOS))
-    return {"img": img, "ax": f["ax"] * nw / w, "ay": f["ay"] * nh / h}
+    return {"img": img, "ax": f["ax"] * nw / w, "ay": f["ay"] * nh / h, "hx": f.get("hx", f["ax"]) * nw / w}
 
 
 def sheet_scale(name, sheet):
@@ -235,6 +238,14 @@ def pack_sheet(name, sheet):
     all_frames = []
     for anim_name, spec in sheet["anims"].items():
         fr = [downscale(f, k * atlas(spec["atlas"])["k"]) for i, f in enumerate(extract_frames(spec)) if i not in spec.get("skip", ())]
+        if spec.get("torso") and fr:
+            # Shift the whole cycle so its average hip lands where its average feet were.
+            off = float(np.mean([f["ax"] - f["hx"] for f in fr]))
+            # Airborne run frames are shorter; feet-anchoring would sink her head, so lift them instead.
+            tall = float(np.median([f["ay"] for f in fr]))
+            for f in fr:
+                f["ax"] = f["hx"] + off
+                f["ay"] = max(f["ay"], tall)
         if sheet.get("center_x"):
             for f in fr:
                 f["ax"] = f["img"].shape[1] / 2
