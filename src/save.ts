@@ -12,7 +12,7 @@ export interface SaveData {
   sfx: boolean;
 }
 
-const DEFAULTS: SaveData = { level: 0, weapons: [], cleared: false, music: true, sfx: true };
+const DEFAULTS: SaveData = { level: 27, weapons: ["sword", "bow", "hammer", "boomerang", "wand", "cog", "ray"], cleared: false, music: true, sfx: true };
 
 let cache: SaveData | null = null;
 
