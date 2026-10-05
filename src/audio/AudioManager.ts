@@ -105,6 +105,11 @@ class AudioManagerImpl {
       if (document.hidden) onHidden();
       else onVisible();
     });
+    // Additional events for better background detection
+    window.addEventListener("pagehide", onHidden);
+    window.addEventListener("pageshow", onVisible);
+    window.addEventListener("blur", onHidden);
+    window.addEventListener("focus", onVisible);
     // Capacitor App plugin pause/resume (Android lifecycle)
     (window as any).Capacitor?.Plugins?.App?.addListener?.("pause", onHidden);
     (window as any).Capacitor?.Plugins?.App?.addListener?.("resume", onVisible);
@@ -117,11 +122,33 @@ class AudioManagerImpl {
     if (hidden === this.backgrounded) return;
     this.backgrounded = hidden;
     if (hidden) {
+      // Stop file-based music
       this.fileMusic?.pause();
+      // Stop procedural music timer
+      if (this.timer) {
+        window.clearInterval(this.timer);
+        this.timer = undefined;
+      }
+      // Suspend audio context (stops all Web Audio)
       this.ctx?.suspend();
+      // Also pause Phaser sound manager
+      this.game?.sound.pauseAll();
     } else {
-      if (this.musicOn) this.fileMusic?.resume();
+      // Resume audio context
       this.ctx?.resume();
+      // Resume Phaser sounds
+      this.game?.sound.resumeAll();
+      // Resume file music if it was playing
+      if (this.musicOn && this.fileMusic && this.current) {
+        this.fileMusic.resume();
+      } else if (this.musicOn && this.current && !this.fileMusic) {
+        // Restart procedural music if needed
+        this.step = 0;
+        if (this.ctx) {
+          this.nextTime = this.ctx.currentTime + 0.1;
+          this.timer = window.setInterval(() => this.schedule(), 30);
+        }
+      }
     }
   }
 
