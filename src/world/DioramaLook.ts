@@ -39,7 +39,7 @@ export class DioramaLook {
 
     this.sky = scene.add.image(0, 0, key).setOrigin(0).setDepth(-120).setScale(zoom * 1.12).setAlpha(0.72);
     this.sky.setTint(0x8a90a8);
-    this.mid = scene.add.image(0, 0, key).setOrigin(0).setDepth(-70).setScale(zoom * 1.04).setAlpha(0.38);
+    this.mid = scene.add.image(0, 0, key).setOrigin(0).setDepth(-70).setScale(zoom * 1.04).setAlpha(0);
     this.mid.setTint(0x1a1428);
 
     this.sun = scene.add
