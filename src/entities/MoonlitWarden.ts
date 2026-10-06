@@ -172,6 +172,7 @@ export class MoonlitWarden {
 
     this.hp -= amount;
     this.hitUntil = time + 300;
+    this.scene.onBossHp(this.hp, this.maxHp, amount);
 
     if (this.hp <= 0) {
       this.die();
