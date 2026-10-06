@@ -32,6 +32,8 @@ export class KnightBoss {
   private baseScale: number;
   private dashFrom = 0;
   private dashTo = 0;
+  private aura: Phaser.GameObjects.Particles.ParticleEmitter;
+  private warn: Phaser.GameObjects.Text;
 
   constructor(scene: GameScene, x: number, arena: { x0: number; x1: number }) {
     this.scene = scene;
@@ -42,6 +44,33 @@ export class KnightBoss {
     this.sprite = scene.add.sprite(x, GROUND_Y, "sovereign").setDepth(46).setScale(this.baseScale);
     applyOrigin(this.sprite, "sovereign");
     this.sprite.play("sovereign:idle");
+    // Purple aura particles for visual polish
+    this.aura = scene.add
+      .particles(0, 0, "dot", {
+        x: { min: -30, max: 30 },
+        y: { min: 20, max: 80 },
+        speedY: { min: 10, max: 40 },
+        speedX: { min: -15, max: 15 },
+        lifespan: 800,
+        scale: { start: 0.6, end: 0 },
+        alpha: { start: 0.4, end: 0 },
+        tint: [0x8a4fff, 0xc59bff, 0x5a2a9a],
+        frequency: 60,
+      })
+      .setDepth(44);
+    // Warning indicator for telegraphed attacks
+    this.warn = scene.add
+      .text(x, GROUND_Y - 240, "!", {
+        fontFamily: "Trebuchet MS",
+        fontSize: "54px",
+        fontStyle: "bold",
+        color: "#ff5ad1",
+        stroke: "#1b0f2e",
+        strokeThickness: 8,
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(95)
+      .setVisible(false);
     this.sync();
   }
 
@@ -151,7 +180,9 @@ export class KnightBoss {
     this.dashTo = target;
     this.sprite.play("sovereign:walk", true);
     Audio.sfx("skeleton_swing");
-    // Telegraph flash
+    // Telegraph: warning + flash
+    this.warn.setVisible(true);
+    this.scene.time.delayedCall(300, () => this.warn.setVisible(false));
     this.sprite.setTintFill(0xc59bff);
     this.scene.time.delayedCall(120, () => this.sprite.clearTint());
     this.until = time + 450;
@@ -162,6 +193,9 @@ export class KnightBoss {
     this.state = "slam";
     this.sprite.play("sovereign:attack", true);
     Audio.sfx("boss_roar");
+    // Telegraph warning
+    this.warn.setVisible(true);
+    this.scene.time.delayedCall(400, () => this.warn.setVisible(false));
     this.until = time + (this.phase === 2 ? 800 : 1000);
     // Delayed shockwave on both sides
     this.scene.time.delayedCall(this.phase === 2 ? 350 : 500, () => {
@@ -205,6 +239,7 @@ export class KnightBoss {
   private die() {
     this.state = "dead";
     this.scene.tweens.killTweensOf(this);
+    this.aura.stop();
     this.sprite.clearTint().play("sovereign:dead", true);
     Audio.sfx("boss_defeat");
     this.scene.cameras.main.shake(600, 0.01);
@@ -217,11 +252,14 @@ export class KnightBoss {
   }
 
   vanish() {
+    this.aura.stop();
     this.scene.tweens.add({ targets: [this.sprite, this.shadow], alpha: 0, duration: 800 });
   }
 
   private sync() {
     this.sprite.setPosition(this.x, GROUND_Y + 4);
     this.shadow.setPosition(this.x, GROUND_Y + 6).setScale(1.15, 0.42);
+    this.aura.setPosition(this.x, GROUND_Y - 60);
+    this.warn.setPosition(this.x, GROUND_Y - 240);
   }
 }

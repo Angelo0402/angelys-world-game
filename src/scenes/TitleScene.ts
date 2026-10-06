@@ -29,6 +29,8 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private padStatus(y: number, top = false) {
+    // Don't show gamepad prompt on touch devices (mobile) - it covers the UI
+    if (useTouchUi(this)) return;
     const label = this.add
       .text(GAME_W / 2, y, "", { fontFamily: FONT, fontSize: top ? "12px" : "14px", color: "#e8dcff", stroke: "#1b0f2e", strokeThickness: 4 })
       .setOrigin(0.5, top ? 0 : 1)
