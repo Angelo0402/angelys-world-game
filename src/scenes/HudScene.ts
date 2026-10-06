@@ -61,6 +61,7 @@ export class HudScene extends Phaser.Scene {
   private attackId = -1;
   private showTouch = false;
   private lowPulse?: Phaser.Tweens.Tween;
+  private cinemaTop: (Phaser.GameObjects.GameObject & Phaser.GameObjects.Components.Visible)[] = [];
 
   constructor() {
     super("Hud");
@@ -81,6 +82,7 @@ export class HudScene extends Phaser.Scene {
 
     this.buildTopBar();
     this.buildBossBar();
+    this.cinemaTop = this.children.list.slice() as typeof this.cinemaTop;
     this.buildWeaponSlot();
     this.buildTouchControls();
     this.dialogue = new Dialogue(this);
@@ -457,6 +459,8 @@ export class HudScene extends Phaser.Scene {
 
   private setCinema(on: boolean) {
     this.cinema = on;
+    this.cinemaTop.forEach(item => item.setVisible(!on));
+    if (!on) this.setBoss(this.registry.get("boss") ?? null);
     this.dialogue.cinema(on);
     resetTouch();
     this.joyId = this.jumpId = this.attackId = -1;
@@ -574,40 +578,37 @@ export class HudScene extends Phaser.Scene {
   }
 
   private showVictory() {
-    const c = this.openOverlay(460);
-    const top = GAME_H / 2 - 230;
-    c.add(titleText(this, GAME_W / 2, top + 58, "YOU DID IT, ANGELY!", 50, "#ffe7a3"));
-    c.add(
-      this.add
-        .text(GAME_W / 2, top + 112, "The Sky Tower and the Sunken Temple shine again.\nAll seven worlds are full of light. Dad would be proud!", {
-          fontFamily: FONT, fontSize: "20px", color: "#fff4d6", align: "center",
-        })
-        .setOrigin(0.5),
-    );
-    const s = this.add.sprite(GAME_W / 2, top + 300, "angely");
-    s.setScale(scaleForHeight("angely", 130, "celebrate"));
-    applyOrigin(s, "angely");
-    s.play("angely:celebrate");
-    c.add(s);
-    const again = new Button(this, GAME_W / 2 - 150, top + 392, "PLAY AGAIN", () => {
-      this.scene.stop("Game");
-      this.scene.start("Splash", { level: 0 });
-    }, { width: 260, height: 56, fontSize: 24 });
-    const levels = new Button(this, GAME_W / 2 + 150, top + 392, "LEVELS", () => this.toChapterSelect(), { width: 260, height: 56, fontSize: 24, color: 0x7a5aa8 });
-    c.add([again, levels]);
-    this.menu = new PadMenu(this, [again, levels]);
-    this.add
-      .particles(GAME_W / 2, -10, "dot", {
-        x: { min: -GAME_W / 2, max: GAME_W / 2 },
-        speedY: { min: 80, max: 200 },
-        lifespan: 4000,
-        scale: { start: 0.5, end: 0.2 },
-        tint: [0xffd36b, 0xff8fb0, 0x9ff5ff, 0xb08cff],
-        frequency: 40,
-      })
-      .setDepth(99);
+    if (this.overlay) this.closeOverlay();
+    resetTouch();
+    this.cinema = true;
+    this.dialogue.cinema(false);
+    this.syncTouchVisibility();
+    const c = this.add.container(0,0).setDepth(300);
+    c.add(this.add.rectangle(0,0,GAME_W,GAME_H,0x080b21).setOrigin(0).setInteractive());
+    const glow = this.add.image(GAME_W/2,220,"glow").setTint(0x358fdf).setAlpha(.18).setDisplaySize(850,480);
+    c.add(glow);
+    c.add(this.add.text(GAME_W/2,152,"ANGELO & ANGELY",{
+      fontFamily:FONT,fontSize:"24px",fontStyle:"bold",color:"#9deeff",letterSpacing:4
+    }).setOrigin(.5));
+    c.add(titleText(this,GAME_W/2,244,"TO BE CONTINUED...",54,"#fff4d6"));
+    c.add(this.add.text(GAME_W/2,316,"Together, wherever the next adventure takes us.",{
+      fontFamily:FONT,fontSize:"21px",color:"#b8cde5",align:"center"
+    }).setOrigin(.5));
+    const levels = new Button(this,GAME_W/2,420,"BACK TO LEVELS",() => this.toChapterSelect(),{
+      width:360,height:62,fontSize:26,color:0x426eaa
+    });
+    c.add(levels);
+    this.overlay = c;
+    c.setAlpha(0);
+    this.tweens.add({targets:c,alpha:1,duration:700});
+    this.menu = new PadMenu(this,[levels],{back:() => levels.activate(),menuIsBack:true});
+    const born = this.time.now;
+    const onKey = (e: KeyboardEvent) => {
+      if (this.time.now-born >= 500 && ["Enter","Space","Escape"].includes(e.code)) levels.activate();
+    };
+    this.input.keyboard?.on("keydown",onKey);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN,() => this.input.keyboard?.off("keydown",onKey));
   }
-
   private restartLevel() {
     Audio.duck(false);
     this.scene.start("Game", { level: this.levelIndex });

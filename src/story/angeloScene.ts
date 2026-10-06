@@ -6,6 +6,7 @@ import { GROUND_Y } from "../config";
 import type { GameScene } from "../scenes/GameScene";
 import { ANGELO_ARRIVES, ANGELO_FAREWELL, ANGELO_TALK, COLOSSUS_APPEARS, COLOSSUS_SMASH } from "./angelo";
 import { ANGELO_AFTER_WORM, ANGELO_LEAVES_RIFT } from "./worm";
+import { BlueRift } from "./BlueRift";
 
 const ANGELO_H = 140;
 const COLOSSUS_H = 340;
@@ -180,7 +181,7 @@ export async function angeloCutscene(scene: GameScene, arena: { x0: number; x1: 
   await scene.say(COLOSSUS_SMASH);
 
   // ---- Angelo's rift
-  const rift = new Rift(scene, arena.x0 + 130);
+  const rift = new BlueRift(scene, arena.x0 + 130);
   cam.flash(300, 120, 170, 255);
   await rift.open();
   await scene.wait(250);

@@ -1,0 +1,252 @@
+{
+  "sprites": {
+    "angelo_finale": {
+      "file": "assets/runtime/angelo_finale.webp",
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "originX": 0.5,
+      "originY": 0.80078125,
+      "bodyHeight": 205,
+      "anims": {
+        "idle": {
+          "start": 0,
+          "end": 3,
+          "fps": 5,
+          "repeat": -1,
+          "h": 145
+        },
+        "walk": {
+          "start": 4,
+          "end": 11,
+          "fps": 10,
+          "repeat": -1,
+          "h": 140
+        },
+        "talk": {
+          "start": 12,
+          "end": 15,
+          "fps": 6,
+          "repeat": -1,
+          "h": 139
+        },
+        "kneel": {
+          "start": 16,
+          "end": 19,
+          "fps": 6,
+          "repeat": 0,
+          "h": 126
+        },
+        "reach": {
+          "start": 20,
+          "end": 23,
+          "fps": 5,
+          "repeat": -1,
+          "h": 141
+        },
+        "smile": {
+          "start": 24,
+          "end": 27,
+          "fps": 4,
+          "repeat": -1,
+          "h": 144
+        },
+        "wave": {
+          "start": 28,
+          "end": 31,
+          "fps": 6,
+          "repeat": -1,
+          "h": 143
+        }
+      }
+    },
+    "angelo_finale_back": {
+      "file": "assets/runtime/angelo_finale_back.webp",
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "originX": 0.5,
+      "originY": 0.80078125,
+      "bodyHeight": 205,
+      "anims": {
+        "walk": {
+          "start": 0,
+          "end": 7,
+          "fps": 10,
+          "repeat": -1,
+          "h": 141
+        }
+      }
+    },
+    "angely_finale": {
+      "file": "assets/runtime/angely_finale.webp",
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "originX": 0.5,
+      "originY": 0.80078125,
+      "bodyHeight": 205,
+      "anims": {
+        "idle": {
+          "start": 0,
+          "end": 3,
+          "fps": 5,
+          "repeat": -1,
+          "h": 115
+        },
+        "walk": {
+          "start": 4,
+          "end": 11,
+          "fps": 10,
+          "repeat": -1,
+          "h": 109
+        },
+        "talk": {
+          "start": 12,
+          "end": 15,
+          "fps": 6,
+          "repeat": -1,
+          "h": 101
+        },
+        "run": {
+          "start": 16,
+          "end": 23,
+          "fps": 12,
+          "repeat": -1,
+          "h": 113
+        },
+        "reach": {
+          "start": 24,
+          "end": 27,
+          "fps": 5,
+          "repeat": -1,
+          "h": 118
+        },
+        "happy": {
+          "start": 28,
+          "end": 31,
+          "fps": 5,
+          "repeat": -1,
+          "h": 109
+        }
+      }
+    },
+    "angely_finale_back": {
+      "file": "assets/runtime/angely_finale_back.webp",
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "originX": 0.5,
+      "originY": 0.80078125,
+      "bodyHeight": 205,
+      "anims": {
+        "walk": {
+          "start": 0,
+          "end": 7,
+          "fps": 10,
+          "repeat": -1,
+          "h": 100
+        }
+      }
+    },
+    "final_pair_reunion": {
+      "file": "assets/runtime/final_pair_reunion.webp",
+      "frameWidth": 384,
+      "frameHeight": 384,
+      "originX": 0.5,
+      "originY": 0.7994791666666666,
+      "bodyHeight": 307,
+      "anims": {
+        "approach": {
+          "start": 0,
+          "end": 3,
+          "fps": 6,
+          "repeat": 0,
+          "h": 88
+        },
+        "hug": {
+          "start": 4,
+          "end": 6,
+          "fps": 4,
+          "repeat": -1,
+          "h": 94
+        },
+        "pat": {
+          "start": 7,
+          "end": 7,
+          "fps": 1,
+          "repeat": 0,
+          "h": 94
+        }
+      }
+    },
+    "final_pair_side": {
+      "file": "assets/runtime/final_pair_side.webp",
+      "frameWidth": 384,
+      "frameHeight": 384,
+      "originX": 0.5,
+      "originY": 0.7994791666666666,
+      "bodyHeight": 307,
+      "anims": {
+        "walk": {
+          "start": 0,
+          "end": 7,
+          "fps": 10,
+          "repeat": -1,
+          "h": 209
+        }
+      }
+    },
+    "final_pair_back": {
+      "file": "assets/runtime/final_pair_back.webp",
+      "frameWidth": 384,
+      "frameHeight": 384,
+      "originX": 0.5,
+      "originY": 0.7994791666666666,
+      "bodyHeight": 307,
+      "anims": {
+        "walk": {
+          "start": 0,
+          "end": 7,
+          "fps": 10,
+          "repeat": -1,
+          "h": 202
+        }
+      }
+    },
+    "final_portal": {
+      "file": "assets/runtime/final_portal.webp",
+      "frameWidth": 512,
+      "frameHeight": 512,
+      "originX": 0.5,
+      "originY": 0.5,
+      "bodyHeight": 256,
+      "anims": {
+        "open": {
+          "start": 0,
+          "end": 3,
+          "fps": 8,
+          "repeat": -1,
+          "h": 231
+        },
+        "close": {
+          "start": 4,
+          "end": 7,
+          "fps": 6,
+          "repeat": 0,
+          "h": 195
+        }
+      }
+    }
+  },
+  "sourceFrames": 112,
+  "alpha": "native; no color key",
+  "hashes": {
+    "angelo_back.png": "25f30ea6862ba93c98bfae36099c98933ac7ffc9ea6cab30c8cddf78cc2148b1",
+    "angelo_emotions.png": "43897b82bd9b13de884004e151b9a65e04847f7f2417c42b992a2c73e91645c9",
+    "angelo_motion.png": "09002376035b7f07d4cba6ff9b1902569e4e4ddcb009121e6f37ead0afe23bdb",
+    "angely_back.png": "6658841f0f85b8ae7089c6b9b02d3c5b067ac390440e2f29ec6490694c0ae105",
+    "angely_emotions.png": "4c19246d012961d7524ffd1448521b2b9465abf2e81412e4160487597c7b2c9a",
+    "angely_motion.png": "7ea47126ac342ba1748910eaec49f45c256d60bb10878809c3c3742d9c9a7575",
+    "blue_portal.png": "2ae9ba5972dbbe1a132bc4abe9766a8d028ae75e731eea0ec54baf09aa07f45e",
+    "pair_back.png": "939748bc28af64606634ba7941ca51a6ef2e93f7441e16616a2f21a3f573564c",
+    "pair_reunion.png": "7e3fab1d82ac4daef0cbcd46950cd89613f299b8a05cec03f0dbc1248bccf968",
+    "pair_side.png": "d91f036d7234c6e1e7d31d90ea315b9400211800f95618099fe8480b620f4cd6"
+  }
+}

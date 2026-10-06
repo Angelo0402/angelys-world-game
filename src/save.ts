@@ -1,4 +1,4 @@
-import { WEAPON_ORDER, type WeaponId } from "./config";
+import { LAST_LEVEL, WEAPON_ORDER, type WeaponId } from "./config";
 
 const KEY = "angelys-world-save-v1";
 
@@ -8,13 +8,23 @@ export interface SaveData {
   weapons: WeaponId[];
   /** Queen Umbra has been defeated at least once. */
   cleared: boolean;
+  /** Both Angelo and Angely have crossed the final blue portal. */
+  finaleSeen: boolean;
   music: boolean;
   sfx: boolean;
 }
 
-const DEFAULTS: SaveData = { level: 27, weapons: ["sword", "bow", "hammer", "boomerang", "wand", "cog", "ray"], cleared: false, music: true, sfx: true };
+const DEFAULTS: SaveData = { level: LAST_LEVEL, weapons: ["sword", "bow", "hammer", "boomerang", "wand", "cog", "ray"], cleared: false, finaleSeen: false, music: true, sfx: true };
 
 let cache: SaveData | null = null;
+
+function normalize(out: SaveData): SaveData {
+  return { ...out,
+    level: Number.isFinite(out.level) ? Math.max(0, Math.min(LAST_LEVEL, Math.floor(out.level))) : 0,
+    weapons: WEAPON_ORDER.filter(w => out.weapons.includes(w)),
+    finaleSeen: out.finaleSeen === true,
+  };
+}
 
 /** v1 saves stored the highest unlocked chapter (1-4) and a sword flag. */
 function migrate(raw: Record<string, unknown>): SaveData {
@@ -23,9 +33,10 @@ function migrate(raw: Record<string, unknown>): SaveData {
   if (!Array.isArray(raw.weapons)) out.weapons = out.sword ? ["sword"] : [];
   // A finished save from before chapter 8 stopped at Coral Palace (index 13).
   if (out.cleared && out.level < 14) out.level = 14;
+  out.finaleSeen = raw.finaleSeen === true;
   delete out.unlocked;
   delete out.sword;
-  return out;
+  return normalize(out);
 }
 
 export function loadSave(): SaveData {
@@ -40,7 +51,7 @@ export function loadSave(): SaveData {
 }
 
 export function updateSave(patch: Partial<SaveData>): SaveData {
-  const next = { ...loadSave(), ...patch };
+  const next = normalize({ ...loadSave(), ...patch });
   cache = next;
   try {
     localStorage.setItem(KEY, JSON.stringify(next));

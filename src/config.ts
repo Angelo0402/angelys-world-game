@@ -3,8 +3,8 @@ export const GAME_H = 576;
 export const GROUND_Y = 500;
 export const MAX_HEARTS = 5;
 
-export type ChapterId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
-export const LAST_CHAPTER: ChapterId = 13;
+export type ChapterId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
+export const LAST_CHAPTER: ChapterId = 11;
 export type MusicTrack =
   | "music_title"
   | "music_forest"
@@ -187,38 +187,12 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
     splash: "splash11",
     background: "bg11",
     music: "music_shadow",
-    enemies: ["shardknight", "voidwraith", "galaxmaw", "stormgolem"],
+    enemies: ["shardknight", "voidwraith", "galaxmaw", "stormgolem", "skeleton", "firebat", "lavablob", "magmagolem"],
     maxAlive: 4,
     spawnEvery: 1.9,
     pitKind: "pit",
     grip: 1,
     ambient: { color: 0xb7a6ff, count: 34 },
-  },
-  12: {
-    id: 12,
-    name: "Ember Roost",
-    splash: "splash12",
-    background: "bg12",
-    music: "music_volcano",
-    enemies: ["fireimp", "emberdrake", "brassgolem", "fireimp"],
-    maxAlive: 4,
-    spawnEvery: 1.85,
-    pitKind: "lava",
-    grip: 1,
-    ambient: { color: 0xff8a3d, count: 36 },
-  },
-  13: {
-    id: 13,
-    name: "Glass Tide",
-    splash: "splash13",
-    background: "bg13",
-    music: "music_sea",
-    enemies: ["abyssjaw", "crownjelly", "abyssjaw", "crownjelly"],
-    maxAlive: 4,
-    spawnEvery: 1.9,
-    pitKind: "pit",
-    grip: 1,
-    ambient: { color: 0x9ff5ff, count: 32 },
   },
 };
 
@@ -295,10 +269,6 @@ export const LEVELS: LevelInfo[] = [
   { chapter: 10, stage: 2, name: "Candy Canopy", mode: "run", goal: "gems", need: 6, terrain: "cliffs", seed: 139, pieces: ["spring", "crateWall", "movingBridge", "spikes", "steps", "hops"], tip: "Candy witches hover. Collect every star gem." },
   { chapter: 11, stage: 1, name: "Shattered Causeway", mode: "run", goal: "kills", need: 12, terrain: "cliffs", seed: 149, pieces: [], tip: "Cross the crystal bridges. Clear twelve guardians to reach the crown." },
   { chapter: 11, stage: 2, name: "The Veil Crown", mode: "run", goal: "boss", need: 0, terrain: "flat", seed: 151, pieces: [], boss: true, tip: "Watch the pink warnings. Strike the core after each attack to free Angelo." },
-  { chapter: 12, stage: 1, name: "Cinder Roost", mode: "run", goal: "kills", need: 10, terrain: "hills", seed: 157, pieces: ["hops", "spikes", "target", "steps", "crateWall"], tip: "Imps and drakes breathe fire. Stay off the lava." },
-  { chapter: 12, stage: 2, name: "Furnace Walk", mode: "run", goal: "gems", need: 6, terrain: "cliffs", seed: 163, pieces: ["lift", "movingBridge", "spikes", "breakWall", "steps", "hops"], tip: "Brass golems punch hard. Find the star gems above the heat." },
-  { chapter: 13, stage: 1, name: "Lantern Deep", mode: "swim", goal: "kills", need: 10, terrain: "hills", seed: 167, pieces: ["hops", "mines", "gate", "spikes", "mines", "gate"], tip: "Press JUMP to swim. The lantern jaws bite from the dark." },
-  { chapter: 13, stage: 2, name: "Crown Current", mode: "swim", goal: "gems", need: 8, terrain: "cliffs", seed: 173, pieces: ["hops", "mines", "gate", "steps", "target", "mines", "gate"], tip: "Swim the current and gather every star gem." },
 ].map((l, i) => L(l as Omit<LevelInfo, "index">, i));
 
 export const LAST_LEVEL = LEVELS.length - 1;

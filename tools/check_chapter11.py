@@ -6,6 +6,9 @@ from PIL import Image
 
 root=Path(__file__).resolve().parents[1]
 meta=json.loads((root/"art/source/chapter11/runtime.json").read_text())
+finale=json.loads((root/"art/source/finale/runtime.json").read_text())
+assert sum(a["end"]-a["start"]+1 for m in finale["sprites"].values() for a in m["anims"].values())==112
+meta["sprites"].update(finale["sprites"])
 count=0
 for name,m in meta["sprites"].items():
     image=Image.open(root/"public"/m["file"])

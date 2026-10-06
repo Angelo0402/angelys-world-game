@@ -81,10 +81,9 @@ _atlas("props_11", "props_ch11", mask="alpha")
 # 4x5 black-background sheets. row0_px is the idle-row height in the runtime sheet.
 GRID_PX = {
     "leafslime": 156, "candywitch": 176, "shardknight": 210, "voidwraith": 188,
-    "galaxmaw": 168, "stormgolem": 240, "fireimp": 164, "emberdrake": 156,
-    "brassgolem": 228, "abyssjaw": 148, "crownjelly": 186, "sovereign": 300,
+    "galaxmaw": 168, "stormgolem": 240, "sovereign": 300,
 }
-GRID_FLY = {"candywitch", "voidwraith", "galaxmaw", "abyssjaw", "crownjelly"}
+GRID_FLY = {"candywitch", "voidwraith", "galaxmaw"}
 for e, px in GRID_PX.items():
     _atlas(f"e_{e}", f"e_{e}", mask="grid", row0_px=px)
 
@@ -356,11 +355,6 @@ _LOOSE = {
 for _c, _parts in _LOOSE.items():
     for _name, (_box, _w) in _parts.items():
         PROPS[f"{_name}_{_c}"] = (f"props_{_c}", _box, None, _w)
-# Ember Roost reuses the volcanic stone; Glass Tide reuses the sunken temple stone.
-for _name in ("ground", "plat_l", "plat_m", "plat_s", "spikes", "crate", "block"):
-    PROPS[f"{_name}_12"] = PROPS[f"{_name}_3"]
-    PROPS[f"{_name}_13"] = PROPS[f"{_name}_7"]
-
 BACKDROPS = {
     "bg1": ("gen/bg_ch1.png", 800),
     "bg2": ("gen/bg_ch2.png", 800),
@@ -373,8 +367,6 @@ BACKDROPS = {
     "bg9": ("gen/bg_ch9.png", 800),
     "bg10": ("gen/bg_ch10.png", 800),
     "bg11": ("gen/bg_ch11.png", 800),
-    "bg12": ("gen/bg_ch12.png", 800),
-    "bg13": ("gen/bg_ch13.png", 800),
     # Title / chapter select and chapter splashes use the original hand-supplied art.
     "title_bg": ("chapter1_enchanted_forest_background.png", 800),
     "title_splash": ("title_splash.png", 1080),
@@ -389,8 +381,6 @@ BACKDROPS = {
     "splash9": ("gen/splash_ch9b.png", 720),
     "splash10": ("gen/splash_ch10.png", 720),
     "splash11": ("gen/splash_ch11.png", 720),
-    "splash12": ("gen/splash_ch12.png", 720),
-    "splash13": ("gen/splash_ch13.png", 720),
 }
 
 # Dialogue portraits: (source, crop box, output px). Angely's face comes from the

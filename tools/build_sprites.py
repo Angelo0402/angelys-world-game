@@ -379,6 +379,9 @@ def main():
     if os.path.exists("art/source/hud/generation.json"):
         from build_hud import build as build_hud
         build_hud()
+    if os.path.exists("art/source/finale/layout.json"):
+        from build_finale import build as build_finale
+        build_finale()
     print("packed stargem + starshield")
 
 

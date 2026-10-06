@@ -32,7 +32,8 @@ export const VEIL_RESCUE: DialogueLine[] = [
 ];
 
 export const VEIL_FAREWELL: DialogueLine[] = [
-  { who: "angelo", text: "My blue gate takes me home. The stone arch leads you onward." },
-  { who: "angely", face: "happy", text: "I'll see you soon. Love you, Dad!" },
-  { who: "angelo", text: "Love you too, Angely. I'll always be watching over you." },
+  { who: "angelo", text: "The blue gate is open. Take my hand, Angely." },
+  { who: "angely", face: "happy", text: "We're going together this time, right?" },
+  { who: "angelo", text: "Together. Wherever our next adventure takes us." },
+  { who: "angely", face: "happy", text: "Love you, Dad. Let's go!" },
 ];

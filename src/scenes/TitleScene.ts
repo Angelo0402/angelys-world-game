@@ -231,7 +231,7 @@ export class TitleScene extends Phaser.Scene {
     if (save.level > 0 || save.weapons.length) {
       const reset = new Button(this, GAME_W - 78, 18, "RESET", () => {
         if (window.confirm("Reset all progress? Unlocked levels and weapons will be lost.")) {
-          updateSave({ level: 0, weapons: [], cleared: false });
+          updateSave({ level: 0, weapons: [], cleared: false, finaleSeen: false });
           this.scene.restart({ select: true });
         }
       }, { width: 118, height: 32, fontSize: 14, color: 0x7a5aa8 });

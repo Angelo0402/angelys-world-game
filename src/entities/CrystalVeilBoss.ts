@@ -13,7 +13,7 @@ export const VEIL_BOSS_NAME = "CRYSTAL VEIL";
 
 /** Chapter 11: face the target, telegraph, strike, then expose the core. */
 export class CrystalVeilBoss {
-  readonly maxHp = 28;
+  readonly maxHp = 160;
   hp = this.maxHp;
   phase: Phase = 1;
   x: number;
@@ -27,6 +27,7 @@ export class CrystalVeilBoss {
   private strikeFrom = 0;
   private strikeUntil = 0;
   private hitUntil = 0;
+  private flashUntil = 0;
   private attackIndex = 0;
   private action = 0;
   private timers = new Set<Phaser.Time.TimerEvent>();
@@ -64,18 +65,22 @@ export class CrystalVeilBoss {
 
   begin() {
     this.state = "walk";
-    this.readyAt = this.scene.time.now + 1100;
+    this.readyAt = this.scene.time.now + 900;
     this.sprite.play("crystalveil:walk", true);
   }
 
   update(time: number, delta: number) {
     if (!this.sprite.active) return;
+    if (this.flashUntil && time >= this.flashUntil) {
+      this.sprite.clearTint();
+      this.flashUntil = 0;
+    }
     if (this.scene.player.alive && this.state === "walk") {
       const dx = this.scene.player.x - this.x;
       this.dir = dx < 0 ? -1 : 1;
       this.sprite.setFlipX(this.dir < 0);
       if (Math.abs(dx) > 170) {
-        const speed = [0,62,80,96][this.phase];
+        const speed = [0,96,125,150][this.phase];
         this.x = Phaser.Math.Clamp(this.x + this.dir * speed * Math.min(delta,50)/1000, this.arena.x0+120, this.arena.x1-120);
         this.sprite.play("crystalveil:walk",true);
       } else this.sprite.play("crystalveil:idle",true);
@@ -83,7 +88,7 @@ export class CrystalVeilBoss {
     } else if (["hurt","recover"].includes(this.state) && time >= this.until) {
       this.sprite.clearTint();
       this.state = "walk";
-      this.readyAt = time + 180;
+      this.readyAt = time + 90;
     }
     this.sprite.setPosition(this.x, GROUND_Y + 4);
     this.shadow.setPosition(this.x, GROUND_Y + 6);
@@ -160,8 +165,8 @@ export class CrystalVeilBoss {
   }
 
   private melee(time: number, slam: boolean) {
-    const ms = slam ? 740 : 620;
-    this.windup(slam ? "slam" : "claw",slam ? "slam" : "claw",time,ms,200,600,() => {
+    const ms = (slam ? 740 : 620) * [0,1,.9,.8][this.phase];
+    this.windup(slam ? "slam" : "claw",slam ? "slam" : "claw",time,ms,200,this.recovery(),() => {
       Audio.sfx(slam ? "ground_slam" : "skeleton_swing");
       this.scene.cameras.main.shake(160,slam ? .004 : .002);
       if (slam) {
@@ -174,12 +179,12 @@ export class CrystalVeilBoss {
   }
 
   private volley(time: number, burst: boolean) {
-    this.windup(burst ? "burst" : "shoot",burst ? "summon" : "shoot",time,650,280,550,() => {
+    this.windup(burst ? "burst" : "shoot",burst ? "summon" : "shoot",time,650*[0,1,.9,.8][this.phase],280,this.recovery(),() => {
       Audio.sfx("ghost_orb");
-      const count = burst ? (this.phase === 3 ? 5 : 3) : 1;
+      const count = burst ? (this.phase === 3 ? 5 : 3) : this.phase === 1 ? 1 : 2;
       for (let i=0;i<count;i++) {
         const angle = count === 1 ? 0 : Phaser.Math.DegToRad(-24+48*i/(count-1));
-        const speed = 215+this.phase*22;
+        const speed = 245+this.phase*30;
         this.scene.spawnProjectile("crystal_shot",this.x+this.dir*74,GROUND_Y-108,
           this.dir*Math.cos(angle)*speed,Math.sin(angle)*speed,scaleForHeight("crystal_shot",30,"fly"));
       }
@@ -191,7 +196,7 @@ export class CrystalVeilBoss {
     const px = this.scene.player.x;
     const spots = (this.phase === 3 ? [px-150,px,px+150] : [px,px+180*this.dir])
       .map(x => Phaser.Math.Clamp(x,this.arena.x0+50,this.arena.x1-50));
-    this.windup("erupt","erupt",time,900,480,650,() => {
+    this.windup("erupt","erupt",time,900*[0,1,.9,.8][this.phase],480,this.recovery(),() => {
       Audio.sfx("ground_slam");
       for (const x of spots) {
         const s = this.track(this.scene.add.sprite(x,GROUND_Y+4,"crystalveil_fx").setDepth(40)
@@ -209,7 +214,7 @@ export class CrystalVeilBoss {
     const origin = this.x+this.dir*76;
     const width = this.dir > 0 ? this.arena.x1-origin : origin-this.arena.x0;
     const mid = origin+this.dir*width/2;
-    this.windup("beam","charge",time,1050,650,800,() => {
+    this.windup("beam","charge",time,850,650,this.recovery()+100,() => {
       Audio.sfx("ghost_orb");
       const ray = this.track(this.scene.add.sprite(mid,GROUND_Y-92,"crystalveil_beam")
         .setDepth(47).setDisplaySize(width*1.14,106).setFlipX(this.dir<0).setAlpha(.95));
@@ -222,18 +227,23 @@ export class CrystalVeilBoss {
     Audio.sfx("boss_roar");
   }
 
-  takeDamage(amount: number, _kind: DamageKind, _fromX: number) {
+  private recovery() { return [0,450,380,320][this.phase]; }
+
+  takeDamage(amount: number, kind: DamageKind, _fromX: number) {
     const time = this.scene.time.now;
     if (!this.vulnerable || time < this.hitUntil) return false;
     this.hitUntil = time+260;
+    // A stomp still bounces Angely, but cannot stun-lock the final boss.
+    if (kind === "stomp") amount = .25;
     this.hp = Math.max(0,this.hp-amount);
     Audio.sfx("boss_hit");
     this.scene.onBossHp(this.hp,this.maxHp,amount);
     if (!this.hp) { this.die(); return true; }
     const phase: Phase = this.hp <= this.maxHp*.3 ? 3 : this.hp <= this.maxHp*.6 ? 2 : 1;
-    this.cancelAction();
-    this.sprite.anims.timeScale = 1;
     if (phase > this.phase) {
+      this.cancelAction();
+      this.sprite.clearTint();
+      this.sprite.anims.timeScale = 1;
       this.phase = phase;
       this.attackIndex = 0;
       this.state = "enrage";
@@ -243,14 +253,19 @@ export class CrystalVeilBoss {
       this.scene.cameras.main.flash(220,110,70,170);
       this.later(1100,() => {
         this.state = "walk";
-        this.readyAt = this.scene.time.now+500;
+        this.readyAt = this.scene.time.now+300;
         this.glow.setTint(0xb57cff);
       });
     } else {
-      this.state = "hurt";
-      this.until = time+320;
-      this.sprite.setTintFill(0xffffff).play("crystalveil:hurt",true);
-      this.later(90,() => this.sprite.clearTint());
+      this.sprite.setTintFill(0xffffff);
+      this.flashUntil = time+90;
+      // Wind-ups and strikes finish even when hit. Heavy weapons briefly
+      // stagger a walking boss; its attack schedule does not restart.
+      if (kind !== "stomp" && amount >= 3 && this.state === "walk") {
+        this.state = "hurt";
+        this.until = time+160;
+        this.sprite.play("crystalveil:hurt",true);
+      }
     }
     return true;
   }

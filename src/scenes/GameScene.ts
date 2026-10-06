@@ -14,12 +14,12 @@ import { Player } from "../entities/Player";
 import { KeyboardInput, NO_INPUT, resetTouch, touchState, type FrameInput } from "../input/controls";
 import { Gamepad } from "../input/gamepad";
 import { addWeapon, loadSave, unlockLevel, updateSave } from "../save";
-import { angeloCutscene, angeloPraise, Rift } from "../story/angeloScene";
-import { veilReunion } from "../story/veilScene";
+import { angeloCutscene, angeloPraise } from "../story/angeloScene";
+import { veilFinale } from "../story/veilScene";
 import { CageAngelo } from "../entities/CageAngelo";
 import { CrystalVeilBoss } from "../entities/CrystalVeilBoss";
 import { Sandworm } from "../entities/Sandworm";
-import { VEIL_DEFEAT, VEIL_FAREWELL, VEIL_INTRO, VEIL_NAME, VEIL_PHASE2, VEIL_PHASE3, VEIL_RESCUE } from "../story/crystalveil";
+import { VEIL_DEFEAT, VEIL_INTRO, VEIL_NAME, VEIL_PHASE2, VEIL_PHASE3 } from "../story/crystalveil";
 import { WORM_INTRO, WORM_NAME } from "../story/worm";
 import { UMBRA_DEFEAT, UMBRA_INTRO, UMBRA_PHASE2, type DialogueLine } from "../story/umbra";
 import { useTouchUi } from "../ui/screen";
@@ -64,7 +64,7 @@ export class GameScene extends Phaser.Scene {
   kills = 0;
   boss?: Boss | Sandworm | CrystalVeilBoss | RuinSentinel;
   veilCage?: CageAngelo;
-  veilState: "idle" | "intro" | "fight" | "defeat" | "rescue" | "angelo_exit" | "angely_exit" | "done" = "idle";
+  veilState: "idle" | "intro" | "fight" | "defeat" | "rescue" | "together" | "portal_exit" | "done" = "idle";
   mech!: Mechanics;
   portal!: Portal;
   cutscene = false;
@@ -98,6 +98,10 @@ export class GameScene extends Phaser.Scene {
   private bossStarted = false;
   private bossShade?: Phaser.GameObjects.Rectangle;
   private bossDamage = 0;
+  private nextVeilWave = 0;
+  private veilWave = 0;
+  private veilSummons = new Set<Phaser.Time.TimerEvent>();
+  private veilMarks = new Set<Phaser.GameObjects.GameObject>();
   private lastPortalHint = 0;
   private pauseBlockedUntil = 0;
   private lastLowHealth = 0;
@@ -146,6 +150,9 @@ export class GameScene extends Phaser.Scene {
     this.bossStarted = false;
     this.bossShade = undefined;
     this.bossDamage = 0;
+    this.nextVeilWave = 0;
+    this.veilWave = 0;
+    this.clearVeilSummons();
     this.nextSpawn = 0;
     this.nextDespawn = 0;
     this.chaseOn = false;
@@ -157,6 +164,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.clearVeilSummons());
     fitCamera(this, true);
     const info = this.info;
     const L = (this.level = buildLevel(info));
@@ -657,6 +665,7 @@ export class GameScene extends Phaser.Scene {
     this.enemies = this.enemies.filter((e) => e.alive);
     if (this.boss && !this.cutscene) this.boss.update(time, delta);
     else this.boss?.update(time, 0);
+    if (this.veilState === "fight" && !frozen) this.updateVeilWaves(time);
     this.mech.update(time, delta);
     this.updateFlood(time, delta);
 
@@ -1174,7 +1183,7 @@ export class GameScene extends Phaser.Scene {
       p.stompBounce(this.keyboardJumpHeld());
       Audio.sfx("stomp");
       this.fx("fx_dust", "puff", p.x, hb.top + 10, 0.3);
-      b.takeDamage(2, "stomp", p.x);
+      b.takeDamage(this.info.chapter === 11 ? .25 : 2, "stomp", p.x);
     } else if (b.harmful) p.hurt(b.x);
   }
 
@@ -1296,6 +1305,7 @@ export class GameScene extends Phaser.Scene {
     this.game.events.emit("hud:banner",VEIL_NAME);
     Audio.music("music_boss");
     boss.begin();
+    this.nextVeilWave = this.time.now+3500;
     this.veilState = "fight";
     this.cutscene = false;
   }
@@ -1305,8 +1315,15 @@ export class GameScene extends Phaser.Scene {
     this.veilState = "defeat";
     this.cutscene = true;
     this.registry.set("boss",null);
+    this.clearVeilSummons();
+    this.enemies.forEach(e => e.remove());
+    this.enemies = [];
     this.projectiles.clear(true,true);
+    this.arrows.clear(true,true);
     this.hazards.getChildren().forEach(h => h.destroy());
+    this.hearts.forEach(h => h.sprite.setVisible(false));
+    this.gems.forEach(g => g.sprite.setVisible(false));
+    this.stars.forEach(s => s.sprite.setVisible(false));
     Audio.stopMusic();
     this.cameras.main.stopFollow();
     this.cinema(true,650);
@@ -1316,6 +1333,7 @@ export class GameScene extends Phaser.Scene {
     this.boss?.vanish();
     await this.say(VEIL_DEFEAT);
     this.veilState = "rescue";
+    Audio.music("music_title");
     const angelo = cage ? await cage.release() : undefined;
     if (angelo) {
       const target = angelo.x-100;
@@ -1323,38 +1341,16 @@ export class GameScene extends Phaser.Scene {
       await this.wait(Math.max(350,Math.abs(target-this.player.x)*1000/185+250));
       this.scriptX = null;
       this.player.facing = 1;
-      angelo.setFlipX(true);
-      await this.say(VEIL_RESCUE,line => angelo.play(line.who === "angelo" ? "angelo_veil:talk" : "angelo_veil:idle",true));
-      await veilReunion(this,angelo);
+      if (!await veilFinale(this,angelo)) return;
     }
-    this.veilState = "angelo_exit";
-    const rift = new Rift(this,this.level.arena!.x0+340);
-    await rift.open();
-    await this.say(VEIL_FAREWELL,line => angelo?.play(line.who === "angelo" ? "angelo_veil:wave" : "angelo_veil:idle",true));
-    if (angelo) {
-      angelo.setFlipX(true).play("angelo_veil:walk",true);
-      await new Promise<void>(resolve => this.tweens.add({
-        targets:angelo,x:rift.x,duration:Math.max(600,Math.abs(angelo.x-rift.x)*3.2),onComplete:() => resolve()
-      }));
-      rift.surge();
-      Audio.sfx("portal_enter");
-      await new Promise<void>(resolve => this.tweens.add({targets:angelo,alpha:0,duration:350,onComplete:() => resolve()}));
-      angelo.destroy();
-    }
-    await rift.close();
-    this.veilState = "angely_exit";
-    this.portal.appear();
-    this.portal.open();
-    Audio.sfx("portal_unlock");
-    Audio.music("music_title");
-    this.cinema(false,500);
-    await this.wait(550);
-    this.game.events.emit("hud:banner","ANGELO IS FREE!");
-    this.cutscene = false;
+    if (!this.sys.isActive()) return;
     this.scriptX = null;
+    this.player.freeze();
+    this.ending = true;
     this.veilState = "done";
-    this.cameras.main.startFollow(this.player.rect,true,.12,.1,0,60);
-    this.toast("The stone arch leads to Ember Roost. Keep going, Angely!");
+    updateSave({level:LAST_LEVEL,cleared:true,finaleSeen:true});
+    Audio.music("music_victory");
+    this.game.events.emit("hud:victory");
   }
 
   private async bossIntro() {
@@ -1426,9 +1422,9 @@ export class GameScene extends Phaser.Scene {
   onBossHp(hp: number, max: number, dmg: number) {
     const name = this.info.chapter === 2 ? SENTINEL_NAME : this.info.chapter === 8 ? WORM_NAME : this.info.chapter === 11 ? VEIL_NAME : BOSS_NAME;
     this.registry.set("boss", { name, hp, max });
-    this.cameras.main.shake(90, 0.005);
+    this.cameras.main.shake(90, this.info.chapter === 11 ? .0015 : .005);
     this.bossDamage += dmg;
-    if (this.bossDamage >= 7 && hp > 0 && this.info.chapter !== 11) {
+    if (this.bossDamage >= (this.info.chapter === 11 ? 32 : 7) && hp > 0) {
       this.bossDamage = 0;
       const a = this.level.arena!;
       const h = this.addHeart(Phaser.Math.Between(a.x0 + 200, a.x1 - 200), GROUND_Y - 40);
@@ -1623,6 +1619,47 @@ export class GameScene extends Phaser.Scene {
     const e = new Enemy(this, ENEMY_TYPES[key], x, y, this.enemyGroup);
     this.enemies.push(e);
     return e;
+  }
+
+  private clearVeilSummons() {
+    this.veilSummons.forEach(t => t.remove(false));
+    this.veilSummons.clear();
+    this.veilMarks.forEach(m => m.destroy());
+    this.veilMarks.clear();
+  }
+
+  private updateVeilWaves(time: number) {
+    const boss = this.boss;
+    const arena = this.level.arena;
+    if (!(boss instanceof CrystalVeilBoss) || !arena || !boss.alive || !this.player.alive || time < this.nextVeilWave) return;
+    const phase = boss.phase;
+    this.nextVeilWave = time+[0,11000,9000,7500][phase];
+    const cap = phase+1;
+    const slots = Math.min(phase === 1 ? 2 : 3,cap-this.enemies.filter(e => e.alive).length);
+    if (slots <= 0) return;
+    const pools = [[],["skeleton","firebat"],["lavablob","shardknight","firebat"],["magmagolem","skeleton","voidwraith","lavablob"]];
+    const pool = pools[phase];
+    for (let i=0;i<slots;i++) {
+      const key = pool[this.veilWave++ % pool.length];
+      const candidates = [arena.x0+135,arena.x1-135,arena.x0+330,arena.x1-330];
+      const safe = candidates.filter(x => Math.abs(x-this.player.x)>260 && Math.abs(x-boss.x)>90);
+      const x = safe[i%safe.length];
+      if (x === undefined) continue;
+      const marker = this.add.ellipse(x,GROUND_Y-4,88,18,0x74ddff,.55).setStrokeStyle(2,0xd6faff).setDepth(35);
+      this.veilMarks.add(marker);
+      this.tweens.add({targets:marker,alpha:.2,scaleX:.7,duration:240,yoyo:true,repeat:2});
+      let timer: Phaser.Time.TimerEvent;
+      timer = this.time.delayedCall(1000,() => {
+        this.veilSummons.delete(timer);
+        this.veilMarks.delete(marker);
+        marker.destroy();
+        if (this.veilState !== "fight" || this.cutscene || !boss.alive || !this.player.alive || this.enemies.filter(e => e.alive).length >= cap) return;
+        const type = ENEMY_TYPES[key];
+        this.spawnEnemy(key,x,type.flying ? GROUND_Y-190 : GROUND_Y-60);
+        this.fx("crystal_shot","impact",x,GROUND_Y-36,.25,0x74ddff);
+      });
+      this.veilSummons.add(timer);
+    }
   }
 
   /** Top Y of the nearest surface at or below `fromY` (null over a pit). */

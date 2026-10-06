@@ -1,6 +1,8 @@
 # Angely's World
 
-A mobile-first 2.5D side-scrolling platformer. The original Phaser 3 build is `Angelys-World.apk` (`com.angelysworld.game`). A second Android app, `Angelys-World-Parlyn.apk` (`com.angelysworld.parlyn`), runs the same chapters on a Parlyn Engine 2.5D runtime (Three.js play renderer, sun, haze, billboards). Install both; the Parlyn APK does **not** replace the Phaser one.
+A mobile-first 2D side-scrolling platformer with painted 2.5D scenery. [Download the latest APK](./Angelys-World.apk) (`com.angelysworld.game`, version 1.3-chapter11-finale / code 5). This is the single current APK in the repository; the two older APK files have been retired. The optional Parlyn/Three.js renderer remains available as source.
+
+Chapter 11 is the final chapter. Crystal Veil has 160 HP, three escalating attack phases, and capped waves of existing enemies including skeletons and Chapter 3 lava enemies. Each stomp removes 0.25 HP and does not cancel an attack. After the rescue and a happy hug, Angelo offers Angely his hand. They walk into the same blue portal viewed from behind. Both disappear, the portal closes, and “TO BE CONTINUED...” appears with one “BACK TO LEVELS” button. Chapter 5-2 also uses the new painted blue portal. Chapters 12 and 13 and their exclusive art have been removed; older saves retain weapons/audio settings and clamp progress to the 22 current levels.
 
 ## Run it
 
@@ -60,7 +62,7 @@ Handy URL flags:
 
 ## Gameplay
 
-Seven chapters, two levels each. Levels differ in how they play, not just in their obstacles:
+Eleven chapters, two levels each. Levels differ in how they play, not just in their obstacles:
 
 - **Modes:** `run` (free side-scrolling), `chase` (the screen scrolls by itself while a collapse or an avalanche chases Angely), `climb` (a one-screen-wide vertical tower) and `swim` (underwater: JUMP is a swim stroke).
 - **Goals:** defeat N enemies, collect N star gems, or just reach the (already open) portal.
@@ -71,11 +73,11 @@ Seven chapters, two levels each. Levels differ in how they play, not just in the
 | 1-1 | Mushroom Meadow | run / 8 enemies | Stomping, platforms, a spring over a tall wall |
 | 1-2 | Old Oak Hills | run / 6 gems | Hills; push crates against walls too tall to jump; moving platforms |
 | 2-1 | Moonlit Gate | run / 10 enemies | Crystal Sword, cliffs, crumbling ledges |
-| 2-2 | Crumbling Halls | chase / reach | The halls collapse behind you |
+| 2-2 | Crumbling Halls | boss | Moonlit Warden |
 | 3-1 | Ember Tunnels | run / 10 enemies | Star Bow: shoot star targets to raise bridges over lava |
 | 3-2 | Magma Lift | run / 6 gems | Lifts up very tall walls |
 | 4-1 | Slippery Slopes | run / 12 enemies | Ember Hammer smashes cracked walls; slippery ice |
-| 4-2 | Avalanche Run | chase / reach | An avalanche, over icy hills |
+| 4-2 | Avalanche Run | run / 12 enemies | Falling snow, icy hills |
 | 5-1 | Shadow Bridge | run / 12 enemies | Every mechanic, shadow-touched enemies |
 | 5-2 | Umbra's Throne | boss | Queen Umbra, then part two: the Colossus and Angelo |
 | 6-1 | Sky Tower | climb / reach | Vertical tower; Moon Boomerang |
@@ -83,7 +85,13 @@ Seven chapters, two levels each. Levels differ in how they play, not just in the
 | 7-1 | Sunken Temple | swim / 10 enemies | Swimming, spiky urchins, gates; Star Wand |
 | 7-2 | Coral Palace | swim / 8 gems | Swim the palace and collect every star gem |
 | 8-1 | Cog Dunes | run / 12 enemies | Clockwork Desert: moths, armored gear crabs, sand wisps |
-| 8-2 | Sandstorm Run | chase / reach | A sandstorm chases Angely across the dunes |
+| 8-2 | Dune Worm | boss | Sand worm and another reunion with Angelo |
+| 9-1 | Gumdrop Trail | run / 10 enemies | Bubble Ray |
+| 9-2 | Bubble Falls | run / 6 gems | Springs and platforms |
+| 10-1 | Dewpath | run / 10 enemies | Leaf slimes |
+| 10-2 | Candy Canopy | run / 6 gems | Candy witches |
+| 11-1 | Shattered Causeway | run / 12 enemies | Crystal route, checkpoints and mixed enemies |
+| 11-2 | The Veil Crown | final boss | Crystal Veil, family reunion, shared blue portal and ending |
 
 Part two of 5-2 is a cutscene where Angely doesn't fight. A giant golem rises, her dad Angelo (blue hoodie) arrives through a blue portal, defeats it, talks with her and leaves ("Angely, I'll be watching you. I'll be back. I have stuff to do, but be careful."). His frames come from the character sheet in `art/source/angelo_reference_sheet.png`. The lines are in `src/story/angelo.ts`.
 
@@ -96,6 +104,8 @@ Weapons (Angely keeps every weapon she finds; swap between them):
 - **Ember Hammer**: slow, two damage, a ground shockwave that hits nearby enemies, breaks armour and cracked walls.
 - **Moon Boomerang**: flies out and curves back, hitting everything on the way there and back.
 - **Star Wand**: three stars that home in on the nearest enemies.
+- **Cog Saw**: an armored-enemy piercing saw.
+- **Bubble Ray**: a fast pink energy bolt.
 
 Queen Umbra: walking into her arena starts a cutscene. The camera locks, she floats in, and she speaks to Angely in subtitles at the bottom (advance with tap, A, Space or Enter; SKIP or Menu skips). During the fight she cycles orb volleys, an orb rain with ground markers, a low swoop you jump over (after which she kneels, tired and open to stomps), a ground slam with shockwaves, and minion summons. At half health she gets faster. When she falls there's a farewell scene, and the portal home appears. The dialogue lives in `src/story/umbra.ts`.
 
@@ -115,6 +125,8 @@ Xbox (or any standard) controller: left stick or D-pad to move (a light push wal
 - `art/source/gen/` holds the current art: player, enemy, prop, item, portal and VFX sheets plus backgrounds and chapter splashes, all generated in one consistent style on flat white (or black, for effects) backgrounds. The older hand-supplied atlases are kept in `art/source/` for reference.
 - `tools/atlas_config.py` maps each animation to frames. `G(atlas, row, first, last)` picks frames from the rows that `tools/segment.py` detects automatically. Player sheets are normalised to the same character size using her hair area; enemy sheets are normalised by walk height.
 - `public/assets/runtime/` holds the cut WebP sheets the game loads, exported at about 2x on-screen size. These are generated, so don't edit them by hand.
+- `art/source/chapter11/` and `art/source/finale/` hold the regenerated Chapter 11 and 112 new finale frames. Their `layout.json` files record reviewed extraction rectangles and feet/center pivots. The dedicated packers preserve native alpha and use fixed padded cells: 256x256 for solo characters, 384x384 for pairs and 512x512 for the blue portal. `generation.json` records prompts and selected sources.
+- `art/source/hud/` contains the seven distinct weapon icons. The HUD keeps five hearts, blue joystick, purple attack/swap, gold jump, and sound/pause shifted left.
 
 ## Sharpness and frame rate
 

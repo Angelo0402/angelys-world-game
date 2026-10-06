@@ -17,10 +17,10 @@ export class CageAngelo {
   constructor(scene: GameScene, x: number) {
     this.scene = scene;
     this.x = x;
-    this.actor = scene.add.sprite(x,this.y-18,"angelo_veil").setDepth(69)
-      .setScale(scaleForHeight("angelo_veil",142,"idle"));
-    applyOrigin(this.actor,"angelo_veil");
-    this.actor.play("angelo_veil:idle");
+    this.actor = scene.add.sprite(x,this.y-18,"angelo_finale").setDepth(69)
+      .setScale(scaleForHeight("angelo_finale",142,"idle"));
+    applyOrigin(this.actor,"angelo_finale");
+    this.actor.play("angelo_finale:idle");
     this.cage = scene.add.sprite(x,this.y,"veil_cage").setDepth(72)
       .setScale(scaleForHeight("veil_cage",210,"idle"));
     applyOrigin(this.cage,"veil_cage");
@@ -34,12 +34,12 @@ export class CageAngelo {
   react(kind: "look" | "grip" | "shake" | "cheer" | "idle", ms = 1300) {
     if (this.freed) return;
     this.holdUntil = this.scene.time.now+ms;
-    this.actor.play(kind === "cheer" ? "angelo_veil:wave" : kind === "idle" ? "angelo_veil:idle" : "angelo_veil:talk",true);
+    this.actor.play(kind === "cheer" ? "angelo_finale:wave" : kind === "idle" ? "angelo_finale:idle" : "angelo_finale:talk",true);
   }
 
   update(time: number, hp: number, maxHp: number, attacking: boolean) {
     if (this.freed || !this.actor.active || time<this.holdUntil) return;
-    this.actor.play(hp/maxHp < .3 ? "angelo_veil:wave" : attacking ? "angelo_veil:talk" : "angelo_veil:idle",true);
+    this.actor.play(hp/maxHp < .3 ? "angelo_finale:wave" : attacking ? "angelo_finale:talk" : "angelo_finale:idle",true);
   }
 
   async release(): Promise<Phaser.GameObjects.Sprite> {
@@ -50,7 +50,7 @@ export class CageAngelo {
     await this.scene.wait(300);
     this.cage.play("veil_cage:open");
     await this.scene.wait(450);
-    this.actor.setDepth(74).play("angelo_veil:idle");
+    this.actor.setDepth(74).play("angelo_finale:idle");
     this.scene.tweens.add({targets:this.cage,alpha:0,duration:600,onComplete:() => this.cage.destroy()});
     await new Promise<void>(resolve => this.scene.tweens.add({
       targets:this.actor,y:GROUND_Y+4,duration:550,ease:"Quad.easeIn",onComplete:() => resolve()
