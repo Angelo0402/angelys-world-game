@@ -1463,7 +1463,40 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** Umbra's farewell, or the dune reunion with Angelo. */
+  /** Moonlit Warden's defeat - moonlight fades, path to Volcanic Caves opens. */
+  private async wardenOutro() {
+    this.cutscene = true;
+    this.registry.set("boss", null);
+    for (const e of this.enemies) e.remove();
+    this.projectiles.clear(true, true);
+    this.hazards.getChildren().forEach((h) => h.getData("wave") && h.destroy());
+    Audio.stopMusic();
+    await this.wait(1500);
+    this.cinema(true, 700);
+    this.player.facing = this.boss!.x > this.player.x ? 1 : -1;
+    await this.wait(500);
+    await this.say([
+      { who: "angely", text: "The moonlight... it's fading away." },
+      { who: "angely", text: "The Warden was guarding something. I can feel it." },
+    ]);
+    this.boss!.vanish();
+    this.cameras.main.flash(700, 200, 220, 255);
+    await this.wait(1200);
+    this.portal.appear();
+    this.portal.open();
+    Audio.sfx("portal_unlock");
+    Audio.music("music_title");
+    this.cinema(false, 600);
+    this.game.events.emit("hud:banner", "TO THE VOLCANIC CAVES!");
+    this.cutscene = false;
+    this.time.delayedCall(1600, () => this.toast("Step into the portal: your adventure continues!"));
+  }
+
   private async bossOutro() {
+    if (this.info.chapter === 2) {
+      await this.wardenOutro();
+      return;
+    }
     if (this.info.chapter === 8) {
       await this.wormOutro();
       return;
