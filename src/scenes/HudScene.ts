@@ -166,7 +166,7 @@ export class HudScene extends Phaser.Scene {
     this.gemIcon = this.add.image(GAME_W / 2 - 122, 39, "hud_gem").setDisplaySize(44, 54).setVisible(false);
     this.killPanel = this.add.container(0, 0, [kp, this.killText, this.lockIcon, this.gemIcon, lvl]);
 
-    const pause = this.add.container(GAME_W - 46, 40);
+    const pause = this.add.container(GAME_W - 78, 40);
     pause.add(hudDisc(this, "hud_pause", 28)).setSize(64, 64).setInteractive({ useHandCursor: true });
     pause.on("pointerup", () => {
       if (this.overlay || this.cinema) return;
@@ -174,7 +174,7 @@ export class HudScene extends Phaser.Scene {
       this.game.events.emit("pause-request");
     });
 
-    const mute = this.add.container(GAME_W - 114, 40);
+    const mute = this.add.container(GAME_W - 146, 40);
     const mg = hudDisc(this, "hud_sound", 24);
     const drawMute = () => {
       mg.setTexture(!Audio.musicOn && !Audio.sfxOn ? "hud_sound_off" : "hud_sound");
@@ -381,7 +381,7 @@ export class HudScene extends Phaser.Scene {
   private onDown(ptr: Phaser.Input.Pointer) {
     if (this.overlay || this.cinema || !this.showTouch) return;
     const p = this.logical(ptr);
-    if (p.y < 80 && (p.x > GAME_W - 150 || p.x < 260)) return;
+    if (p.y < 80 && (p.x > GAME_W - 182 || p.x < 260)) return;
     if (p.x < 100 && p.y < 160) return;
     const d = (b: { x: number; y: number }) => Phaser.Math.Distance.Between(p.x, p.y, b.x, b.y);
     if (d(JUMP) < JUMP.r + 18 && this.jumpId < 0) {
