@@ -33,11 +33,11 @@ export class RuinSentinel {
     this.arena = arena;
     this.x = x;
     this.y = GROUND_Y;
-    this.baseScale = scaleForHeight("golem", HEIGHT, "idle");
+    this.baseScale = scaleForHeight("sentinel", HEIGHT, "idle");
     this.shadow = scene.add.image(x, GROUND_Y + 2, "shadow").setAlpha(0.35).setDepth(30);
-    this.sprite = scene.add.sprite(x, this.y, "golem").setDepth(45).setScale(this.baseScale);
-    applyOrigin(this.sprite, "golem");
-    this.sprite.play("golem:idle");
+    this.sprite = scene.add.sprite(x, this.y, "sentinel").setDepth(45).setScale(this.baseScale);
+    applyOrigin(this.sprite, "sentinel");
+    this.sprite.play("sentinel:idle");
     this.sync();
   }
 
@@ -85,9 +85,9 @@ export class RuinSentinel {
         if (Math.abs(dx) > 80) {
           this.x += Math.sign(dx) * Math.min(Math.abs(dx), speed * dt);
           this.dir = dx > 0 ? 1 : -1;
-          this.sprite.play("golem:walk", true);
+          this.sprite.play("sentinel:walk", true);
         } else {
-          this.sprite.play("golem:idle", true);
+          this.sprite.play("sentinel:idle", true);
         }
         this.sprite.setFlipX(this.dir < 0);
 
@@ -102,7 +102,7 @@ export class RuinSentinel {
         break;
       }
       case "slam": {
-        this.sprite.play("golem:attack", true);
+        this.sprite.play("sentinel:attack", true);
         if (time > this.until) {
           this.state = "move";
           this.nextAttack = time + 2200 + Math.random() * 800;
@@ -110,7 +110,7 @@ export class RuinSentinel {
         break;
       }
       case "throw": {
-        this.sprite.play("golem:attack", true);
+        this.sprite.play("sentinel:attack", true);
         if (time > this.until) {
           this.state = "move";
           this.nextAttack = time + 2200 + Math.random() * 800;
@@ -167,7 +167,7 @@ export class RuinSentinel {
     }
 
     this.state = "hurt";
-    this.sprite.play("golem:hurt", true);
+    this.sprite.play("sentinel:hurt", true);
     Audio.sfx("enemy_hit");
     this.until = time + 350;
     return true;
@@ -175,7 +175,7 @@ export class RuinSentinel {
 
   private die() {
     this.state = "dead";
-    this.sprite.play("golem:dead", true);
+    this.sprite.play("sentinel:dead", true);
     Audio.sfx("boss_defeat");
     this.scene.cameras.main.shake(500, 0.01);
     for (let i = 0; i < 8; i++) {

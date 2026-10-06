@@ -180,6 +180,46 @@ export const SPRITES = {
       }
     }
   },
+  "sentinel": {
+    "file": "assets/runtime/sentinel.webp",
+    "frameWidth": 256,
+    "frameHeight": 256,
+    "originX": 0.5,
+    "originY": 0.98,
+    "bodyHeight": 200,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 24,
+        "fps": 8,
+        "repeat": -1,
+      },
+      "walk": {
+        "start": 25,
+        "end": 49,
+        "fps": 10,
+        "repeat": -1,
+      },
+      "attack": {
+        "start": 50,
+        "end": 74,
+        "fps": 12,
+        "repeat": 0,
+      },
+      "hurt": {
+        "start": 75,
+        "end": 82,
+        "fps": 10,
+        "repeat": 0,
+      },
+      "dead": {
+        "start": 83,
+        "end": 99,
+        "fps": 8,
+        "repeat": 0,
+      },
+    },
+  },
   "sandworm": {
     "file": "assets/runtime/sandworm.webp",
     "frameWidth": 341,
