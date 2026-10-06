@@ -621,7 +621,7 @@ export class HudScene extends Phaser.Scene {
           ? info.chapter === 8
             ? "The dune is still moving... get back up, Angely!"
             : info.chapter === 11
-              ? "The Veil Sovereign is still standing. Try again, Angely!"
+              ? "The Crystal Veil is still standing. Try again, Angely!"
               : "Queen Umbra is waiting... don't give up, Angely!"
           : g.kind === "reach" ? "So close! Try again, Angely!"
             : `${g.kind === "gems" ? "Star gems" : "Enemies defeated"}: ${Math.min(g.have, g.need)} / ${g.need}`;

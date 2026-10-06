@@ -1,83 +1,67 @@
 import Phaser from "phaser";
 import { applyOrigin, scaleForHeight } from "../assets/manifest";
+import { Audio } from "../audio/AudioManager";
 import { GROUND_Y } from "../config";
 import type { GameScene } from "../scenes/GameScene";
 
-const CAGE_H = 168;
-const ANGELO_H = 140;
-
-/**
- * Jail art already has Angelo behind the bars, so the cage is one sprite during
- * the fight. After the lock breaks he is swapped to the regular Angelo sheet.
- */
+/** The lattice and actor are independent: bars never change with a human pose. */
 export class CageAngelo {
   readonly cage: Phaser.GameObjects.Sprite;
+  readonly actor: Phaser.GameObjects.Sprite;
   readonly x: number;
-  readonly y: number;
-  private scene: GameScene;
-  private lastRatio = 1;
+  readonly y = GROUND_Y - 98;
   private freed = false;
-  private pose = "idle";
   private holdUntil = 0;
+  private scene: GameScene;
 
   constructor(scene: GameScene, x: number) {
     this.scene = scene;
     this.x = x;
-    this.y = GROUND_Y - 268;
-    this.cage = scene.add.sprite(x, this.y, "angelo_cage").setDepth(72);
-    this.cage.setScale(scaleForHeight("angelo_cage", CAGE_H, "idle"));
-    applyOrigin(this.cage, "angelo_cage");
-    this.cage.play("angelo_cage:idle");
+    this.actor = scene.add.sprite(x,this.y-18,"angelo_veil").setDepth(69)
+      .setScale(scaleForHeight("angelo_veil",142,"idle"));
+    applyOrigin(this.actor,"angelo_veil");
+    this.actor.play("angelo_veil:idle");
+    this.cage = scene.add.sprite(x,this.y,"veil_cage").setDepth(72)
+      .setScale(scaleForHeight("veil_cage",210,"idle"));
+    applyOrigin(this.cage,"veil_cage");
+    this.cage.play("veil_cage:idle");
   }
 
   lookAt(x: number) {
-    this.cage.setFlipX(x < this.x);
+    if (!this.freed && this.actor.active) this.actor.setFlipX(x<this.x);
   }
 
-  react(_kind: "look" | "grip" | "shake" | "cheer" | "idle", _ms = 1400) {
-    /* Cage holds one idle loop so the bars never pop between mismatched frames. */
+  react(kind: "look" | "grip" | "shake" | "cheer" | "idle", ms = 1300) {
+    if (this.freed) return;
+    this.holdUntil = this.scene.time.now+ms;
+    this.actor.play(kind === "cheer" ? "angelo_veil:wave" : kind === "idle" ? "angelo_veil:idle" : "angelo_veil:talk",true);
   }
 
-  update(time: number, bossHp: number, maxHp: number, attacking: boolean) {
-    if (this.freed || !this.cage.active) return;
-    const ratio = bossHp / Math.max(1, maxHp);
-    let next = "idle";
-    if (ratio < 0.35) next = "cheer";
-    else if (attacking) next = "shake";
-    else if (ratio < this.lastRatio - 0.12) {
-      this.lastRatio = ratio;
-      next = "worry";
-      this.holdUntil = time + 1400;
-    } else if (time < this.holdUntil) next = this.pose;
-    if (next !== this.pose) {
-      this.pose = next;
-      this.cage.play(`angelo_cage:${next}`, true);
-    }
+  update(time: number, hp: number, maxHp: number, attacking: boolean) {
+    if (this.freed || !this.actor.active || time<this.holdUntil) return;
+    this.actor.play(hp/maxHp < .3 ? "angelo_veil:wave" : attacking ? "angelo_veil:talk" : "angelo_veil:idle",true);
   }
 
   async release(): Promise<Phaser.GameObjects.Sprite> {
-    const scene = this.scene;
     this.freed = true;
-    if (this.cage.active) this.cage.play("angelo_cage:cheer", true);
-    scene.cameras.main.shake(280, 0.006);
-    scene.fx("fx_spark", "hit", this.x, this.y - 40, 0.7, 0x9fd0ff);
-    scene.fx("fx_dust", "puff", this.x, this.y, 0.45, 0x9aa4b8);
-    await scene.wait(450);
-    scene.tweens.add({ targets: this.cage, alpha: 0, y: this.y + 18, duration: 400, onComplete: () => this.cage.destroy() });
-    const angelo = scene.add.sprite(this.x, this.y, "angelo").setDepth(58);
-    angelo.setScale(scaleForHeight("angelo", ANGELO_H, "idle"));
-    applyOrigin(angelo, "angelo");
-    angelo.play("angelo:idle");
-    await new Promise<void>((res) =>
-      scene.tweens.add({ targets: angelo, y: GROUND_Y + 4, duration: 480, ease: "Quad.easeIn", onComplete: () => res() }),
-    );
-    angelo.play("angelo:idle");
-    scene.fx("fx_dust", "puff", angelo.x, GROUND_Y, 0.35, 0x9fd0ff);
-    await scene.wait(160);
-    return angelo;
+    this.cage.play("veil_cage:crack");
+    Audio.sfx("wall_break");
+    this.scene.fx("crystal_shot","impact",this.x,this.y-88,.45);
+    await this.scene.wait(300);
+    this.cage.play("veil_cage:open");
+    await this.scene.wait(450);
+    this.actor.setDepth(74).play("angelo_veil:idle");
+    this.scene.tweens.add({targets:this.cage,alpha:0,duration:600,onComplete:() => this.cage.destroy()});
+    await new Promise<void>(resolve => this.scene.tweens.add({
+      targets:this.actor,y:GROUND_Y+4,duration:550,ease:"Quad.easeIn",onComplete:() => resolve()
+    }));
+    this.actor.setDepth(58);
+    this.scene.fx("fx_dust","puff",this.x,GROUND_Y,.25,0xbcdfff);
+    return this.actor;
   }
 
   destroy() {
     this.cage.destroy();
+    this.actor.destroy();
   }
 }

@@ -3,36 +3,36 @@ import type { DialogueLine } from "./umbra";
 export const VEIL_NAME = "CRYSTAL VEIL";
 
 export const VEIL_INTRO: DialogueLine[] = [
-  { who: "angelo", text: "Angely! I'm stuck up here — get me out!" },
-  { who: "angely", face: "surprised", text: "Dad?! Hold on, I'll cut you free!" },
-  { who: "angelo", text: "That crystal thing took me. Don't let it catch you." },
-  { who: "angely", face: "determined", text: "Stay put. I'm coming for you." },
+  { who: "angely", face: "surprised", text: "Dad! I found you!" },
+  { who: "angelo", text: "Angely! The crown is keeping this cage sealed." },
+  { who: "angelo", text: "Watch for the pink light. Its core opens after it attacks." },
+  { who: "angely", face: "determined", text: "Then I'll break its spell. Hold on, Dad!" },
 ];
 
 export const VEIL_PHASE2: DialogueLine = {
   who: "angely",
   face: "determined",
-  text: "The crystals are waking up. Keep moving!",
+  text: "The floor is glowing! Move before the crystals rise!",
 };
 
 export const VEIL_PHASE3: DialogueLine = {
   who: "angely",
   face: "determined",
-  text: "It's glowing harder. Hit it between the beams!",
+  text: "Here comes the beam! Jump, then strike the core!",
 };
 
 export const VEIL_DEFEAT: DialogueLine[] = [
-  { who: "angelo", text: "You did it! Get me out of here!" },
-  { who: "angely", face: "happy", text: "I'm coming, Dad!" },
+  { who: "angelo", text: "You did it! The lock is losing its light!" },
+  { who: "angely", face: "happy", text: "It's over. You're coming home." },
 ];
 
 export const VEIL_RESCUE: DialogueLine[] = [
-  { who: "angelo", text: "That's my girl. I knew you'd find me." },
-  { who: "angely", face: "happy", text: "I wasn't going to leave you in there." },
+  { who: "angelo", text: "My brave girl. You crossed the whole Veil for me." },
+  { who: "angely", face: "happy", text: "Of course I did. I wasn't leaving without my dad." },
 ];
 
 export const VEIL_FAREWELL: DialogueLine[] = [
-  { who: "angelo", text: "I have to take my gate. You take yours — keep going." },
-  { who: "angely", face: "determined", text: "I will. Love you, Dad!" },
-  { who: "angelo", text: "Love you too, kiddo. I'll be watching." },
+  { who: "angelo", text: "My blue gate takes me home. The stone arch leads you onward." },
+  { who: "angely", face: "happy", text: "I'll see you soon. Love you, Dad!" },
+  { who: "angelo", text: "Love you too, Angely. I'll always be watching over you." },
 ];
