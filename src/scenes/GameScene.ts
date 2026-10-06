@@ -28,7 +28,7 @@ import { DioramaLook } from "../world/DioramaLook";
 import { Portal } from "../world/Portal";
 import { fitCamera } from "../render";
 
-const BG_ZOOM = 1.08;
+const BG_ZOOM = 1.25;
 const ARROW_SPEED = 980;
 const DESPAWN_X = 1500;
 const DESPAWN_Y = 950;
@@ -268,6 +268,9 @@ export class GameScene extends Phaser.Scene {
     // One zoomed image instead of a mirrored tile: no seams. It drifts slowly across the
     // whole level for parallax and is re-placed in world space every frame (see update).
     const key = this.chapter.background;
+    // Solid backdrop behind the image so no black bars ever show through
+    const bgColor = this.chapter.id === 5 ? 0x1a0f2e : 0x0d0a1a;
+    this.add.rectangle(0, 0, GAME_W + 400, GAME_H + 400, bgColor).setOrigin(0).setDepth(-101).setScrollFactor(0);
     this.far = this.add.image(0, 0, key).setOrigin(0).setDepth(-100);
     const zoom = Math.max(GAME_W / this.far.width, GAME_H / this.far.height) * BG_ZOOM;
     this.far.setScale(zoom);
