@@ -550,7 +550,7 @@ export class Player {
       this.shadow.setVisible(false);
     } else {
       const k = Phaser.Math.Clamp(1 - (surface - this.body.bottom) / 320, 0.3, 1);
-      this.shadow.setVisible(true).setPosition(this.x, surface + 2).setScale(0.9 * k, 0.75 * k).setAlpha(0.32 * k);
+      this.shadow.setVisible(true).setPosition(this.x, surface + 2).setScale(1.05 * k, 0.62 * k).setAlpha(0.42 * k);
     }
   }
 }

@@ -82,4 +82,15 @@ export function buildSharedTextures(scene: Phaser.Scene) {
     ctx.fillRect(0, 0, 128, 128);
     tex.refresh();
   }
+  if (!scene.textures.exists("vignette")) {
+    const tex = scene.textures.createCanvas("vignette", 256, 144)!;
+    const ctx = tex.getContext();
+    const g = ctx.createRadialGradient(128, 72, 46, 128, 72, 150);
+    g.addColorStop(0, "rgba(0,0,0,0)");
+    g.addColorStop(0.52, "rgba(0,0,0,0)");
+    g.addColorStop(1, "rgba(6,3,14,0.78)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 256, 144);
+    tex.refresh();
+  }
 }

@@ -24,6 +24,7 @@ import { useTouchUi } from "../ui/screen";
 import { buildLevel, groundAt, groundY, type LevelDef, type PlatformDef, type Spot } from "../world/level";
 import { Mechanics } from "../world/Mechanics";
 import { backPlatform } from "../world/backing";
+import { DioramaLook } from "../world/DioramaLook";
 import { Portal } from "../world/Portal";
 import { fitCamera } from "../render";
 
@@ -77,6 +78,7 @@ export class GameScene extends Phaser.Scene {
   hazards!: Phaser.Physics.Arcade.Group;
   private platformTops: { x0: number; x1: number; y: number }[] = [];
   private far!: Phaser.GameObjects.Image;
+  private look?: DioramaLook;
   private hearts: Pickup[] = [];
   private gems: Pickup[] = [];
   private stars: Pickup[] = [];
@@ -127,6 +129,7 @@ export class GameScene extends Phaser.Scene {
     this.shieldShown = -1;
     this.checkpoints = [];
     this.platformTops = [];
+    this.look = undefined;
     this.swordStone = undefined;
     this.weaponPickup = undefined;
     this.boss = undefined;
@@ -285,6 +288,7 @@ export class GameScene extends Phaser.Scene {
         frequency: 4200 / amb.count,
       })
       .setDepth(-40);
+    this.look = new DioramaLook(this, this.far, this.chapter);
   }
 
   /** Keeps screen-fixed layers in world space so they follow the zoomed camera exactly. */
@@ -300,6 +304,7 @@ export class GameScene extends Phaser.Scene {
     this.ambient.setPosition(view.x, view.y);
     this.water?.setPosition(view.x, view.y);
     this.bubbles?.setPosition(view.x, view.y);
+    this.look?.place(view, this.far, span, t, ty);
   }
 
   private buildGround() {

@@ -366,8 +366,8 @@ export class Enemy {
       this.shadow
         .setVisible(true)
         .setPosition(this.x, surface + 2)
-        .setScale((this.body.width / 52) * k, 0.8 * k)
-        .setAlpha(0.3 * k);
+        .setScale((this.body.width / 48) * k, 0.62 * k)
+        .setAlpha(0.4 * k);
     }
   }
 }
