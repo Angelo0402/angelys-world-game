@@ -286,43 +286,7 @@ export async function angeloCutscene(scene: GameScene, arena: { x0: number; x1: 
   pose("idle");
   await scene.say(ANGELO_FAREWELL, (l) => pose(l.who === "angelo" ? "talk" : "wave"));
 
-  // ---- a goodbye hug: both characters swap to one shared hug sprite
-  await runTo(player.x + HUG_DX * 2, 2);
-  angelo.setFlipX(true);
-  await scene.wait(200);
-  const hug = scene.add.sprite(player.x + HUG_DX, GROUND_Y + 4, "angelo_hug").setDepth(59).setScale(angelo.scale);
-  applyOrigin(hug, "angelo_hug");
-  angelo.setVisible(false);
-  player.sprite.setVisible(false);
-  hug.play("angelo_hug:open");
-  await scene.wait(550);
-  hug.play("angelo_hug:kneel");
-  await scene.wait(450);
-  hug.play("angelo_hug:hug");
-  Audio.sfx("heart_pickup");
-  const hearts = scene.add
-    .particles(hug.x, GROUND_Y - 95, "heart", {
-      frame: 0,
-      x: { min: -50, max: 50 },
-      speedY: { min: -90, max: -50 },
-      speedX: { min: -25, max: 25 },
-      scale: { start: (16 / SPRITES.heart.frameHeight), end: (30 / SPRITES.heart.frameHeight) },
-      alpha: { start: 1, end: 0 },
-      rotate: { min: -20, max: 20 },
-      lifespan: 1500,
-      frequency: 170,
-    })
-    .setDepth(60);
-  await scene.wait(2800);
-  hearts.stop();
-  hug.play("angelo_hug:pat");
-  await scene.wait(1100);
-  hug.destroy();
-  player.sprite.setVisible(true);
-  angelo.setVisible(true);
-  pose("wave");
-  await scene.wait(900);
-  scene.time.delayedCall(1600, () => hearts.destroy());
+  await reunionHug(scene, angelo);
 
   // ---- he leaves through his rift
   await runTo(rift.x + 40, 1.4);
@@ -355,34 +319,39 @@ export async function reunionHug(scene: GameScene, angelo: Phaser.GameObjects.Sp
   await tween({ targets: angelo, x: meet, duration: Math.max(280, Math.abs(angelo.x - meet) * 1.8) });
   angelo.setFlipX(angelo.x > player.x);
   player.facing = angelo.x > player.x ? 1 : -1;
-  await scene.wait(180);
-  const hug = scene.add.sprite((player.x + angelo.x) / 2, GROUND_Y + 4, "angelo_hug").setDepth(59).setScale(angelo.scale);
+  await scene.wait(160);
+  const hugH = 168;
+  const hug = scene.add.sprite((player.x + angelo.x) / 2, GROUND_Y + 4, "angelo_hug").setDepth(59);
+  hug.setScale(scaleForHeight("angelo_hug", hugH, "hug"));
   applyOrigin(hug, "angelo_hug");
   angelo.setVisible(false);
   player.sprite.setVisible(false);
-  hug.play("angelo_hug:open");
-  await scene.wait(500);
-  hug.play("angelo_hug:kneel");
-  await scene.wait(400);
-  hug.play("angelo_hug:hug");
+  const playHug = async (key: string, ms: number) => {
+    const full = `angelo_hug:${key}`;
+    if (scene.anims.exists(full)) hug.play(full, true);
+    await scene.wait(ms);
+  };
+  await playHug("open", 520);
+  await playHug("hug", 80);
   Audio.sfx("heart_pickup");
   const hearts = scene.add
-    .particles(hug.x, GROUND_Y - 100, "heart", {
+    .particles(hug.x, GROUND_Y - 110, "heart", {
       frame: 0,
-      x: { min: -55, max: 55 },
-      speedY: { min: -110, max: -55 },
-      speedX: { min: -30, max: 30 },
-      scale: { start: 16 / SPRITES.heart.frameHeight, end: 32 / SPRITES.heart.frameHeight },
+      x: { min: -60, max: 60 },
+      speedY: { min: -120, max: -55 },
+      speedX: { min: -32, max: 32 },
+      scale: { start: 18 / SPRITES.heart.frameHeight, end: 36 / SPRITES.heart.frameHeight },
       alpha: { start: 1, end: 0 },
       rotate: { min: -24, max: 24 },
-      lifespan: 1700,
-      frequency: 120,
+      lifespan: 1800,
+      frequency: 90,
     })
     .setDepth(60);
-  await scene.wait(3200);
+  await scene.wait(1600);
+  await playHug("kiss", 1400);
+  await playHug("hold", 1400);
   hearts.stop();
-  hug.play("angelo_hug:pat");
-  await scene.wait(1100);
+  await playHug("pat", 1100);
   hug.destroy();
   player.sprite.setVisible(true);
   angelo.setVisible(true);
@@ -417,32 +386,7 @@ export async function angeloPraise(scene: GameScene, arena: { x0: number; x1: nu
   pose("talk");
   await scene.say(ANGELO_AFTER_WORM, (l) => pose(l.who === "angelo" ? "talk" : "arms"));
 
-  const hug = scene.add.sprite((player.x + angelo.x) / 2, GROUND_Y + 4, "angelo_hug").setDepth(59).setScale(angelo.scale);
-  applyOrigin(hug, "angelo_hug");
-  angelo.setVisible(false);
-  player.sprite.setVisible(false);
-  hug.play("angelo_hug:kneel");
-  await scene.wait(400);
-  hug.play("angelo_hug:hug");
-  Audio.sfx("heart_pickup");
-  const hearts = scene.add
-    .particles(hug.x, GROUND_Y - 110, "heart", {
-      frame: 0,
-      x: { min: -50, max: 50 },
-      speedY: { min: -90, max: -50 },
-      speedX: { min: -25, max: 25 },
-      scale: { start: 16 / SPRITES.heart.frameHeight, end: 30 / SPRITES.heart.frameHeight },
-      alpha: { start: 1, end: 0 },
-      lifespan: 1500,
-      frequency: 150,
-    })
-    .setDepth(60);
-  await scene.wait(2200);
-  hearts.stop();
-  hug.destroy();
-  scene.time.delayedCall(1400, () => hearts.destroy());
-  angelo.setVisible(true);
-  player.sprite.setVisible(true);
+  await reunionHug(scene, angelo);
   pose("idle");
   await scene.say(ANGELO_LEAVES_RIFT, (l) => pose(l.who === "angelo" ? "talk" : "idle"));
 

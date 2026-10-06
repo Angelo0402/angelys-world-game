@@ -17,6 +17,8 @@ export class CageAngelo {
   private scene: GameScene;
   private lastRatio = 1;
   private freed = false;
+  private pose = "idle";
+  private holdUntil = 0;
 
   constructor(scene: GameScene, x: number) {
     this.scene = scene;
@@ -36,14 +38,21 @@ export class CageAngelo {
     /* Cage holds one idle loop so the bars never pop between mismatched frames. */
   }
 
-  update(_time: number, bossHp: number, maxHp: number, attacking: boolean) {
+  update(time: number, bossHp: number, maxHp: number, attacking: boolean) {
     if (this.freed || !this.cage.active) return;
     const ratio = bossHp / Math.max(1, maxHp);
-    if (attacking) this.cage.play("angelo_cage:grip", true);
+    let next = "idle";
+    if (ratio < 0.35) next = "cheer";
+    else if (attacking) next = "shake";
     else if (ratio < this.lastRatio - 0.12) {
       this.lastRatio = ratio;
-      this.cage.play(ratio < 0.4 ? "angelo_cage:cheer" : "angelo_cage:idle", true);
-    } else this.cage.play("angelo_cage:idle", true);
+      next = "worry";
+      this.holdUntil = time + 1400;
+    } else if (time < this.holdUntil) next = this.pose;
+    if (next !== this.pose) {
+      this.pose = next;
+      this.cage.play(`angelo_cage:${next}`, true);
+    }
   }
 
   async release(): Promise<Phaser.GameObjects.Sprite> {

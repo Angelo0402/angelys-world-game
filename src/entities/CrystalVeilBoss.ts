@@ -5,7 +5,7 @@ import { GROUND_Y } from "../config";
 import type { GameScene } from "../scenes/GameScene";
 import type { DamageKind } from "./Enemy";
 
-const HEIGHT = 200;
+const HEIGHT = 228;
 type Phase = 1 | 2 | 3;
 type State = "intro" | "walk" | "claw" | "slam" | "shoot" | "burst" | "erupt" | "beam" | "hurt" | "stagger" | "enrage" | "dead";
 
@@ -31,7 +31,7 @@ export class CrystalVeilBoss {
   private nextShot = 0;
   private hitUntil = 0;
   private actionLock = false;
-  private beam?: Phaser.GameObjects.Sprite;
+  private beam?: Phaser.GameObjects.GameObject;
   private beamZone?: Phaser.GameObjects.Rectangle;
   private spikes: Phaser.GameObjects.GameObject[] = [];
 
@@ -150,7 +150,7 @@ export class CrystalVeilBoss {
       this.scene.spawnProjectile("crystal_shot", this.x + this.dir * 70, GROUND_Y - 110, this.dir * sp, -10, 0.22);
     });
     this.nextShot = time + (this.phase === 3 ? 1100 : this.phase === 2 ? 1500 : 2100);
-    this.until = time + 640;
+    this.until = time + 900;
   }
 
   private startBurst(time: number) {
@@ -213,10 +213,13 @@ export class CrystalVeilBoss {
       mark.destroy();
       if (!this.alive || this.state !== "beam") return;
       Audio.sfx("ghost_orb");
-      const beam = this.scene.add.sprite(this.x + this.dir * 280, GROUND_Y - 96, "crystalveil_beam").setDepth(47);
-      beam.setScale(0.42).setFlipX(this.dir < 0);
-      applyOrigin(beam, "crystalveil_beam");
-      beam.play("crystalveil_beam:beam");
+      const beam = this.scene.add
+        .image(this.x + this.dir * 300, GROUND_Y - 90, "glow")
+        .setTint(0xe8b0ff)
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setDisplaySize(640, 56)
+        .setAlpha(0.92)
+        .setDepth(47);
       const zone = this.scene.add.rectangle(this.x + this.dir * 300, GROUND_Y - 90, 620, 48).setVisible(false);
       this.scene.hazards.add(zone);
       this.beam = beam;

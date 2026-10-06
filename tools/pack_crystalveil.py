@@ -6,6 +6,8 @@ column near its grid line, and the cut edge is feathered instead of left hard.
 """
 from __future__ import annotations
 
+import os
+
 import numpy as np
 from PIL import Image, ImageFilter
 
@@ -134,14 +136,163 @@ def grid5(path: str) -> list[list[dict]]:
     return out
 
 
+def border_key(rgb: np.ndarray) -> np.ndarray:
+    from scipy import ndimage as ndi
+
+    rgb = rgb.astype(np.int16)
+    mx, mn = rgb.max(axis=2), rgb.min(axis=2)
+    # Anything with chroma or that isn't near-paper-white is ink.
+    ink = ((mx - mn) > 8) | (mx < 242)
+    # Close armpit/hem leaks so white shirts stay inside the silhouette.
+    closed = ndi.binary_closing(ink, iterations=4)
+    paper = ~closed
+    seed = np.zeros(paper.shape, bool)
+    seed[0] = seed[-1] = seed[:, 0] = seed[:, -1] = True
+    bg = ndi.binary_propagation(seed & paper, mask=paper) if paper.any() else paper
+    rgba = np.zeros(rgb.shape[:2] + (4,), np.uint8)
+    rgba[..., :3] = np.clip(rgb, 0, 255).astype(np.uint8)
+    rgba[..., 3] = np.where(bg, 0, 255)
+    return rgba
+
+
+def drop_edge_bleed(keep: np.ndarray) -> np.ndarray:
+    from scipy import ndimage as ndi
+
+    labels, n = ndi.label(keep)
+    if n == 0:
+        return keep
+    h, w = keep.shape
+    out = keep.copy()
+    for i in range(1, n + 1):
+        ys, xs = np.nonzero(labels == i)
+        left, right = int(xs.min()), int(xs.max())
+        if right - left < 8:
+            out[labels == i] = False
+            continue
+        # Neighbor-cell slivers sit on one side and never cross the middle.
+        if right < w * 0.22 or left > w * 0.78:
+            out[labels == i] = False
+            continue
+        # Feet from the row above land on the top of a cell.
+        if float(ys.mean()) < h * 0.16 and int(ys.max()) < h * 0.22:
+            out[labels == i] = False
+    return out
+
+
+def keep_ink(alpha: np.ndarray, keep_all: bool) -> np.ndarray:
+    if not keep_all:
+        return largest_blob(alpha)
+    from scipy import ndimage as ndi
+
+    m = alpha > 55
+    labels, n = ndi.label(m)
+    if n == 0:
+        return m
+    sizes = ndi.sum(m, labels, range(1, n + 1))
+    keep = np.zeros_like(m)
+    for i, s in enumerate(sizes, 1):
+        if s >= 80:
+            keep |= labels == i
+    return keep if keep.any() else m
+
+
+def frame_from_rgba(a: np.ndarray, center: bool = False, keep_all: bool = False) -> dict | None:
+    keep = drop_edge_bleed(keep_ink(a[..., 3], keep_all))
+    if keep.sum() < 80:
+        return None
+    a = a.copy()
+    a[..., 3] = np.where(keep, a[..., 3], 0)
+    ys, xs = np.nonzero(keep)
+    if center:
+        ax = float(xs.min() + xs.max()) / 2
+    else:
+        foot = ys.max() - max(3, int((ys.max() - ys.min()) * 0.18))
+        ax = float(np.median(xs[ys >= foot]))
+    return {"img": a, "ax": ax, "ay": float(ys.max())}
+
+
+def pin_row(fr: list[dict], k: float, center: bool = False) -> list[dict]:
+    if not fr:
+        return []
+    base = float(np.percentile([f["ay"] for f in fr], 80))
+    hips = float(np.median([f["ax"] for f in fr]))
+    out = []
+    for f in fr:
+        f["ay"] = base
+        if not center:
+            f["ax"] = float(np.clip(f["ax"], hips - 28, hips + 28))
+        out.append(finish(f, k))
+    return out
+
+
+def strip_n(path: str, n: int, k: float = 1.4) -> list[dict]:
+    rgb = np.array(Image.open(path).convert("RGB"))
+    keyed = border_key(rgb)
+    W = rgb.shape[1]
+    cuts = [0]
+    for i in range(1, n):
+        cuts.append(seam(keyed[..., 3], int(i * W / n), 24))
+    cuts.append(W)
+    fr = []
+    for x0, x1 in zip(cuts, cuts[1:]):
+        pad = min(10, max(2, (x1 - x0) // 16))
+        f = frame_from_rgba(keyed[:, x0 + pad:x1 - pad])
+        if f:
+            fr.append(f)
+    return pin_row(fr, k)
+
+
+def grid_fixed(path: str, cols: int, rows: int, k: float = 1.0, center: bool = False, keep_all: bool = False) -> list[list[dict]]:
+    rgb = np.array(Image.open(path).convert("RGB"))
+    H, W = rgb.shape[:2]
+    out = []
+    for r in range(rows):
+        y0, y1 = int(r * H / rows) + 3, int((r + 1) * H / rows) - 3
+        fr = []
+        for c in range(cols):
+            x0, x1 = int(c * W / cols) + 6, int((c + 1) * W / cols) - 6
+            f = frame_from_rgba(border_key(rgb[y0:y1, x0:x1]), center=center, keep_all=keep_all)
+            if f:
+                fr.append(f)
+        out.append(pin_row(fr, k, center=center))
+    return out
+
+
+def load_strip(name: str, n: int = 8, k: float = 1.4) -> list[dict]:
+    for ext in ("png", "jpg"):
+        path = f"{SRC}/veil_{name}_strip.{ext}"
+        if os.path.exists(path):
+            fr = strip_n(path, n, k)
+            if fr:
+                return fr
+    return []
+
+
+def row_slice(rows: list[list[dict]], r: int, a: int, b: int | None = None) -> list[dict]:
+    if not rows:
+        return []
+    row = rows[r] if r < len(rows) else rows[-1]
+    if not row:
+        return (rows[0][:1] if rows[0] else [])
+    sl = row[a:] if b is None else row[a:b]
+    return sl or row[-1:]
+
+
 def boss_frames():
-    idle = grid5(f"{SRC}/veil_idle.png")
-    melee = grid5(f"{SRC}/veil_melee.png")
-    cast = grid5(f"{SRC}/veil_cast.png")
-    death = grid5(f"{SRC}/veil_death.png")
-    for name, rows in ("idle", idle), ("melee", melee), ("cast", cast), ("death", death):
-        print(name, [len(r) for r in rows])
-    return idle, melee, cast, death
+    idle = load_strip("idle")
+    walk = load_strip("walk")
+    dead = load_strip("dead")
+    claw = load_strip("claw")
+    slam = load_strip("slam")
+    cast = load_strip("cast")
+    beam = load_strip("beam")
+    have = idle and walk and dead and claw and slam and cast and beam
+    melee = grid5(f"{SRC}/veil_melee.png") if (not have and os.path.exists(f"{SRC}/veil_melee.png")) else []
+    sheet_cast = grid5(f"{SRC}/veil_cast.png") if (not have and os.path.exists(f"{SRC}/veil_cast.png")) else []
+    death = grid5(f"{SRC}/veil_death.png") if (not have and os.path.exists(f"{SRC}/veil_death.png")) else []
+    pick = lambda pref, *alts: pref or next((a for a in alts if a), pref)
+    print("strips", {k: len(v) for k, v in dict(idle=idle, walk=walk, dead=dead, claw=claw, slam=slam, cast=cast, beam=beam).items()})
+    return idle, walk, dead, claw, slam, cast, beam, melee, sheet_cast, death, pick
 
 
 def segments(mask: np.ndarray, min_w: int = 6) -> list[tuple[int, int]]:
@@ -214,27 +365,34 @@ def pack(name: str, anims: dict[str, tuple[list[dict], int, int]]) -> dict:
 
 
 def build() -> dict:
-    idle, melee, cast, death = boss_frames()
-    row = lambda sheet, i: sheet[i] if i < len(sheet) else sheet[0]
+    idle, walk, dead, claw, slam, cast, beam, melee, sheet_cast, death, pick = boss_frames()
+    row = lambda sheet, i: sheet[i] if i < len(sheet) else (sheet[0] if sheet else [])
     cat = lambda *rows: [f for r in rows for f in r]
+    claw_fr = pick(claw, cat(row(melee, 1), row(melee, 2)))
+    slam_fr = pick(slam, row(melee, 3))
+    shoot_fr = pick(cast[:5], row(sheet_cast, 1)[:4], row(sheet_cast, 1))
+    summon_fr = pick(cast, row(sheet_cast, 2))
+    charge_fr = pick(beam, row(sheet_cast, 3)[:3], row(sheet_cast, 3))
+    hurt_fr = pick(dead[:3], row(death, 1))
+    stagger_fr = pick(dead[1:4], row(death, 2)[:3], row(death, 2))
     boss = pack("crystalveil", {
-        "idle": (cat(row(idle, 0), row(idle, 1)), 8, -1),
-        "walk": (cat(row(idle, 2), row(idle, 3)), 10, -1),
-        "claw": (cat(row(melee, 1), row(melee, 2)), 12, 0),
-        "slam": (row(melee, 3), 10, 0),
-        "summon": (row(cast, 2), 10, 0),
-        "shoot": (row(cast, 1)[:4] or row(cast, 1), 9, 0),
-        "charge": (row(cast, 3)[:2] or row(cast, 3)[:1], 5, 0),
-        "erupt": (row(cast, 2), 8, 0),
-        "hurt": (row(death, 1), 10, 0),
-        "stagger": (row(death, 2)[:3] or row(death, 2), 6, 0),
-        "enrage": (cat(row(idle, 4), row(melee, 4)), 8, -1),
-        "dead": (cat(row(death, 2), row(death, 3), row(death, 4)), 8, 0),
+        "idle": (idle, 8, -1),
+        "walk": (walk, 10, -1),
+        "claw": (claw_fr, 12, 0),
+        "slam": (slam_fr, 10, 0),
+        "summon": (summon_fr, 10, 0),
+        "shoot": (shoot_fr, 9, 0),
+        "charge": (charge_fr, 8, 0),
+        "erupt": (summon_fr, 8, 0),
+        "hurt": (hurt_fr, 10, 0),
+        "stagger": (stagger_fr, 6, 0),
+        "enrage": (pick(cast, idle), 8, -1),
+        "dead": (dead, 8, 0),
     })
-    beam_fr = row(cast, 3)[-2:] or row(cast, 3)
-    spike_fr = row(death, 4)[:2] or row(death, 4)
-    ring_fr = row(cast, 2)[-1:]
-    beam = pack("crystalveil_beam", {"beam": (beam_fr, 8, -1)})
+    beam_fr = pick(beam[3:7], beam[-2:], row(sheet_cast, 3)[-2:], row(sheet_cast, 3))
+    spike_fr = pick(dead[-3:], dead[-1:])
+    ring_fr = pick(slam[3:5], summon_fr[-1:], slam[-1:])
+    beam_sheet = pack("crystalveil_beam", {"beam": (beam_fr, 8, -1)})
     fx = pack("crystalveil_fx", {"spikes": (spike_fr, 1, 0), "ring": (ring_fr, 1, 0)})
 
     s = grid_frames(f"{SRC}/shot.png", "center")
@@ -248,13 +406,27 @@ def build() -> dict:
         "grip": (a[7][2:4], 6, -1),
         "cheer": (a[7][4:6], 6, -1),
     })
-    c = grid_frames(f"{SRC}/cage.png", "feet")
+    cage_rows = grid_fixed(f"{SRC}/cage_new.png", 9, 5, k=1.0)
+    print("cage", [len(r) for r in cage_rows])
     cage = pack("angelo_cage", {
-        "idle": (c[0][:6], 6, -1),
-        "grip": (c[2][:6] if len(c) > 2 else c[0][:6], 7, -1),
-        "cheer": (c[7][:4] if len(c) > 7 else c[0][:4], 6, -1),
+        "idle": (row_slice(cage_rows, 0, 0, 4), 6, -1),
+        "grip": (row_slice(cage_rows, 1, 0, 5), 8, -1),
+        "shake": (row_slice(cage_rows, 1, 6) + row_slice(cage_rows, 2, 7), 10, -1),
+        "worry": (row_slice(cage_rows, 3, 0, 5) + row_slice(cage_rows, 4, 4, 6), 7, -1),
+        "cheer": (row_slice(cage_rows, 4, 6, 8), 6, -1),
     })
-    return {"crystalveil": boss, "crystalveil_beam": beam, "crystalveil_fx": fx, "crystal_shot": shot, "angelo_cell": angelo, "angelo_cage": cage}
+    hug_rows = grid_fixed(f"{SRC}/hug_new.png", 9, 5, k=1.0, center=True, keep_all=True)
+    print("hug", [len(r) for r in hug_rows])
+    hug = pack("angelo_hug", {
+        "open": (row_slice(hug_rows, 0, 0, 4), 8, 0),
+        "hug": (row_slice(hug_rows, 0, 4) + row_slice(hug_rows, 1, 0, 2), 8, -1),
+        "kneel": (row_slice(hug_rows, 1, 4, 8), 6, -1),
+        "kiss": (row_slice(hug_rows, 4, 0, 1) + row_slice(hug_rows, 3, 2, 3) + row_slice(hug_rows, 4, 6, 7) + row_slice(hug_rows, 2, 7, 8), 6, -1),
+        "hold": (row_slice(hug_rows, 2, 2, 6), 6, -1),
+        "pat": (row_slice(hug_rows, 3, 0, 2) + row_slice(hug_rows, 4, 1, 2), 6, -1),
+    })
+    return {"crystalveil": boss, "crystalveil_beam": beam_sheet, "crystalveil_fx": fx, "crystal_shot": shot,
+            "angelo_cell": angelo, "angelo_cage": cage, "angelo_hug": hug}
 
 
 if __name__ == "__main__":
