@@ -13,7 +13,7 @@ const HEIGHT = 220;
  * and hurls rocks. No cutscene - pure fight.
  */
 export class RuinSentinel {
-  readonly maxHp = 14;
+  readonly maxHp = 20;
   hp = this.maxHp;
   x: number;
   y: number;
@@ -59,7 +59,7 @@ export class RuinSentinel {
 
   begin() {
     this.state = "move";
-    this.nextAttack = this.scene.time.now + 2000;
+    this.nextAttack = this.scene.time.now + 1200;
   }
 
   update(time: number, delta: number) {
@@ -80,7 +80,7 @@ export class RuinSentinel {
     switch (this.state) {
       case "move": {
         // Walk toward player
-        const speed = 90;
+        const speed = 140;
         const dx = player.x - this.x;
         if (Math.abs(dx) > 80) {
           this.x += Math.sign(dx) * Math.min(Math.abs(dx), speed * dt);
@@ -93,7 +93,7 @@ export class RuinSentinel {
 
         // Attack when in range or on timer
         if (time > this.nextAttack && player.alive) {
-          if (Math.abs(dx) < 250) {
+          if (Math.abs(dx) < 300) {
             this.startSlam(time);
           } else {
             this.startThrow(time);
@@ -105,7 +105,7 @@ export class RuinSentinel {
         this.sprite.play("sentinel:attack", true);
         if (time > this.until) {
           this.state = "move";
-          this.nextAttack = time + 2200 + Math.random() * 800;
+          this.nextAttack = time + 1400 + Math.random() * 600;
         }
         break;
       }
@@ -113,7 +113,7 @@ export class RuinSentinel {
         this.sprite.play("sentinel:attack", true);
         if (time > this.until) {
           this.state = "move";
-          this.nextAttack = time + 2200 + Math.random() * 800;
+          this.nextAttack = time + 1400 + Math.random() * 600;
         }
         break;
       }
@@ -135,9 +135,9 @@ export class RuinSentinel {
     this.scene.cameras.main.shake(250, 0.008);
     // Ground shockwave on both sides (as projectiles)
     const y = GROUND_Y - 30;
-    this.scene.spawnProjectile("fx_dust", this.x - 80, y, -200, 0, 1.5);
-    this.scene.spawnProjectile("fx_dust", this.x + 80, y, 200, 0, 1.5);
-    this.until = time + 700;
+    this.scene.spawnProjectile("fx_dust", this.x - 80, y, -280, 0, 1.5);
+    this.scene.spawnProjectile("fx_dust", this.x + 80, y, 280, 0, 1.5); this.scene.spawnProjectile("fx_dust", this.x - 40, y, -160, -300, 1.2); this.scene.spawnProjectile("fx_dust", this.x + 40, y, 160, -300, 1.2);
+    this.until = time + 600;
   }
 
   private startThrow(time: number) {
@@ -147,9 +147,9 @@ export class RuinSentinel {
     const dx = player.x - this.x;
     const dy = (GROUND_Y - 80) - (this.y - 160);
     const dist = Math.max(1, Math.hypot(dx, dy));
-    const speed = 300;
-    this.scene.spawnProjectile("fx_dust", this.x, this.y - 160, (dx / dist) * speed, (dy / dist) * speed, 1.2);
-    this.until = time + 700;
+    const speed = 380;
+    this.scene.spawnProjectile("fx_dust", this.x, this.y - 160, (dx / dist) * speed, (dy / dist) * speed, 1.2); this.scene.spawnProjectile("fx_dust", this.x, this.y - 160, (dx / dist) * speed * 0.94, (dy / dist) * speed - 80, 1.2); this.scene.spawnProjectile("fx_dust", this.x, this.y - 160, (dx / dist) * speed * 0.94, (dy / dist) * speed + 80, 1.2);
+    this.until = time + 600;
   }
 
   takeDamage(amount: number, _kind: DamageKind, _fromX: number): boolean {
