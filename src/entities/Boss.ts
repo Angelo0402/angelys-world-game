@@ -102,7 +102,7 @@ export class Boss {
     this.enterIdle(this.scene.time.now, 900);
   }
 
-  private enterIdle(time: number, ms = 1300) {
+  private enterIdle(time: number, ms = 800) {
     this.state = "idle";
     this.sub = 0;
     this.until = time + ms / this.speed;
@@ -124,12 +124,12 @@ export class Boss {
 
     switch (this.state) {
       case "idle": {
-        this.x += (this.targetX - this.x) * Math.min(1, dt * 1.4);
-        this.y += (HOVER_Y + Math.sin(time / 600) * 14 - this.y) * Math.min(1, dt * 3);
+        this.x += (this.targetX - this.x) * Math.min(1, dt * 2.2);
+        this.y += (HOVER_Y + Math.sin(time / 600) * 14 - this.y) * Math.min(1, dt * 4);
         if (Math.abs(dx) < 130 && player.alive) {
           if (!this.underSince) this.underSince = time;
         } else this.underSince = 0;
-        if (time > this.until || (this.underSince && time - this.underSince > 900)) this.chooseAttack(time);
+        if (time > this.until || (this.underSince && time - this.underSince > 700)) this.chooseAttack(time);
         break;
       }
       case "volley":

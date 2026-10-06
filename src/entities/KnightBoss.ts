@@ -145,7 +145,7 @@ export class KnightBoss {
     this.state = "slash";
     this.sprite.play("sovereign:attack", true);
     Audio.sfx("skeleton_swing");
-    this.until = time + (this.phase === 2 ? 500 : 700);
+    this.until = time + (this.phase === 2 ? 400 : 550);
   }
 
   private startShot(time: number) {
@@ -165,7 +165,7 @@ export class KnightBoss {
       this.scene.spawnProjectile("fx_orb", this.x + this.dir * 64, GROUND_Y - 118, this.dir * sp, -20, 0.4, 0xc59bff);
       this.nextShot = time + 2000;
     }
-    this.until = time + 520;
+    this.until = time + 420;
   }
 
   private startDash(time: number) {
