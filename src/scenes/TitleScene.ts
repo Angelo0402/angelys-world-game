@@ -133,7 +133,7 @@ export class TitleScene extends Phaser.Scene {
     const CH = 200;
     const GAP = 16;
     const list = this.add.container(GAME_W / 2, LIST_TOP);
-    const maskG = this.add.graphics().fillRect(0, LIST_TOP, GAME_W, LIST_H);
+    const maskG = this.add.graphics().fillRect(0, LIST_TOP, GAME_W, LIST_H).setVisible(false);
     list.setMask(maskG.createGeometryMask());
     let y = CH / 2;
     ids.forEach((id) => {
