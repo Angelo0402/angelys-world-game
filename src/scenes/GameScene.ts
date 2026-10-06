@@ -7,6 +7,7 @@ import {
   type ChapterDef, type LevelInfo, type WeaponId,
 } from "../config";
 import { Boss, BOSS_NAME, HOVER_Y } from "../entities/Boss";
+import { MoonlitWarden, WARDEN_NAME } from "../entities/MoonlitWarden";
 import { Enemy, type DamageKind } from "../entities/Enemy";
 import { ENEMY_TYPES, type ProjectileSheet } from "../entities/enemyTypes";
 import { Player } from "../entities/Player";
@@ -60,7 +61,7 @@ export class GameScene extends Phaser.Scene {
   player!: Player;
   enemies: Enemy[] = [];
   kills = 0;
-  boss?: Boss | Sandworm | CrystalVeilBoss;
+  boss?: Boss | Sandworm | CrystalVeilBoss | MoonlitWarden;
   veilCage?: CageAngelo;
   veilState: "idle" | "intro" | "fight" | "defeat" | "rescue" | "angelo_exit" | "angely_exit" | "done" = "idle";
   mech!: Mechanics;
@@ -1187,6 +1188,30 @@ export class GameScene extends Phaser.Scene {
     this.cinemaCamera(on, ms);
   }
 
+  private async wardenIntro() {
+    const arena = this.level.arena!;
+    const cam = this.cameras.main;
+    this.cutscene = true;
+    cam.stopFollow();
+    cam.setScroll(0, 0);
+    Audio.stopMusic();
+    this.cinema(true, 700);
+    this.mech.addBarrier(arena.x0 - 20);
+    this.mech.addBarrier(arena.x1 + 20);
+    await this.wait(600);
+    Audio.sfx("boss_roar");
+    cam.shake(800, 0.006);
+    const warden = new MoonlitWarden(this, arena.x1 - 200, arena);
+    (this as any).boss = warden;
+    await this.wait(1200);
+    this.player.facing = 1;
+    this.cinema(false, 500);
+    this.registry.set("boss", { name: WARDEN_NAME, hp: warden.hp, max: warden.maxHp });
+    this.game.events.emit("hud:banner", WARDEN_NAME);
+    warden.begin();
+    this.cutscene = false;
+  }
+
   private async wormIntro() {
     const arena = this.level.arena!;
     const cam = this.cameras.main;
@@ -1343,6 +1368,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   private async bossIntro() {
+    if (this.info.chapter === 2) {
+      await this.wardenIntro();
+      return;
+    }
     if (this.info.chapter === 8) {
       await this.wormIntro();
       return;
@@ -1405,7 +1434,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   onBossHp(hp: number, max: number, dmg: number) {
-    const name = this.info.chapter === 8 ? WORM_NAME : this.info.chapter === 11 ? VEIL_NAME : BOSS_NAME;
+    const name = this.info.chapter === 2 ? WARDEN_NAME : this.info.chapter === 8 ? WORM_NAME : this.info.chapter === 11 ? VEIL_NAME : BOSS_NAME;
     this.registry.set("boss", { name, hp, max });
     this.cameras.main.shake(90, 0.005);
     this.bossDamage += dmg;

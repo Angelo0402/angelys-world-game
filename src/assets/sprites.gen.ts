@@ -642,53 +642,39 @@ export const SPRITES = {
   },
   "angelo_hug": {
     "file": "assets/runtime/angelo_hug.webp",
-    "frameWidth": 166,
-    "frameHeight": 175,
-    "originX": 0.497,
-    "originY": 0.9771,
-    "bodyHeight": 168,
+    "frameWidth": 219,
+    "frameHeight": 252,
+    "originX": 0.5,
+    "originY": 0.9841,
+    "bodyHeight": 238,
     "anims": {
       "open": {
         "start": 0,
-        "end": 3,
-        "fps": 8,
-        "repeat": 0,
-        "h": 163
-      },
-      "hug": {
-        "start": 4,
-        "end": 10,
-        "fps": 8,
+        "end": 0,
+        "fps": 1,
         "repeat": -1,
-        "h": 166
+        "h": 238
       },
       "kneel": {
-        "start": 11,
-        "end": 14,
-        "fps": 6,
+        "start": 1,
+        "end": 1,
+        "fps": 1,
         "repeat": -1,
-        "h": 161
+        "h": 212
       },
-      "kiss": {
-        "start": 15,
-        "end": 18,
-        "fps": 6,
+      "hug": {
+        "start": 2,
+        "end": 5,
+        "fps": 3,
         "repeat": -1,
-        "h": 147
-      },
-      "hold": {
-        "start": 19,
-        "end": 22,
-        "fps": 6,
-        "repeat": -1,
-        "h": 145
+        "h": 230
       },
       "pat": {
-        "start": 23,
-        "end": 25,
-        "fps": 6,
+        "start": 6,
+        "end": 6,
+        "fps": 1,
         "repeat": -1,
-        "h": 144
+        "h": 244
       }
     }
   },
