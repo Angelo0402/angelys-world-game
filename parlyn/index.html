@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#120d1f" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <link rel="icon" type="image/png" href="./icon.png" />
+    <title>Angely's World — Parlyn</title>
+    <style>
+      :root {
+        --ink: #fff4d6;
+        --gold: #ffd36b;
+        --dusk: #120d1f;
+        --card: rgba(18, 12, 36, 0.82);
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: var(--dusk);
+        color: var(--ink);
+        font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+        overflow: hidden;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      #stage {
+        position: fixed;
+        inset: 0;
+      }
+      #stage canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      .vignette {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background: radial-gradient(ellipse at 50% 42%, transparent 48%, rgba(8, 4, 18, 0.72) 100%);
+        z-index: 2;
+      }
+      #hud {
+        position: fixed;
+        inset: 0;
+        z-index: 3;
+        pointer-events: none;
+      }
+      #hud * {
+        pointer-events: auto;
+      }
+      .screen {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .screen[hidden],
+      [hidden] {
+        display: none !important;
+      }
+      #title-screen {
+        background:
+          linear-gradient(180deg, rgba(18, 13, 31, 0.2), rgba(18, 13, 31, 0.78)),
+          url("./assets/runtime/backdrops/title_splash.jpg") center/cover;
+      }
+      .mark {
+        letter-spacing: 0.28em;
+        font-size: 12px;
+        color: var(--gold);
+        text-transform: uppercase;
+        margin: 0 0 8px;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(32px, 6vw, 64px);
+        text-shadow: 0 4px 0 #1b0f2e;
+      }
+      .sub {
+        opacity: 0.85;
+        margin: 10px 0 28px;
+        text-align: center;
+        max-width: 520px;
+        padding: 0 16px;
+      }
+      button {
+        font: inherit;
+        color: #1b0f2e;
+        background: linear-gradient(#ffe08a, #ffc24a);
+        border: 0;
+        border-radius: 14px;
+        padding: 12px 28px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        cursor: pointer;
+        box-shadow: 0 6px 0 #8a5a12;
+      }
+      button:active {
+        transform: translateY(3px);
+        box-shadow: 0 3px 0 #8a5a12;
+      }
+      button.ghost {
+        background: #2a2048;
+        color: var(--ink);
+        box-shadow: 0 6px 0 #12081c;
+      }
+      #select-screen {
+        background: rgba(10, 8, 20, 0.72);
+        justify-content: flex-start;
+        padding: 18px 12px 24px;
+      }
+      #chapter-list {
+        width: min(1080px, 100%);
+        overflow: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 8px 8px 32px;
+        pointer-events: auto;
+      }
+      .chapter {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        gap: 16px;
+        background: var(--card);
+        border: 2px solid #ffd36b55;
+        border-radius: 18px;
+        padding: 12px;
+        min-height: 148px;
+      }
+      .thumb {
+        border-radius: 12px;
+        background-size: cover;
+        background-position: center;
+        min-height: 120px;
+      }
+      .kicker {
+        color: var(--gold);
+        font-size: 12px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+      .chapter h2 {
+        margin: 4px 0 10px;
+        font-size: 22px;
+      }
+      .stages {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .stage {
+        background: #3a2560;
+        color: #fff;
+        box-shadow: none;
+        font-size: 13px;
+        padding: 8px 12px;
+      }
+      .stage.boss {
+        background: #5a2a8a;
+      }
+      #splash-screen {
+        background: #0a0714;
+      }
+      #splash-art {
+        position: absolute;
+        inset: 0;
+        background-size: cover;
+        background-position: center;
+        filter: saturate(1.1);
+      }
+      .splash-copy {
+        position: relative;
+        z-index: 1;
+        text-align: center;
+        text-shadow: 0 3px 0 #12081c;
+        background: linear-gradient(transparent, rgba(10, 6, 20, 0.7));
+        width: 100%;
+        padding: 40px 16px 48px;
+        margin-top: auto;
+      }
+      #play-hud {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      #play-hud > * {
+        pointer-events: none;
+      }
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 14px 0;
+        text-shadow: 0 2px 0 #12081c;
+        font-weight: 700;
+      }
+      #hearts {
+        color: #ff6a8a;
+        letter-spacing: 2px;
+      }
+      #banner {
+        position: absolute;
+        left: 50%;
+        top: 18%;
+        transform: translateX(-50%);
+        background: var(--card);
+        border: 2px solid var(--gold);
+        padding: 10px 18px;
+        border-radius: 12px;
+        font-weight: 700;
+      }
+      #tip {
+        position: absolute;
+        left: 50%;
+        bottom: 86px;
+        transform: translateX(-50%);
+        font-size: 14px;
+        opacity: 0.9;
+        text-align: center;
+        width: 80%;
+      }
+      #touch {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      #stick {
+        position: absolute;
+        left: 28px;
+        bottom: 22px;
+        width: 128px;
+        height: 128px;
+        border-radius: 50%;
+        background: rgba(255, 244, 214, 0.12);
+        border: 3px solid #ffd36b66;
+        pointer-events: auto;
+      }
+      #knob {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 54px;
+        height: 54px;
+        margin: -27px;
+        border-radius: 50%;
+        background: #ffe08a;
+      }
+      .btns {
+        position: absolute;
+        right: 18px;
+        bottom: 18px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        pointer-events: auto;
+      }
+      .btns button,
+      #btn-pause {
+        width: 86px;
+        height: 86px;
+        border-radius: 50%;
+        box-shadow: 0 5px 0 #8a5a12;
+        padding: 0;
+        font-size: 13px;
+      }
+      #btn-pause {
+        position: absolute;
+        right: 16px;
+        top: 10px;
+        width: 54px;
+        height: 54px;
+        pointer-events: auto;
+      }
+      #pause-screen,
+      #end-card,
+      #loading {
+        background: rgba(8, 4, 18, 0.62);
+      }
+      #end-card,
+      #pause-screen,
+      #loading {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+      }
+      #engine-tag {
+        position: absolute;
+        left: 12px;
+        top: 10px;
+        font-size: 11px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #9ff5ff;
+        text-shadow: 0 2px 0 #12081c;
+        pointer-events: none;
+      }
+      #rotate {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        background: radial-gradient(circle at 50% 40%, #3b2a6b, #120d1f 70%);
+        text-align: center;
+        padding: 24px;
+      }
+      @media (orientation: portrait) and (pointer: coarse) {
+        #rotate {
+          display: flex;
+        }
+      }
+      @media (max-width: 720px) {
+        .chapter {
+          grid-template-columns: 1fr;
+        }
+        #stick {
+          width: 110px;
+          height: 110px;
+        }
+        .btns button {
+          width: 74px;
+          height: 74px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stage"></div>
+    <div class="vignette"></div>
+    <div id="hud">
+      <div id="engine-tag" hidden>Parlyn Engine 2.5D</div>
+      <div id="title-screen" class="screen">
+        <p class="mark">Parlyn Engine build</p>
+        <h1>Angely's World</h1>
+        <p class="sub">The same adventure, now on a true 2.5D stage — sun, haze, and billboards. Every chapter is open.</p>
+        <button id="btn-play" type="button">PLAY</button>
+      </div>
+      <div id="select-screen" class="screen" hidden>
+        <p class="mark">Choose a level</p>
+        <div id="chapter-list"></div>
+      </div>
+      <div id="splash-screen" class="screen" hidden>
+        <div id="splash-art"></div>
+        <div class="splash-copy">
+          <div class="kicker" id="splash-kicker"></div>
+          <h1 id="splash-title"></h1>
+          <p id="splash-tip"></p>
+        </div>
+      </div>
+      <div id="play-hud" hidden>
+        <div class="topbar">
+          <div>
+            <div id="hearts">❤❤❤❤❤</div>
+            <div id="shield" hidden></div>
+          </div>
+          <div style="text-align: right">
+            <div id="level-name"></div>
+            <div id="weapon"></div>
+            <div id="goal"></div>
+          </div>
+        </div>
+        <div id="banner" hidden></div>
+        <div id="tip"></div>
+      </div>
+      <div id="touch" hidden>
+        <div id="stick"><div id="knob"></div></div>
+        <button id="btn-pause" type="button">II</button>
+        <div class="btns">
+          <button id="btn-swap" type="button">SWAP</button>
+          <button id="btn-jump" type="button">JUMP</button>
+          <button id="btn-atk" type="button">ATK</button>
+        </div>
+      </div>
+      <div id="pause-screen" hidden>
+        <h1>Paused</h1>
+        <button id="btn-resume" type="button">Resume</button>
+        <button id="btn-select" class="ghost" type="button">Chapters</button>
+      </div>
+      <div id="end-card" hidden>
+        <h1 id="end-title"></h1>
+        <p id="end-body"></p>
+        <button id="overlay-ok" type="button">OK</button>
+      </div>
+      <div id="loading" hidden>Lighting the stage…</div>
+    </div>
+    <div id="rotate">
+      <h1>Turn your phone sideways</h1>
+      <p>Angely's World plays in landscape.</p>
+    </div>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

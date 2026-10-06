@@ -1,14 +1,17 @@
 # Angely's World
 
-A mobile-first 2.5D side-scrolling platformer built with Phaser 3, TypeScript and Vite. The installable Android file is `Angelys-World.apk` in the root of this repo (landscape). Copy it to a phone and allow installs from unknown sources.
+A mobile-first 2.5D side-scrolling platformer. The original Phaser 3 build is `Angelys-World.apk` (`com.angelysworld.game`). A second Android app, `Angelys-World-Parlyn.apk` (`com.angelysworld.parlyn`), runs the same chapters on a Parlyn Engine 2.5D runtime (Three.js play renderer, sun, haze, billboards). Install both; the Parlyn APK does **not** replace the Phaser one.
 
 ## Run it
 
 ```bash
-npm run setup      # required once: fresh npm ci + Gradle download (do not copy node_modules)
-npm run dev        # http://localhost:41731 (also reachable on your LAN for phone testing)
-npm run build      # production build in dist/
-npm run apk        # debug APK for sideloading (needs Android Studio / Android SDK)
+npm run setup         # required once: fresh npm ci + Gradle download (do not copy node_modules)
+npm run dev           # Phaser build — http://localhost:41731
+npm run dev:parlyn    # Parlyn Engine build — http://localhost:41741
+npm run build         # Phaser production build in dist/
+npm run build:parlyn  # Parlyn production build in parlyn-dist/
+npm run apk           # Phaser debug APK (does not touch the Parlyn APK)
+npm run apk:parlyn    # Parlyn debug APK → Angelys-World-Parlyn.apk (does not touch Angelys-World.apk)
 ```
 
 Do **not** copy `node_modules` from another computer or from a zip. Vite 8 uses Rolldown, and that package needs a native binding for *this* OS (`@rolldown/binding-linux-x64-gnu`, `binding-win32-x64-msvc`, `binding-darwin-arm64`, …). A copied folder is almost always missing that file. `npm run setup` deletes `node_modules` and runs `npm ci` so npm installs the right binding.

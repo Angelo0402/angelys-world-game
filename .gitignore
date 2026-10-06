@@ -10,6 +10,7 @@ lerna-debug.log*
 
 node_modules
 dist
+parlyn-dist
 dist-ssr
 *.local
 
@@ -33,4 +34,10 @@ android/**/build/
 android/local.properties
 android/captures/
 android/.idea/
+android-parlyn/.gradle/
+android-parlyn/**/build/
+android-parlyn/local.properties
+android-parlyn/captures/
+android-parlyn/.idea/
+android-parlyn/app/src/main/assets/public/
 .gradle-home/
