@@ -292,7 +292,8 @@ export class GameScene extends Phaser.Scene {
         frequency: 4200 / amb.count,
       })
       .setDepth(-40);
-    this.look = new DioramaLook(this, this.far, this.chapter);
+        // DioramaLook disabled: it was causing a black horizontal bar across the screen.
+    // this.look = new DioramaLook(this, this.far, this.chapter);
   }
 
   /** Keeps screen-fixed layers in world space so they follow the zoomed camera exactly. */
