@@ -133,7 +133,7 @@ export class TitleScene extends Phaser.Scene {
     const CH = 200;
     const GAP = 16;
     const list = this.add.container(GAME_W / 2, LIST_TOP);
-    const maskG = this.add.graphics().fillRect(0, LIST_TOP, GAME_W, LIST_H).setVisible(false);
+    const maskG = this.make.graphics().fillRect(0, LIST_TOP, GAME_W, LIST_H);
     list.setMask(maskG.createGeometryMask());
     let y = CH / 2;
     ids.forEach((id) => {
@@ -155,7 +155,7 @@ export class TitleScene extends Phaser.Scene {
       if (locked) img.setTint(0x333344);
       const thumbFrame = this.add.graphics();
       thumbFrame.lineStyle(3, locked ? 0x5a5470 : gold, 0.9).strokeRoundedRect(tx - TW / 2, -TH / 2, TW, TH, 12);
-      card.add([img, thumbFrame]);
+      card.add([frame, img, thumbFrame]);
       if (locked) {
         const lock = this.add.graphics();
         drawLock(lock, tx, 0, 1.1);
