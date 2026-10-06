@@ -6,7 +6,7 @@ import { MAX_HEARTS, WEAPON_ORDER, type WeaponId } from "../config";
 import type { FrameInput } from "../input/controls";
 import type { GameScene } from "../scenes/GameScene";
 
-const SPEED = 280;
+const SPEED = 350;
 export const PUSH_SPEED = 140;
 const SWIM_SPEED = 230;
 const SWIM_STROKE = 430;
@@ -223,7 +223,7 @@ export class Player {
         return;
       }
       const canJump = time - this.lastGrounded < COYOTE_MS;
-      if (time - this.jumpBufferedAt < BUFFER_MS && canJump && body.velocity.y >= -10) {
+      if (time - this.jumpBufferedAt < BUFFER_MS && canJump) {
         body.setVelocityY(-JUMP_V);
         this.jumpBufferedAt = -1000;
         this.lastGrounded = -1000;
