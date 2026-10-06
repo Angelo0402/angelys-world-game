@@ -342,6 +342,55 @@ export async function angeloCutscene(scene: GameScene, arena: { x0: number; x1: 
   await scene.wait(400);
 }
 
+/** Shared hug: hide both actors, play the hug sheet, float hearts, then restore them. */
+export async function reunionHug(scene: GameScene, angelo: Phaser.GameObjects.Sprite) {
+  const player = scene.player;
+  const tweens = scene.tweens;
+  const tween = (cfg: Tween) => new Promise<void>((res) => tweens.add({ ...cfg, onComplete: () => res() }));
+  const pose = (anim: string) => angelo.play(`angelo:${anim}`, true);
+  angelo.setFlipX(angelo.x > player.x);
+  player.facing = angelo.x > player.x ? 1 : -1;
+  pose("run");
+  const meet = player.x + (angelo.x > player.x ? HUG_DX * 2 : -HUG_DX * 2);
+  await tween({ targets: angelo, x: meet, duration: Math.max(280, Math.abs(angelo.x - meet) * 1.8) });
+  angelo.setFlipX(angelo.x > player.x);
+  player.facing = angelo.x > player.x ? 1 : -1;
+  await scene.wait(180);
+  const hug = scene.add.sprite((player.x + angelo.x) / 2, GROUND_Y + 4, "angelo_hug").setDepth(59).setScale(angelo.scale);
+  applyOrigin(hug, "angelo_hug");
+  angelo.setVisible(false);
+  player.sprite.setVisible(false);
+  hug.play("angelo_hug:open");
+  await scene.wait(500);
+  hug.play("angelo_hug:kneel");
+  await scene.wait(400);
+  hug.play("angelo_hug:hug");
+  Audio.sfx("heart_pickup");
+  const hearts = scene.add
+    .particles(hug.x, GROUND_Y - 100, "heart", {
+      frame: 0,
+      x: { min: -55, max: 55 },
+      speedY: { min: -110, max: -55 },
+      speedX: { min: -30, max: 30 },
+      scale: { start: 16 / SPRITES.heart.frameHeight, end: 32 / SPRITES.heart.frameHeight },
+      alpha: { start: 1, end: 0 },
+      rotate: { min: -24, max: 24 },
+      lifespan: 1700,
+      frequency: 120,
+    })
+    .setDepth(60);
+  await scene.wait(3200);
+  hearts.stop();
+  hug.play("angelo_hug:pat");
+  await scene.wait(1100);
+  hug.destroy();
+  player.sprite.setVisible(true);
+  angelo.setVisible(true);
+  pose("wave");
+  await scene.wait(700);
+  scene.time.delayedCall(1400, () => hearts.destroy());
+}
+
 /** After the dune worm falls. Angelo praises Angely, hugs her, and leads her on. */
 export async function angeloPraise(scene: GameScene, arena: { x0: number; x1: number }) {
   const cam = scene.cameras.main;

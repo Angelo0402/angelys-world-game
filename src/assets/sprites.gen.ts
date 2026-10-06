@@ -2715,136 +2715,136 @@ export const SPRITES = {
   },
   "crystalveil": {
     "file": "assets/runtime/crystalveil.webp",
-    "frameWidth": 337,
-    "frameHeight": 267,
-    "originX": 0.4854,
-    "originY": 0.9146,
-    "bodyHeight": 241,
+    "frameWidth": 353,
+    "frameHeight": 255,
+    "originX": 0.5269,
+    "originY": 0.9618,
+    "bodyHeight": 242,
     "anims": {
       "idle": {
         "start": 0,
         "end": 9,
         "fps": 8,
         "repeat": -1,
-        "h": 219
+        "h": 213
       },
       "walk": {
         "start": 10,
         "end": 19,
         "fps": 10,
         "repeat": -1,
-        "h": 198
+        "h": 192
       },
       "claw": {
         "start": 20,
-        "end": 23,
-        "fps": 12,
-        "repeat": 0,
-        "h": 211
-      },
-      "slam": {
-        "start": 24,
-        "end": 29,
+        "end": 24,
         "fps": 11,
         "repeat": 0,
-        "h": 195
+        "h": 204
+      },
+      "slam": {
+        "start": 25,
+        "end": 29,
+        "fps": 10,
+        "repeat": 0,
+        "h": 192
       },
       "summon": {
         "start": 30,
         "end": 35,
         "fps": 10,
         "repeat": 0,
-        "h": 246
+        "h": 217
       },
       "shoot": {
         "start": 36,
-        "end": 37,
+        "end": 38,
         "fps": 8,
         "repeat": 0,
-        "h": 225
+        "h": 198
       },
       "charge": {
-        "start": 38,
-        "end": 38,
+        "start": 39,
+        "end": 39,
         "fps": 1,
         "repeat": -1,
         "h": 204
       },
       "erupt": {
-        "start": 39,
-        "end": 40,
+        "start": 40,
+        "end": 41,
         "fps": 6,
         "repeat": 0,
-        "h": 205
+        "h": 199
       },
       "hurt": {
-        "start": 41,
-        "end": 42,
+        "start": 42,
+        "end": 43,
         "fps": 10,
         "repeat": 0,
-        "h": 174
+        "h": 172
       },
       "stagger": {
-        "start": 43,
-        "end": 44,
+        "start": 44,
+        "end": 45,
         "fps": 5,
         "repeat": 0,
-        "h": 181
+        "h": 196
       },
       "enrage": {
-        "start": 45,
-        "end": 46,
+        "start": 46,
+        "end": 47,
         "fps": 6,
         "repeat": -1,
-        "h": 204
+        "h": 196
       },
       "dead": {
-        "start": 47,
-        "end": 51,
+        "start": 48,
+        "end": 52,
         "fps": 6,
         "repeat": 0,
-        "h": 153
+        "h": 141
       }
     }
   },
   "crystalveil_beam": {
     "file": "assets/runtime/crystalveil_beam.webp",
-    "frameWidth": 738,
-    "frameHeight": 225,
-    "originX": 0.3173,
-    "originY": 0.96,
-    "bodyHeight": 213,
+    "frameWidth": 729,
+    "frameHeight": 213,
+    "originX": 0.2695,
+    "originY": 0.9718,
+    "bodyHeight": 204,
     "anims": {
       "beam": {
         "start": 0,
         "end": 1,
         "fps": 10,
         "repeat": -1,
-        "h": 214
+        "h": 204
       }
     }
   },
   "crystalveil_fx": {
     "file": "assets/runtime/crystalveil_fx.webp",
-    "frameWidth": 237,
-    "frameHeight": 239,
-    "originX": 0.4961,
-    "originY": 0.959,
-    "bodyHeight": 226,
+    "frameWidth": 231,
+    "frameHeight": 174,
+    "originX": 0.4935,
+    "originY": 0.9612,
+    "bodyHeight": 164,
     "anims": {
       "spikes": {
         "start": 0,
         "end": 0,
         "fps": 1,
         "repeat": 0,
-        "h": 195
+        "h": 150
       },
       "ring": {
         "start": 1,
         "end": 1,
         "fps": 1,
         "repeat": 0,
-        "h": 228
+        "h": 99
       }
     }
   },
@@ -2927,43 +2927,29 @@ export const SPRITES = {
   "angelo_cage": {
     "file": "assets/runtime/angelo_cage.webp",
     "frameWidth": 129,
-    "frameHeight": 290,
+    "frameHeight": 289,
     "originX": 0.4922,
-    "originY": 0.9724,
+    "originY": 0.9758,
     "bodyHeight": 279,
     "anims": {
       "idle": {
         "start": 0,
-        "end": 9,
+        "end": 5,
         "fps": 6,
         "repeat": -1,
         "h": 140
       },
-      "look": {
-        "start": 10,
-        "end": 19,
-        "fps": 7,
-        "repeat": -1,
-        "h": 141
-      },
       "grip": {
-        "start": 20,
-        "end": 29,
-        "fps": 8,
+        "start": 6,
+        "end": 11,
+        "fps": 7,
         "repeat": -1,
         "h": 282
       },
-      "shake": {
-        "start": 30,
-        "end": 39,
-        "fps": 10,
-        "repeat": -1,
-        "h": 144
-      },
       "cheer": {
-        "start": 40,
-        "end": 45,
-        "fps": 7,
+        "start": 12,
+        "end": 15,
+        "fps": 6,
         "repeat": -1,
         "h": 133
       }

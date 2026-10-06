@@ -91,13 +91,13 @@ export class CrystalVeilBoss {
     this.sprite.setFlipX(this.dir < 0);
     const adx = Math.abs(dx);
     const speed = this.phase === 3 ? 118 : this.phase === 2 ? 92 : 68;
-    if (this.state === "walk" && !this.actionLock) {
+      if (this.state === "walk" && !this.actionLock) {
       const minX = this.arena.x0 + 110;
       const maxX = this.arena.x1 - 110;
       if (adx > 120) {
         this.x = Phaser.Math.Clamp(this.x + this.dir * speed * (delta / 1000), minX, maxX);
-        this.sprite.play("crystalveil:walk", true);
-      } else this.sprite.play("crystalveil:idle", true);
+        if (this.sprite.anims.currentAnim?.key !== "crystalveil:walk") this.sprite.play("crystalveil:walk", true);
+      } else if (this.sprite.anims.currentAnim?.key !== "crystalveil:idle") this.sprite.play("crystalveil:idle", true);
       if (adx < 160 && time > this.until) this.startClaw(time);
       else if (adx < 240 && time > this.until + 200 && Math.random() < 0.012 * this.phase) this.startSlam(time);
       else if (adx > 210 && time > this.nextShot) this.pickRanged(time, adx);

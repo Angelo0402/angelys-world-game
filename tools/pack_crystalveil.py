@@ -50,29 +50,34 @@ def upscale(a: np.ndarray, k: float) -> np.ndarray:
     return np.array(im.convert("RGBA"))
 
 
-def cut_row(src: np.ndarray, y0: int, y1: int, bounds: list[int], win: int = 14):
-    band = src[y0:y1]
-    alpha = band[..., 3]
-    xs = [bounds[0]] + [seam(alpha, b, win) for b in bounds[1:-1]] + [bounds[-1]]
-    frames = []
-    for i in range(len(xs) - 1):
-        a = band[:, xs[i]:xs[i + 1]].copy()
-        feather(a, i > 0, i < len(xs) - 2)
-        frames.append({"img": a, "x0": xs[i], "cx": (bounds[i] + bounds[i + 1]) / 2 - xs[i]})
-    return frames
+def largest_blob(alpha: np.ndarray) -> np.ndarray:
+    """Keep the main body in a cell, plus sparkles that actually touch it."""
+    from scipy import ndimage as ndi
+
+    m = alpha > 55
+    labels, n = ndi.label(m)
+    if n == 0:
+        return m
+    sizes = ndi.sum(m, labels, range(1, n + 1))
+    keep = labels == (int(np.argmax(sizes)) + 1)
+    keep = ndi.binary_dilation(keep, iterations=4) & m
+    return keep
 
 
-def dark_center(a: np.ndarray) -> float | None:
-    """The boss body is near-black; its crystals and effects are bright."""
-    body = (a[..., 3] > 200) & (a[..., :3].max(axis=2) < 90)
-    cols = body.sum(axis=0)
-    if cols.sum() < 30:
+def cell_frame(band: np.ndarray, x0: int, x1: int) -> dict | None:
+    a = band[:, x0:x1].copy()
+    feather(a, True, True, 5)
+    keep = largest_blob(a[..., 3])
+    if keep.sum() < 80:
         return None
-    return float((cols * np.arange(len(cols))).sum() / cols.sum())
+    a[..., 3] = np.where(keep, a[..., 3], 0)
+    ys, xs = np.nonzero(keep)
+    foot = ys.max() - max(3, int((ys.max() - ys.min()) * 0.18))
+    feet = xs[ys >= foot]
+    return {"img": a, "ax": float(np.median(feet)), "ay": float(ys.max())}
 
 
 def finish(f: dict, k: float) -> dict:
-    """Trim to ink, upscale, and express the anchor in the trimmed image."""
     a = f["img"]
     ys, xs = np.nonzero(a[..., 3] > 6)
     x0, x1, y0, y1 = xs.min(), xs.max() + 1, ys.min(), ys.max() + 1
@@ -84,21 +89,22 @@ def boss_frames():
     src = rgba(f"{SRC}/boss.png")
     rows = []
     for r, (y0, y1) in enumerate(BOSS_ROWS):
-        bounds = BOSS_ROW4 if r == 4 else [round(819 * i / 10) for i in range(11)]
-        fr = cut_row(src, y0, y1, bounds, 18 if r == 4 else 14)
-        # One baseline per row: the frames of a row stand on the same floor.
-        bottoms = [int(np.nonzero((f["img"][..., 3] > 120).any(axis=1))[0].max()) for f in fr]
-        base = float(np.percentile(bottoms, 80))
-        if r == 4:
-            for f in fr:
-                f["ax"] = dark_center(f["img"]) or f["img"].shape[1] / 2
-        else:
-            offs = [d - f["cx"] for f in fr if (d := dark_center(f["img"])) is not None]
-            off = float(np.median(offs)) if offs else 0.0
-            for f in fr:
-                f["ax"] = f["cx"] + off
+        bounds = BOSS_ROW4 if r == 4 else [round(src.shape[1] * i / 10) for i in range(11)]
+        band = src[y0:y1]
+        fr = []
+        for i in range(len(bounds) - 1):
+            f = cell_frame(band, bounds[i], bounds[i + 1])
+            if f:
+                fr.append(f)
+        if not fr:
+            continue
+        # Pin every pose in the row to the same floor so the body doesn't hop.
+        base = float(np.percentile([f["ay"] for f in fr], 75))
+        hips = float(np.median([f["ax"] for f in fr]))
         for f in fr:
             f["ay"] = base
+            # Don't force a shared x — strides need to travel — but clamp wild glow offsets.
+            f["ax"] = float(np.clip(f["ax"], hips - 18, hips + 18))
         rows.append([finish(f, BOSS_K) for f in fr])
     return rows
 
@@ -174,23 +180,26 @@ def pack(name: str, anims: dict[str, tuple[list[dict], int, int]]) -> dict:
 
 def build() -> dict:
     b = boss_frames()
+    for i, row in enumerate(b):
+        print(f"boss row {i}: {len(row)}")
     r0, r1, r2, r3, r4, r5 = b
+    take = lambda row, a, b: row[a:min(b, len(row))] or row[:1]
     boss = pack("crystalveil", {
-        "idle": (r0, 8, -1),
-        "walk": (r1, 10, -1),
-        "claw": (r2[0:4], 12, 0),
-        "slam": (r2[4:10], 11, 0),
-        "summon": (r3[0:6], 10, 0),
-        "shoot": ([r3[6], r3[8]], 8, 0),
-        "charge": ([r4[0]], 1, -1),
-        "erupt": (r4[3:5], 6, 0),
-        "hurt": (r5[0:2], 10, 0),
-        "stagger": ([r5[2], r5[5]], 5, 0),
-        "enrage": (r5[3:5], 6, -1),
-        "dead": (r5[5:10], 6, 0),
+        "idle": (take(r0, 0, 10), 8, -1),
+        "walk": (take(r1, 0, 10), 10, -1),
+        "claw": (take(r2, 0, 5), 11, 0),
+        "slam": (take(r2, 5, 10), 10, 0),
+        "summon": (take(r3, 0, 6), 10, 0),
+        "shoot": (take(r3, 6, 9), 8, 0),
+        "charge": (take(r4, 0, 1), 1, -1),
+        "erupt": (take(r4, 3, 5) if len(r4) > 4 else take(r4, 0, 1), 6, 0),
+        "hurt": (take(r5, 0, 2), 10, 0),
+        "stagger": (take(r5, 2, 4), 5, 0),
+        "enrage": (take(r5, 3, 5), 6, -1),
+        "dead": (take(r5, 5, 10), 6, 0),
     })
-    beam = pack("crystalveil_beam", {"beam": (r4[1:3], 10, -1)})
-    fx = pack("crystalveil_fx", {"spikes": ([r4[5]], 1, 0), "ring": ([r3[9]], 1, 0)})
+    beam = pack("crystalveil_beam", {"beam": (take(r4, 1, 3), 10, -1)})
+    fx = pack("crystalveil_fx", {"spikes": (take(r4, 5, 6), 1, 0), "ring": (take(r3, 9, 10), 1, 0)})
 
     s = grid_frames(f"{SRC}/shot.png", "center")
     shot = pack("crystal_shot", {"form": (s[0], 14, 0), "fly": (s[1] + s[2], 16, -1), "impact": (s[3], 18, 0)})
@@ -205,11 +214,9 @@ def build() -> dict:
     })
     c = grid_frames(f"{SRC}/cage.png", "feet")
     cage = pack("angelo_cage", {
-        "idle": (c[0], 6, -1),
-        "look": (c[1], 7, -1),
-        "grip": (c[2], 8, -1),
-        "shake": (c[3], 10, -1),
-        "cheer": (c[7][:6] if len(c) > 7 else c[0], 7, -1),
+        "idle": (c[0][:6], 6, -1),
+        "grip": (c[2][:6] if len(c) > 2 else c[0][:6], 7, -1),
+        "cheer": (c[7][:4] if len(c) > 7 else c[0][:4], 6, -1),
     })
     return {"crystalveil": boss, "crystalveil_beam": beam, "crystalveil_fx": fx, "crystal_shot": shot, "angelo_cell": angelo, "angelo_cage": cage}
 

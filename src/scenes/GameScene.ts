@@ -13,12 +13,11 @@ import { Player } from "../entities/Player";
 import { KeyboardInput, NO_INPUT, resetTouch, touchState, type FrameInput } from "../input/controls";
 import { Gamepad } from "../input/gamepad";
 import { addWeapon, loadSave, unlockLevel, updateSave } from "../save";
-import { angeloCutscene, angeloPraise } from "../story/angeloScene";
+import { angeloCutscene, angeloPraise, reunionHug, Rift } from "../story/angeloScene";
 import { CageAngelo } from "../entities/CageAngelo";
 import { CrystalVeilBoss } from "../entities/CrystalVeilBoss";
 import { Sandworm } from "../entities/Sandworm";
 import { VEIL_DEFEAT, VEIL_FAREWELL, VEIL_INTRO, VEIL_NAME, VEIL_PHASE2, VEIL_PHASE3, VEIL_RESCUE } from "../story/crystalveil";
-import { Rift } from "../story/angeloScene";
 import { WORM_INTRO, WORM_NAME } from "../story/worm";
 import { UMBRA_DEFEAT, UMBRA_INTRO, UMBRA_PHASE2, type DialogueLine } from "../story/umbra";
 import { useTouchUi } from "../ui/screen";
@@ -1296,11 +1295,12 @@ export class GameScene extends Phaser.Scene {
     this.veilState = "rescue";
     const angelo = cage ? await cage.release() : undefined;
     if (angelo) {
-      this.player.facing = angelo.x > this.player.x ? 1 : -1;
-      angelo.setFlipX(angelo.x > this.player.x);
-      angelo.play("angelo_cell:cheer", true);
-    }
-    await this.say(VEIL_RESCUE);
+      this.scriptX = angelo.x - 70;
+      await this.wait(500);
+      this.scriptX = null;
+      await this.say(VEIL_RESCUE);
+      await reunionHug(this, angelo);
+    } else await this.say(VEIL_RESCUE);
     this.veilState = "angelo_exit";
     const riftX = (this.level.arena!.x0 + this.level.arena!.x1) / 2 - 220;
     const rift = new Rift(this, riftX);
@@ -1309,7 +1309,7 @@ export class GameScene extends Phaser.Scene {
     await this.say(VEIL_FAREWELL);
     if (angelo) {
       angelo.setFlipX(rift.x < angelo.x);
-      angelo.play("angelo_cell:walk", true);
+      angelo.play("angelo:run", true);
       await new Promise<void>((res) => this.tweens.add({ targets: angelo, x: rift.x, duration: Math.max(400, Math.abs(angelo.x - rift.x) * 2.2), onComplete: () => res() }));
       rift.surge();
       Audio.sfx("portal_enter");
@@ -1401,7 +1401,7 @@ export class GameScene extends Phaser.Scene {
     this.registry.set("boss", { name, hp, max });
     this.cameras.main.shake(90, 0.005);
     this.bossDamage += dmg;
-    if (this.bossDamage >= 7 && hp > 0) {
+    if (this.bossDamage >= 7 && hp > 0 && this.info.chapter !== 11) {
       this.bossDamage = 0;
       const a = this.level.arena!;
       const h = this.addHeart(Phaser.Math.Between(a.x0 + 200, a.x1 - 200), GROUND_Y - 40);
