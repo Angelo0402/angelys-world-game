@@ -376,6 +376,9 @@ def main():
     if new_chapter11:
         from build_chapter11 import build as build_chapter11
         build_chapter11()
+    if os.path.exists("art/source/hud/generation.json"):
+        from build_hud import build as build_hud
+        build_hud()
     print("packed stargem + starshield")
 
 

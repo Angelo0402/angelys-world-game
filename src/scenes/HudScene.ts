@@ -12,23 +12,15 @@ import { useTouchUi } from "../ui/screen";
 import type { DialogueLine } from "../story/umbra";
 import { drawLock } from "./TitleScene";
 import { fitCamera } from "../render";
+import { ensureHudArt, hudDisc, WEAPON_LABELS } from "../ui/gameHudArt";
 
-const JOY_R = 60;
-const KNOB_R = 22;
+const JOY_R = 74;
+const KNOB_R = 33;
 const DEAD_ZONE = 0.08;
-const JOY_HOME = { x: 112, y: GAME_H - 104 };
-const JUMP = { x: GAME_W - 96, y: GAME_H - 108, r: 68 };
-const ATTACK = { x: GAME_W - 228, y: GAME_H - 96, r: 50 };
-const SWAP = { x: GAME_W - 168, y: GAME_H - 198, r: 32 };
-const WEAPON_STYLE: Record<WeaponId, { label: string; color: number }> = {
-  sword: { label: "", color: 0x3ecbff },
-  bow: { label: "", color: 0x3ecbff },
-  hammer: { label: "", color: 0x3ecbff },
-  boomerang: { label: "", color: 0x3ecbff },
-  wand: { label: "", color: 0x3ecbff },
-  cog: { label: "", color: 0x3ecbff },
-  ray: { label: "", color: 0x3ecbff },
-};
+const JOY_HOME = { x: 140, y: GAME_H - 126 };
+const JUMP = { x: GAME_W - 104, y: GAME_H - 108, r: 68 };
+const ATTACK = { x: GAME_W - 238, y: GAME_H - 82, r: 50 };
+const SWAP = { x: GAME_W - 202, y: GAME_H - 180, r: 36 };
 
 interface GoalState {
   kind: "kills" | "gems" | "reach" | "boss";
@@ -40,7 +32,7 @@ export class HudScene extends Phaser.Scene {
   private levelIndex = 0;
   private hearts: Phaser.GameObjects.Sprite[] = [];
   private shieldText!: Phaser.GameObjects.Text;
-  private gemIcon?: Phaser.GameObjects.Sprite;
+  private gemIcon!: Phaser.GameObjects.Image;
   private killPanel!: Phaser.GameObjects.Container;
   private killText!: Phaser.GameObjects.Text;
   private lockIcon!: Phaser.GameObjects.Graphics;
@@ -69,7 +61,6 @@ export class HudScene extends Phaser.Scene {
   private attackId = -1;
   private showTouch = false;
   private lowPulse?: Phaser.Tweens.Tween;
-  private hpFill!: Phaser.GameObjects.Rectangle;
 
   constructor() {
     super("Hud");
@@ -86,7 +77,7 @@ export class HudScene extends Phaser.Scene {
     this.lowPulse = undefined;
     this.input.addPointer(3);
     this.showTouch = useTouchUi(this) && !Gamepad.connected;
-    ensureSwordIcon(this);
+    ensureHudArt(this);
 
     this.buildTopBar();
     this.buildBossBar();
@@ -150,29 +141,19 @@ export class HudScene extends Phaser.Scene {
   // ---------------------------------------------------------------- top bar
 
   private buildTopBar() {
-    const panel = this.add.graphics();
-    panel.fillStyle(0x14082a, 0.62).fillRoundedRect(14, 10, 292, 62, 22);
-    panel.lineStyle(3, 0x7a4dff, 0.85).strokeRoundedRect(14, 10, 292, 62, 22);
-    const face = this.add.image(46, 41, "portrait_angely").setDisplaySize(46, 46);
-    const ring = this.add.graphics();
-    ring.lineStyle(3, 0xff7ad9, 1).strokeCircle(46, 41, 25);
+    this.add.image(129, 42, "hud_hearts_panel").setDisplaySize(222, 52);
     for (let i = 0; i < MAX_HEARTS; i++) {
-      const h = this.add.sprite(86 + i * 28, 30, "heart", SPRITES.heart.anims.glow.start);
-      h.setScale(scaleForHeight("heart", 22));
+      const h = this.add.sprite(46 + i * 42, 44, "heart", SPRITES.heart.anims.glow.start);
+      h.setScale(scaleForHeight("heart", 30));
       applyOrigin(h, "heart");
       this.hearts.push(h);
     }
-    this.add.rectangle(86, 52, 150, 8, 0x2a1648).setOrigin(0, 0.5);
-    this.hpFill = this.add.rectangle(86, 52, 150, 8, 0xff4d8d).setOrigin(0, 0.5);
     this.shieldText = this.add
-      .text(250, 52, "", { fontFamily: FONT, fontSize: "13px", fontStyle: "bold", color: "#fff27a", stroke: "#2a1640", strokeThickness: 4 })
+      .text(254, 44, "", { fontFamily: FONT, fontSize: "15px", fontStyle: "bold", color: "#fff27a", stroke: "#2a1640", strokeThickness: 4 })
       .setOrigin(0, 0.5)
       .setVisible(false);
-    void face;
-    void ring;
 
-    const kp = this.add.graphics();
-    kp.fillStyle(0x1b0f2e, 0.55).fillRoundedRect(GAME_W / 2 - 150, 12, 300, 54, 18);
+    const kp = this.add.image(GAME_W / 2, 39, "hud_goal_panel").setDisplaySize(300, 54);
     this.killText = this.add
       .text(GAME_W / 2 + 18, 39, "", { fontFamily: FONT, fontSize: "26px", fontStyle: "bold", color: "#fff4d6", stroke: "#2a1640", strokeThickness: 5 })
       .setOrigin(0.5);
@@ -182,13 +163,11 @@ export class HudScene extends Phaser.Scene {
         fontFamily: FONT, fontSize: "14px", fontStyle: "bold", color: "#e8dcff", stroke: "#1b0f2e", strokeThickness: 4,
       })
       .setOrigin(0.5, 0);
-    this.killPanel = this.add.container(0, 0, [kp, this.killText, this.lockIcon, lvl]);
+    this.gemIcon = this.add.image(GAME_W / 2 - 122, 39, "hud_gem").setDisplaySize(44, 54).setVisible(false);
+    this.killPanel = this.add.container(0, 0, [kp, this.killText, this.lockIcon, this.gemIcon, lvl]);
 
     const pause = this.add.container(GAME_W - 46, 40);
-    const pg = this.add.graphics();
-    pg.fillStyle(0x1b0f2e, 0.6).fillCircle(0, 0, 28).lineStyle(3, 0xffd36b, 1).strokeCircle(0, 0, 28);
-    pg.fillStyle(0xfff4d6, 1).fillRoundedRect(-10, -12, 7, 24, 2).fillRoundedRect(3, -12, 7, 24, 2);
-    pause.add(pg).setSize(64, 64).setInteractive({ useHandCursor: true });
+    pause.add(hudDisc(this, "hud_pause", 28)).setSize(64, 64).setInteractive({ useHandCursor: true });
     pause.on("pointerup", () => {
       if (this.overlay || this.cinema) return;
       Audio.sfx("button");
@@ -196,13 +175,9 @@ export class HudScene extends Phaser.Scene {
     });
 
     const mute = this.add.container(GAME_W - 114, 40);
-    const mg = this.add.graphics();
+    const mg = hudDisc(this, "hud_sound", 24);
     const drawMute = () => {
-      mg.clear();
-      mg.fillStyle(0x1b0f2e, 0.6).fillCircle(0, 0, 24).lineStyle(3, 0xffd36b, 1).strokeCircle(0, 0, 24);
-      mg.fillStyle(0xfff4d6, 1).fillRect(-11, -5, 7, 10).fillTriangle(-6, -5, 4, -13, 4, 13).fillTriangle(-6, 5, 4, -13, 4, 13);
-      if (!Audio.musicOn && !Audio.sfxOn) mg.lineStyle(4, 0xff5a5a, 1).lineBetween(-14, -14, 14, 14);
-      else mg.lineStyle(3, 0xfff4d6, 1).beginPath().arc(6, 0, 9, -0.9, 0.9).strokePath();
+      mg.setTexture(!Audio.musicOn && !Audio.sfxOn ? "hud_sound_off" : "hud_sound");
     };
     drawMute();
     mute.add(mg).setSize(56, 56).setInteractive({ useHandCursor: true });
@@ -217,9 +192,7 @@ export class HudScene extends Phaser.Scene {
 
   private buildBossBar() {
     const w = 520;
-    const g = this.add.graphics();
-    g.fillStyle(0x0d0618, 0.75).fillRoundedRect(GAME_W / 2 - w / 2, 10, w, 64, 18);
-    g.lineStyle(3, 0xb57cff, 1).strokeRoundedRect(GAME_W / 2 - w / 2, 10, w, 64, 18);
+    const g = this.add.image(GAME_W / 2, 42, "hud_boss_panel").setDisplaySize(w, 64);
     const name = (this.bossName = this.add
       .text(GAME_W / 2, 16, "", { fontFamily: FONT, fontSize: "18px", fontStyle: "bold", color: "#e0b8ff", stroke: "#12081f", strokeThickness: 5 })
       .setOrigin(0.5, 0));
@@ -250,14 +223,13 @@ export class HudScene extends Phaser.Scene {
   }
 
   private buildWeaponSlot() {
-    const g = this.add.graphics();
-    g.fillStyle(0x14082a, 0.7).fillRoundedRect(-30, -30, 60, 60, 16).lineStyle(3, 0x3ecbff, 1).strokeRoundedRect(-30, -30, 60, 60, 16);
-    this.weaponIcon = this.add.image(0, -2, "icon_sword");
+    const g = hudDisc(this, "hud_weapon_slot", 34);
+    this.weaponIcon = this.add.image(0, -4, "hud_weapon_sword");
     this.weaponKey = this.add
-      .text(30, 30, "", { fontFamily: FONT, fontSize: "14px", fontStyle: "bold", color: "#ffffff", backgroundColor: "#7a5aa8", padding: { x: 5, y: 1 } })
+      .text(29, 29, "", { fontFamily: FONT, fontSize: "14px", fontStyle: "bold", color: "#ffffff", backgroundColor: "#7a5aa8", padding: { x: 5, y: 1 } })
       .setOrigin(1, 1);
-    this.weaponSlot = this.add.container(46, 108, [g, this.weaponIcon, this.weaponKey]).setVisible(false);
-    this.weaponSlot.setSize(68, 68).setInteractive({ useHandCursor: true });
+    this.weaponSlot = this.add.container(52, 120, [g, this.weaponIcon, this.weaponKey]).setVisible(false);
+    this.weaponSlot.setSize(76, 76).setInteractive({ useHandCursor: true });
     this.weaponSlot.on("pointerup", () => {
       if (!this.overlay && !this.cinema) touchState.swapQueued = true;
     });
@@ -268,10 +240,7 @@ export class HudScene extends Phaser.Scene {
     const list = (this.registry.get("weapons") as WeaponId[] | undefined) ?? [];
     this.weaponSlot.setVisible(!!w);
     if (w) {
-      const key = w === "sword" ? "icon_sword" : `weapon_${w}`;
-      this.weaponIcon.setTexture(key, 0);
-      const s = 50 / Math.max(this.weaponIcon.frame.width, this.weaponIcon.frame.height);
-      this.weaponIcon.setScale(s).setAngle(w === "sword" ? 0 : 20);
+      this.weaponIcon.setTexture(`hud_weapon_${w}`).setDisplaySize(52, 52);
       this.weaponKey.setText(list.length > 1 ? (Gamepad.connected ? "Y" : this.showTouch ? "TAP" : "Q") : "").setVisible(list.length > 1);
       this.tweens.add({ targets: this.weaponSlot, scale: { from: 1.25, to: 1 }, duration: 220, ease: "Back.out" });
       this.drawAttackButton(w);
@@ -289,9 +258,8 @@ export class HudScene extends Phaser.Scene {
       h.setData("full", full);
     });
     this.lowPulse?.stop();
-    const base = scaleForHeight("heart", 22);
+    const base = scaleForHeight("heart", 30);
     this.hearts.forEach((h) => h.setScale(base));
-    if (this.hpFill) this.hpFill.width = 150 * (n / MAX_HEARTS);
     if (n === 1) {
       this.lowPulse = this.tweens.add({ targets: this.hearts[0], scale: base * 1.25, duration: 350, yoyo: true, repeat: -1 });
     }
@@ -309,7 +277,7 @@ export class HudScene extends Phaser.Scene {
     const info = LEVELS[this.levelIndex];
     const shown = Math.min(g.have, g.need);
     this.lockIcon.clear();
-    this.gemIcon?.setVisible(false);
+    this.gemIcon.setVisible(false);
     const x = GAME_W / 2 - 122;
     if (g.kind === "reach") {
       this.killText.setText(info.mode === "climb" ? "CLIMB TO THE TOP!" : info.mode === "chase" ? "RUN TO THE PORTAL!" : "REACH THE PORTAL").setFontSize(23);
@@ -323,12 +291,6 @@ export class HudScene extends Phaser.Scene {
     const goal = g.need;
     if (k < goal) {
       if (g.kind === "gems") {
-        if (!this.gemIcon) {
-          this.gemIcon = this.add.sprite(x, 39, "stargem").setDepth(40);
-          this.gemIcon.setScale(scaleForHeight("stargem", 40));
-          applyOrigin(this.gemIcon, "stargem");
-          this.gemIcon.play("stargem:glow");
-        }
         this.gemIcon.setPosition(x, 39).setVisible(true);
       } else drawLock(this.lockIcon, x, 36, 0.55);
     } else {
@@ -345,9 +307,9 @@ export class HudScene extends Phaser.Scene {
     this.touchUi = this.add.container(0, 0).setDepth(80);
     this.joyBase = this.joystick(JOY_HOME.x, JOY_HOME.y);
     this.joyKnob = this.knob(JOY_HOME.x, JOY_HOME.y);
-    this.jumpBtn = this.makeRoundButton(JUMP.x, JUMP.y, JUMP.r, "JUMP", 0xff4d9a, drawJumpIcon, true);
+    this.jumpBtn = this.makeRoundButton(JUMP.x, JUMP.y, JUMP.r, "JUMP", "hud_jump");
     this.attackBtn = this.add.container(ATTACK.x, ATTACK.y);
-    this.swapBtn = this.makeRoundButton(SWAP.x, SWAP.y, SWAP.r, "SWAP", 0xb388ff, drawSwapIcon, false);
+    this.swapBtn = this.makeRoundButton(SWAP.x, SWAP.y, SWAP.r, "SWAP", "hud_swap");
     this.touchUi.add([this.joyBase, this.joyKnob, this.jumpBtn, this.attackBtn, this.swapBtn]);
 
     this.input.on("pointerdown", (p: Phaser.Input.Pointer) => this.onDown(p));
@@ -372,66 +334,41 @@ export class HudScene extends Phaser.Scene {
   }
 
   private drawAttackButton(w: WeaponId) {
-    const st = WEAPON_STYLE[w];
     this.attackBtn.removeAll(true);
-    const inner = this.makeRoundButton(0, 0, ATTACK.r, st.label, st.color, (g) => drawWeaponIcon(g, w), false);
+    const inner = this.makeRoundButton(0, 0, ATTACK.r, WEAPON_LABELS[w], "hud_attack");
+    const icon = this.add.image(0, -10, `hud_weapon_${w}`).setDisplaySize(54, 54);
+    inner.add(icon);
+    // Keep the weapon name above the icon's transparent padding.
+    inner.bringToTop(inner.getAt(1));
     this.attackBtn.add(inner);
   }
 
   private joystick(x: number, y: number) {
     const c = this.add.container(x, y);
-    const g = this.add.graphics();
-    const r = JOY_R;
-    g.lineStyle(8, 0x7ec8ff, 0.95).strokeCircle(0, 0, r);
-    g.lineStyle(3, 0xffffff, 0.45).strokeCircle(0, 0, r - 8);
-    for (const a of [-Math.PI / 2, 0, Math.PI / 2, Math.PI]) {
-      const d = r - 17;
-      const cx = Math.cos(a);
-      const sy = Math.sin(a);
-      const nx = -sy;
-      const ny = cx;
-      g.fillStyle(0xd7eeff, 0.95);
-      g.fillTriangle(cx * (d + 9), sy * (d + 9), cx * (d - 3) + nx * 6, sy * (d - 3) + ny * 6, cx * (d - 3) - nx * 6, sy * (d - 3) - ny * 6);
-    }
-    c.add(g);
+    c.add(hudDisc(this, "hud_joystick", JOY_R));
     return c;
   }
 
   private knob(x: number, y: number) {
     const c = this.add.container(x, y);
-    const g = this.add.graphics();
-    g.fillStyle(0x9eb0c4, 1).fillCircle(2, 3, KNOB_R);
-    g.fillStyle(0xffffff, 1).fillCircle(0, 0, KNOB_R);
-    g.fillStyle(0xffffff, 0.95).fillEllipse(-5, -7, 14, 9);
-    g.lineStyle(2, 0xd7e4f2, 1).strokeCircle(0, 0, KNOB_R);
-    c.add(g);
+    c.add(hudDisc(this, "hud_knob", KNOB_R));
     return c;
   }
 
-  private makeRoundButton(x: number, y: number, r: number, label: string, ring: number, icon: (g: Phaser.GameObjects.Graphics) => void, gold: boolean) {
+  private makeRoundButton(x: number, y: number, r: number, label: string, texture: string) {
     const c = this.add.container(x, y);
-    const g = this.add.graphics();
-    g.fillStyle(0x1a1028, 0.55).fillCircle(0, 0, r);
-    g.lineStyle(gold ? 8 : 5, ring, 1).strokeCircle(0, 0, r - 3);
-    if (gold) g.lineStyle(3, 0xffd0ea, 0.95).strokeCircle(0, 0, r - 14);
-    else g.lineStyle(2, 0xfff6d8, 0.7).strokeCircle(0, 0, r - 9);
-    for (const a of [Math.PI / 4, (3 * Math.PI) / 4, (5 * Math.PI) / 4, (7 * Math.PI) / 4]) {
-      g.fillStyle(ring, 0.95).fillCircle(Math.cos(a) * (r - 3), Math.sin(a) * (r - 3), r > 60 ? 3.2 : 2.2);
-    }
-    const ig = this.add.graphics();
-    ig.setPosition(0, -r * 0.16);
-    icon(ig);
+    const g = hudDisc(this, texture, r);
     const t = this.add
       .text(0, r * 0.46, label, {
         fontFamily: FONT,
-        fontSize: `${Math.max(11, Math.round(r * (label.length > 5 ? 0.24 : 0.28)))}px`,
+        fontSize: `${Math.max(10, Math.round(r * (label.length > 7 ? 0.21 : label.length > 5 ? 0.26 : 0.3)))}px`,
         fontStyle: "bold",
         color: "#fff8e8",
         stroke: "#2a1640",
         strokeThickness: 4,
       })
       .setOrigin(0.5);
-    c.add([g, ig, t]);
+    c.add([g, t]);
     return c;
   }
 
@@ -482,7 +419,7 @@ export class HudScene extends Phaser.Scene {
     const p = this.logical(ptr);
     const dx = p.x - this.joyOrigin.x;
     const dy = p.y - this.joyOrigin.y;
-    const len = Math.min(JOY_R, Math.hypot(dx, dy));
+    const len = Math.min(JOY_R - KNOB_R, Math.hypot(dx, dy));
     const ang = Math.atan2(dy, dx);
     this.joyKnob.setPosition(this.joyOrigin.x + Math.cos(ang) * len, this.joyOrigin.y + Math.sin(ang) * len);
     // Analog: a small push walks, a full push runs. The dead zone only absorbs thumb jitter.
@@ -511,6 +448,9 @@ export class HudScene extends Phaser.Scene {
   private resetJoy() {
     this.joyBase.setPosition(JOY_HOME.x, JOY_HOME.y);
     this.joyKnob.setPosition(JOY_HOME.x, JOY_HOME.y);
+    if (this.jumpId < 0) this.jumpBtn.setScale(1);
+    if (this.attackId < 0) this.attackBtn.setScale(1);
+    this.swapBtn.setScale(1);
   }
 
   // -------------------------------------------------------------- messages
@@ -677,93 +617,4 @@ export class HudScene extends Phaser.Scene {
     this.scene.stop("Game");
     this.scene.start("Title", { select: true });
   }
-}
-
-function drawJumpIcon(g: Phaser.GameObjects.Graphics) {
-  g.fillStyle(0xffe7a3, 1);
-  g.fillTriangle(0, -22, -16, -2, 16, -2);
-  g.fillTriangle(0, -8, -12, 10, 12, 10);
-}
-
-function drawSwapIcon(g: Phaser.GameObjects.Graphics) {
-  g.lineStyle(3.5, 0xfff4d6, 1);
-  g.beginPath();
-  g.arc(0, 0, 11, -0.4, Math.PI * 1.15, false);
-  g.strokePath();
-  g.beginPath();
-  g.arc(0, 0, 11, Math.PI - 0.4, Math.PI * 2.15, false);
-  g.strokePath();
-  g.fillStyle(0xfff4d6, 1);
-  g.fillTriangle(8, -12, 16, -4, 6, -2);
-  g.fillTriangle(-8, 12, -16, 4, -6, 2);
-}
-
-function drawWeaponIcon(g: Phaser.GameObjects.Graphics, w: WeaponId) {
-  const ink = 0xfff6e8;
-  g.fillStyle(ink, 1);
-  g.lineStyle(4, ink, 1);
-  if (w === "ray") {
-    g.fillStyle(0x5ce1e6, 1).fillRoundedRect(-18, -7, 30, 14, 5);
-    g.fillStyle(0xff7ad9, 1).fillCircle(2, -1, 6);
-    g.fillStyle(0x7a4dff, 1).fillRoundedRect(-20, 2, 10, 16, 3);
-    g.fillStyle(0xffd36b, 1).fillRect(12, -4, 10, 8);
-    return;
-  }
-  if (w === "cog") {
-    g.lineStyle(4, 0xffe7a3, 1).strokeCircle(0, 2, 14);
-    g.strokeCircle(0, 2, 6);
-    for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * Math.PI * 2;
-      g.lineBetween(Math.cos(a) * 14, 2 + Math.sin(a) * 14, Math.cos(a) * 20, 2 + Math.sin(a) * 20);
-    }
-    return;
-  }
-  if (w === "bow") {
-    g.beginPath();
-    g.arc(-6, 2, 18, -1.2, 1.2, false);
-    g.strokePath();
-    g.lineBetween(12, -16, 12, 18);
-    g.lineStyle(2, ink, 1).lineBetween(-4, 2, 12, 2);
-    return;
-  }
-  if (w === "hammer") {
-    g.fillStyle(0xffd36b, 1).fillRoundedRect(-18, -18, 36, 14, 3);
-    g.fillStyle(ink, 1).fillRect(-3, -4, 6, 24);
-    return;
-  }
-  if (w === "boomerang") {
-    g.lineStyle(4, 0xbfe6ff, 1);
-    g.beginPath();
-    g.arc(-2, 6, 16, Math.PI * 0.95, Math.PI * 1.85, false);
-    g.strokePath();
-    g.beginPath();
-    g.arc(4, -4, 12, 0.15, Math.PI * 0.95, false);
-    g.strokePath();
-    return;
-  }
-  if (w === "wand") {
-    g.lineStyle(4, 0xffd36b, 1).lineBetween(-8, 16, 12, -16);
-    g.fillStyle(0xfff4d6, 1).fillTriangle(14, -20, 6, -8, 18, -6);
-    return;
-  }
-  g.fillStyle(0xd7f6ff, 1).fillTriangle(0, -22, -7, -8, 7, -8);
-  g.fillRect(-3, -8, 6, 22);
-  g.fillStyle(0xffd36b, 1).fillRect(-14, 6, 28, 6);
-  g.fillStyle(0xc9843a, 1).fillRect(-3, 12, 6, 10);
-}
-
-/** Crystal sword icon for the weapon slot (the sword has no standalone sprite). */
-function ensureSwordIcon(scene: Phaser.Scene) {
-  if (scene.textures.exists("icon_sword")) return;
-  const g = scene.make.graphics({}, false);
-  g.translateCanvas(48, 48);
-  g.rotateCanvas(-Math.PI / 4);
-  g.fillStyle(0x2a1640, 1).fillRect(-9, -42, 18, 62).fillRect(-22, 14, 44, 13).fillRect(-6, 20, 12, 24);
-  g.fillStyle(0x9ff5ff, 1).fillTriangle(0, -44, -7, -32, 7, -32).fillRect(-6, -33, 12, 48);
-  g.fillStyle(0xe6fdff, 1).fillRect(-2, -32, 3, 44);
-  g.fillStyle(0xffc35a, 1).fillRect(-19, 16, 38, 8);
-  g.fillStyle(0x8a5a2b, 1).fillRect(-4, 24, 8, 16);
-  g.fillStyle(0xffc35a, 1).fillCircle(0, 42, 5);
-  g.generateTexture("icon_sword", 96, 96);
-  g.destroy();
 }

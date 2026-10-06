@@ -13,7 +13,7 @@ Runtime assets use fixed transparent cells:
 | Projectile / impacts / beam | 256 x 256 | 12 / 8 / 4 |
 | Background / splash | 1920 x 1080 | 1 each |
 
-Rebuild with Python 3 and Pillow: `python tools/build_chapter11.py`. Validate all 160 runtime frames with `python tools/check_chapter11.py`. The regular sprite build also invokes the chapter packer and bypasses the legacy Crystal Veil cutter.
+Rebuild with Python 3, Pillow, and NumPy: `python tools/build_chapter11.py`. Validate all 160 runtime frames with `python tools/check_chapter11.py`. The regular sprite build also invokes the chapter packer and bypasses the legacy Crystal Veil cutter.
 
 Chapter 11-1 now has a hand-authored route, four enemy types, stepping stones, two checkpoints, and a gated portal. Chapter 11-2 has a three-phase boss with visible attack warnings, cancelable timers and hazards, an independent cage/actor, a full-body reunion, and Angelo's blue-rift exit.
 

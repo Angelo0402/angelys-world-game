@@ -1,8 +1,10 @@
 import Phaser from "phaser";
 import { AUDIO_FILES } from "../audio/manifest";
 import { BACKDROPS, PROPS, SPRITES, type SpriteKey } from "./sprites.gen";
+import { queueHudIcons } from "../ui/gameHudArt";
 
 export function queueAssets(load: Phaser.Loader.LoaderPlugin) {
+  queueHudIcons(load);
   for (const [key, url] of Object.entries(BACKDROPS)) load.image(key, url);
   for (const [key, meta] of Object.entries(SPRITES)) {
     load.spritesheet(key, meta.file, { frameWidth: meta.frameWidth, frameHeight: meta.frameHeight });

@@ -1,0 +1,49 @@
+{
+  "provider": "built-in image_gen",
+  "source": "weapons.png",
+  "prompt": "Create a polished fantasy mobile game UI WEAPON ICON ATLAS, using the supplied screenshot as visual style reference ONLY. Brand new transparent-background image, wide landscape, exactly FOUR columns and TWO rows of equal square cells. Seven independent icons with large transparent gutters, no UI buttons, no words or labels, no outlines of cell borders. Top row LEFT TO RIGHT: (1) elegant crystal SWORD, icy cyan blade and gold hilt, diagonal upward; (2) elegant golden long BOW with purple jewel handle and thin taut string, inspired by the bow in the reference, unmistakably an archery bow; (3) mighty HAMMER, golden head with violet crystal center and short brown handle; (4) turquoise and gold BOOMERANG shaped as a clear angular curved V with two arms. Bottom row LEFT TO RIGHT: (5) magical WAND, gold slender shaft, faceted violet star tip; (6) brass clockwork COG, circular eight-toothed gear with violet glowing central hole; (7) friendly sci-fi RAY GUN, cyan barrel, purple hand grip, gold muzzle and round magenta energy cell; (8) completely EMPTY transparent cell. Each icon centered in its own cell, entirely contained within central55% width and55% height of cell. Plenty of blank transparent space all around; no glow crosses cell borders. Consistent scale and painterly hand-drawn cartoon fantasy rendering, crisp edges, readable downscaled to40px, warmly lit gold trim with restrained pale cream edge highlights, no large black outline. Icon-only artwork, true alpha transparency, absolutely no backdrop, floor, shadows, letters, numbers, UI, phone indicators or watermark.",
+  "layout": {
+    "sword": [
+      60,
+      45,
+      432,
+      440
+    ],
+    "bow": [
+      502,
+      16,
+      853,
+      437
+    ],
+    "hammer": [
+      957,
+      53,
+      1320,
+      431
+    ],
+    "boomerang": [
+      1362,
+      86,
+      1697,
+      451
+    ],
+    "wand": [
+      57,
+      473,
+      413,
+      851
+    ],
+    "cog": [
+      489,
+      499,
+      831,
+      837
+    ],
+    "ray": [
+      916,
+      517,
+      1320,
+      840
+    ]
+  }
+}
