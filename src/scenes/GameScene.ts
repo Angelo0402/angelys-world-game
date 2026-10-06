@@ -7,7 +7,7 @@ import {
   type ChapterDef, type LevelInfo, type WeaponId,
 } from "../config";
 import { Boss, BOSS_NAME, HOVER_Y } from "../entities/Boss";
-import { MoonlitWarden, WARDEN_NAME } from "../entities/MoonlitWarden";
+import { RuinSentinel, SENTINEL_NAME } from "../entities/RuinSentinel";
 import { Enemy, type DamageKind } from "../entities/Enemy";
 import { ENEMY_TYPES, type ProjectileSheet } from "../entities/enemyTypes";
 import { Player } from "../entities/Player";
@@ -61,7 +61,7 @@ export class GameScene extends Phaser.Scene {
   player!: Player;
   enemies: Enemy[] = [];
   kills = 0;
-  boss?: Boss | Sandworm | CrystalVeilBoss | MoonlitWarden;
+  boss?: Boss | Sandworm | CrystalVeilBoss | RuinSentinel;
   veilCage?: CageAngelo;
   veilState: "idle" | "intro" | "fight" | "defeat" | "rescue" | "angelo_exit" | "angely_exit" | "done" = "idle";
   mech!: Mechanics;
@@ -1188,28 +1188,18 @@ export class GameScene extends Phaser.Scene {
     this.cinemaCamera(on, ms);
   }
 
-  private async wardenIntro() {
+  private async sentinelIntro() {
+    // No cutscene - the Sentinel just rises and fights.
     const arena = this.level.arena!;
-    const cam = this.cameras.main;
-    this.cutscene = true;
-    cam.stopFollow();
-    cam.setScroll(0, 0);
-    Audio.stopMusic();
-    this.cinema(true, 700);
     this.mech.addBarrier(arena.x0 - 20);
     this.mech.addBarrier(arena.x1 + 20);
-    await this.wait(600);
     Audio.sfx("boss_roar");
-    cam.shake(800, 0.006);
-    const warden = new MoonlitWarden(this, arena.x1 - 200, arena);
-    (this as any).boss = warden;
-    await this.wait(1200);
-    this.player.facing = 1;
-    this.cinema(false, 500);
-    this.registry.set("boss", { name: WARDEN_NAME, hp: warden.hp, max: warden.maxHp });
-    this.game.events.emit("hud:banner", WARDEN_NAME);
-    warden.begin();
-    this.cutscene = false;
+    this.cameras.main.shake(600, 0.006);
+    const sentinel = new RuinSentinel(this, arena.x1 - 200, arena);
+    (this as any).boss = sentinel;
+    this.registry.set("boss", { name: SENTINEL_NAME, hp: sentinel.hp, max: sentinel.maxHp });
+    this.game.events.emit("hud:banner", SENTINEL_NAME);
+    sentinel.begin();
   }
 
   private async wormIntro() {
@@ -1369,7 +1359,7 @@ export class GameScene extends Phaser.Scene {
 
   private async bossIntro() {
     if (this.info.chapter === 2) {
-      await this.wardenIntro();
+      await this.sentinelIntro();
       return;
     }
     if (this.info.chapter === 8) {
@@ -1434,7 +1424,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   onBossHp(hp: number, max: number, dmg: number) {
-    const name = this.info.chapter === 2 ? WARDEN_NAME : this.info.chapter === 8 ? WORM_NAME : this.info.chapter === 11 ? VEIL_NAME : BOSS_NAME;
+    const name = this.info.chapter === 2 ? SENTINEL_NAME : this.info.chapter === 8 ? WORM_NAME : this.info.chapter === 11 ? VEIL_NAME : BOSS_NAME;
     this.registry.set("boss", { name, hp, max });
     this.cameras.main.shake(90, 0.005);
     this.bossDamage += dmg;
@@ -1463,32 +1453,20 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** Umbra's farewell, or the dune reunion with Angelo. */
-  /** Moonlit Warden's defeat - moonlight fades, path to Volcanic Caves opens. */
+  /** Ruin Sentinel's defeat - no cutscene, portal opens directly. */
   private async wardenOutro() {
-    this.cutscene = true;
     this.registry.set("boss", null);
     for (const e of this.enemies) e.remove();
     this.projectiles.clear(true, true);
     this.hazards.getChildren().forEach((h) => h.getData("wave") && h.destroy());
-    Audio.stopMusic();
-    await this.wait(1500);
-    this.cinema(true, 700);
-    this.player.facing = this.boss!.x > this.player.x ? 1 : -1;
-    await this.wait(500);
-    await this.say([
-      { who: "angely", text: "The moonlight... it's fading away." },
-      { who: "angely", text: "The Warden was guarding something. I can feel it." },
-    ]);
-    this.boss!.vanish();
-    this.cameras.main.flash(700, 200, 220, 255);
     await this.wait(1200);
+    this.boss!.vanish();
+    this.cameras.main.flash(500, 200, 200, 200);
+    await this.wait(800);
     this.portal.appear();
     this.portal.open();
     Audio.sfx("portal_unlock");
-    Audio.music("music_title");
-    this.cinema(false, 600);
     this.game.events.emit("hud:banner", "TO THE VOLCANIC CAVES!");
-    this.cutscene = false;
     this.time.delayedCall(1600, () => this.toast("Step into the portal: your adventure continues!"));
   }
 
