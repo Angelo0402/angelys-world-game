@@ -2715,136 +2715,136 @@ export const SPRITES = {
   },
   "crystalveil": {
     "file": "assets/runtime/crystalveil.webp",
-    "frameWidth": 353,
-    "frameHeight": 255,
-    "originX": 0.5269,
-    "originY": 0.9618,
-    "bodyHeight": 242,
+    "frameWidth": 355,
+    "frameHeight": 298,
+    "originX": 0.4814,
+    "originY": 0.9386,
+    "bodyHeight": 276,
     "anims": {
       "idle": {
         "start": 0,
         "end": 9,
         "fps": 8,
         "repeat": -1,
-        "h": 213
+        "h": 243
       },
       "walk": {
         "start": 10,
         "end": 19,
         "fps": 10,
         "repeat": -1,
-        "h": 192
+        "h": 234
       },
       "claw": {
         "start": 20,
-        "end": 24,
-        "fps": 11,
+        "end": 29,
+        "fps": 12,
         "repeat": 0,
-        "h": 204
+        "h": 231
       },
       "slam": {
-        "start": 25,
-        "end": 29,
+        "start": 30,
+        "end": 34,
         "fps": 10,
         "repeat": 0,
-        "h": 192
+        "h": 220
       },
       "summon": {
-        "start": 30,
-        "end": 35,
+        "start": 35,
+        "end": 39,
         "fps": 10,
         "repeat": 0,
-        "h": 217
+        "h": 235
       },
       "shoot": {
-        "start": 36,
-        "end": 38,
-        "fps": 8,
+        "start": 40,
+        "end": 43,
+        "fps": 9,
         "repeat": 0,
-        "h": 198
+        "h": 236
       },
       "charge": {
-        "start": 39,
-        "end": 39,
-        "fps": 1,
-        "repeat": -1,
-        "h": 204
-      },
-      "erupt": {
-        "start": 40,
-        "end": 41,
-        "fps": 6,
-        "repeat": 0,
-        "h": 199
-      },
-      "hurt": {
-        "start": 42,
-        "end": 43,
-        "fps": 10,
-        "repeat": 0,
-        "h": 172
-      },
-      "stagger": {
         "start": 44,
         "end": 45,
         "fps": 5,
         "repeat": 0,
-        "h": 196
+        "h": 248
       },
-      "enrage": {
+      "erupt": {
         "start": 46,
-        "end": 47,
-        "fps": 6,
-        "repeat": -1,
-        "h": 196
+        "end": 50,
+        "fps": 8,
+        "repeat": 0,
+        "h": 235
       },
-      "dead": {
-        "start": 48,
-        "end": 52,
+      "hurt": {
+        "start": 51,
+        "end": 55,
+        "fps": 10,
+        "repeat": 0,
+        "h": 235
+      },
+      "stagger": {
+        "start": 56,
+        "end": 58,
         "fps": 6,
         "repeat": 0,
-        "h": 141
+        "h": 236
+      },
+      "enrage": {
+        "start": 59,
+        "end": 68,
+        "fps": 8,
+        "repeat": -1,
+        "h": 239
+      },
+      "dead": {
+        "start": 69,
+        "end": 83,
+        "fps": 8,
+        "repeat": 0,
+        "h": 191
       }
     }
   },
   "crystalveil_beam": {
     "file": "assets/runtime/crystalveil_beam.webp",
-    "frameWidth": 729,
-    "frameHeight": 213,
-    "originX": 0.2695,
-    "originY": 0.9718,
-    "bodyHeight": 204,
+    "frameWidth": 280,
+    "frameHeight": 238,
+    "originX": 0.3352,
+    "originY": 0.9838,
+    "bodyHeight": 231,
     "anims": {
       "beam": {
         "start": 0,
         "end": 1,
-        "fps": 10,
+        "fps": 8,
         "repeat": -1,
-        "h": 204
+        "h": 170
       }
     }
   },
   "crystalveil_fx": {
     "file": "assets/runtime/crystalveil_fx.webp",
-    "frameWidth": 231,
-    "frameHeight": 174,
-    "originX": 0.4935,
-    "originY": 0.9612,
-    "bodyHeight": 164,
+    "frameWidth": 280,
+    "frameHeight": 241,
+    "originX": 0.4995,
+    "originY": 0.9773,
+    "bodyHeight": 232,
     "anims": {
       "spikes": {
         "start": 0,
-        "end": 0,
-        "fps": 1,
-        "repeat": 0,
-        "h": 150
-      },
-      "ring": {
-        "start": 1,
         "end": 1,
         "fps": 1,
         "repeat": 0,
-        "h": 99
+        "h": 143
+      },
+      "ring": {
+        "start": 2,
+        "end": 2,
+        "fps": 1,
+        "repeat": 0,
+        "h": 235
       }
     }
   },

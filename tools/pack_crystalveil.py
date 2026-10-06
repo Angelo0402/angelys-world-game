@@ -14,11 +14,13 @@ from pack_pickups import OUT, splice
 SRC = "art/source/crystalveil"
 PAD = 3
 
-# Row bands of the boss sheet (y0, y1) and its 6 rows of frames.
-BOSS_ROWS = [(0, 87), (87, 168), (168, 248), (248, 337), (337, 412), (412, 491)]
-# Row 4 is irregular: charge, two wide beam frames, dome, shell, floor spikes.
-BOSS_ROW4 = [0, 103, 349, 562, 646, 730, 819]
-BOSS_K = 3
+BOSS_K = 1.15
+SHEETS_5 = {
+    "idle": "veil_idle.png",
+    "melee": "veil_melee.png",
+    "cast": "veil_cast.png",
+    "death": "veil_death.png",
+}
 
 
 def rgba(path: str) -> np.ndarray:
@@ -85,28 +87,61 @@ def finish(f: dict, k: float) -> dict:
     return {"img": upscale(a, k), "ax": (f["ax"] - x0) * k, "ay": (f["ay"] - y0) * k}
 
 
-def boss_frames():
-    src = rgba(f"{SRC}/boss.png")
-    rows = []
-    for r, (y0, y1) in enumerate(BOSS_ROWS):
-        bounds = BOSS_ROW4 if r == 4 else [round(src.shape[1] * i / 10) for i in range(11)]
-        band = src[y0:y1]
+def checker_rgba(path: str) -> np.ndarray:
+    """The new sheets are RGB with a light checker; pull that out as alpha."""
+    rgb = np.array(Image.open(path).convert("RGB")).astype(np.int16)
+    mx, mn = rgb.max(axis=2), rgb.min(axis=2)
+    checker = ((mx - mn) < 26) & (mx > 196)
+    alpha = np.where(checker, 0, 255).astype(np.uint8)
+    # Soften the key so crystal glow on the checker doesn't get a hard halo.
+    near = ((mx - mn) < 40) & (mx > 175) & ~checker
+    alpha = np.where(near, np.clip((220 - mx) * 8, 0, 255), alpha).astype(np.uint8)
+    rgba = np.zeros(rgb.shape[:2] + (4,), np.uint8)
+    rgba[..., :3] = np.clip(rgb, 0, 255).astype(np.uint8)
+    rgba[..., 3] = alpha
+    return rgba
+
+
+def bands_1d(ink: np.ndarray, expect: int) -> list[tuple[int, int]]:
+    segs = segments(ink, min_w=12)
+    segs = [s for s in segs if s[1] - s[0] > 40]
+    if len(segs) == expect:
+        return segs
+    n = len(ink)
+    return [(int(i * n / expect) + 6, int((i + 1) * n / expect) - 6) for i in range(expect)]
+
+
+def grid5(path: str) -> list[list[dict]]:
+    src = checker_rgba(path)
+    ink = src[..., 3] > 40
+    rows = bands_1d(ink.any(axis=1), 5)
+    cols = bands_1d(ink.any(axis=0), 5)
+    out = []
+    for y0, y1 in rows:
         fr = []
-        for i in range(len(bounds) - 1):
-            f = cell_frame(band, bounds[i], bounds[i + 1])
+        for x0, x1 in cols:
+            f = cell_frame(src[y0:y1], x0, x1)
             if f:
                 fr.append(f)
         if not fr:
             continue
-        # Pin every pose in the row to the same floor so the body doesn't hop.
-        base = float(np.percentile([f["ay"] for f in fr], 75))
+        base = float(np.percentile([f["ay"] for f in fr], 80))
         hips = float(np.median([f["ax"] for f in fr]))
         for f in fr:
             f["ay"] = base
-            # Don't force a shared x — strides need to travel — but clamp wild glow offsets.
-            f["ax"] = float(np.clip(f["ax"], hips - 18, hips + 18))
-        rows.append([finish(f, BOSS_K) for f in fr])
-    return rows
+            f["ax"] = float(np.clip(f["ax"], hips - 28, hips + 28))
+        out.append([finish(f, BOSS_K) for f in fr])
+    return out
+
+
+def boss_frames():
+    idle = grid5(f"{SRC}/veil_idle.png")
+    melee = grid5(f"{SRC}/veil_melee.png")
+    cast = grid5(f"{SRC}/veil_cast.png")
+    death = grid5(f"{SRC}/veil_death.png")
+    for name, rows in ("idle", idle), ("melee", melee), ("cast", cast), ("death", death):
+        print(name, [len(r) for r in rows])
+    return idle, melee, cast, death
 
 
 def segments(mask: np.ndarray, min_w: int = 6) -> list[tuple[int, int]]:
@@ -179,27 +214,28 @@ def pack(name: str, anims: dict[str, tuple[list[dict], int, int]]) -> dict:
 
 
 def build() -> dict:
-    b = boss_frames()
-    for i, row in enumerate(b):
-        print(f"boss row {i}: {len(row)}")
-    r0, r1, r2, r3, r4, r5 = b
-    take = lambda row, a, b: row[a:min(b, len(row))] or row[:1]
+    idle, melee, cast, death = boss_frames()
+    row = lambda sheet, i: sheet[i] if i < len(sheet) else sheet[0]
+    cat = lambda *rows: [f for r in rows for f in r]
     boss = pack("crystalveil", {
-        "idle": (take(r0, 0, 10), 8, -1),
-        "walk": (take(r1, 0, 10), 10, -1),
-        "claw": (take(r2, 0, 5), 11, 0),
-        "slam": (take(r2, 5, 10), 10, 0),
-        "summon": (take(r3, 0, 6), 10, 0),
-        "shoot": (take(r3, 6, 9), 8, 0),
-        "charge": (take(r4, 0, 1), 1, -1),
-        "erupt": (take(r4, 3, 5) if len(r4) > 4 else take(r4, 0, 1), 6, 0),
-        "hurt": (take(r5, 0, 2), 10, 0),
-        "stagger": (take(r5, 2, 4), 5, 0),
-        "enrage": (take(r5, 3, 5), 6, -1),
-        "dead": (take(r5, 5, 10), 6, 0),
+        "idle": (cat(row(idle, 0), row(idle, 1)), 8, -1),
+        "walk": (cat(row(idle, 2), row(idle, 3)), 10, -1),
+        "claw": (cat(row(melee, 1), row(melee, 2)), 12, 0),
+        "slam": (row(melee, 3), 10, 0),
+        "summon": (row(cast, 2), 10, 0),
+        "shoot": (row(cast, 1)[:4] or row(cast, 1), 9, 0),
+        "charge": (row(cast, 3)[:2] or row(cast, 3)[:1], 5, 0),
+        "erupt": (row(cast, 2), 8, 0),
+        "hurt": (row(death, 1), 10, 0),
+        "stagger": (row(death, 2)[:3] or row(death, 2), 6, 0),
+        "enrage": (cat(row(idle, 4), row(melee, 4)), 8, -1),
+        "dead": (cat(row(death, 2), row(death, 3), row(death, 4)), 8, 0),
     })
-    beam = pack("crystalveil_beam", {"beam": (take(r4, 1, 3), 10, -1)})
-    fx = pack("crystalveil_fx", {"spikes": (take(r4, 5, 6), 1, 0), "ring": (take(r3, 9, 10), 1, 0)})
+    beam_fr = row(cast, 3)[-2:] or row(cast, 3)
+    spike_fr = row(death, 4)[:2] or row(death, 4)
+    ring_fr = row(cast, 2)[-1:]
+    beam = pack("crystalveil_beam", {"beam": (beam_fr, 8, -1)})
+    fx = pack("crystalveil_fx", {"spikes": (spike_fr, 1, 0), "ring": (ring_fr, 1, 0)})
 
     s = grid_frames(f"{SRC}/shot.png", "center")
     shot = pack("crystal_shot", {"form": (s[0], 14, 0), "fly": (s[1] + s[2], 16, -1), "impact": (s[3], 18, 0)})

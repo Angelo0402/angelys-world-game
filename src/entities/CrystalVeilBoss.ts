@@ -122,7 +122,7 @@ export class CrystalVeilBoss {
     this.actionLock = true;
     this.sprite.play("crystalveil:claw", true);
     Audio.sfx("skeleton_swing");
-    this.until = time + 720;
+    this.until = time + 920;
   }
 
   private startSlam(time: number) {

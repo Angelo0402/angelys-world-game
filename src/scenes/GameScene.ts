@@ -1284,7 +1284,7 @@ export class GameScene extends Phaser.Scene {
     this.game.events.emit("hud:cinema", true);
     const cam = this.cameras.main;
     cam.stopFollow();
-    await this.wait(1100);
+    await this.wait(2000);
     this.boss?.vanish();
     const cage = this.veilCage;
     if (cage) cam.pan(cage.x, GAME_H / 2 - 40, 700, "Sine.easeInOut");
