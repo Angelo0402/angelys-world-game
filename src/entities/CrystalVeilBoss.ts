@@ -13,7 +13,7 @@ export const VEIL_BOSS_NAME = "CRYSTAL VEIL";
 
 /** Chapter 10: face the target, telegraph, strike, then expose the core. */
 export class CrystalVeilBoss {
-  readonly maxHp = 160;
+  readonly maxHp = 50;
   hp = this.maxHp;
   phase: Phase = 1;
   x: number;

@@ -113,10 +113,14 @@ export class Dialogue {
     this.panel.clear();
     this.panel.fillStyle(0x0d0618, 0.9).fillRoundedRect(r.x, r.y, r.w, r.h, 20);
     this.panel.lineStyle(3, accent, 1).strokeRoundedRect(r.x, r.y, r.w, r.h, 20);
-    this.portrait.setTexture(sp.portrait(line)).setPosition(px, py).setDisplaySize(pr, pr);
-    this.ring.clear().lineStyle(4, accent, 1).strokeCircle(px, py, pr / 2 + 1);
+    const portraitKey = sp.portrait(line);
+    const hasPortrait = !!portraitKey && this.scene.textures.exists(portraitKey);
+    this.portrait.setVisible(hasPortrait);
+    if (hasPortrait) this.portrait.setTexture(portraitKey!).setPosition(px, py).setDisplaySize(pr, pr);
+    this.ring.setVisible(hasPortrait);
+    if (hasPortrait) this.ring.clear().lineStyle(4, accent, 1).strokeCircle(px, py, pr / 2 + 1);
     const tx = left ? r.x + pr + 44 : r.x + 26;
-    const tw = r.w - pr - 76;
+    const tw = hasPortrait ? r.w - pr - 76 : r.w - 52;
     const small = r === SUB;
     this.name.setText(sp.name).setColor(sp.color).setPosition(tx, r.y + (small ? 8 : 14)).setFontSize(small ? 19 : 24);
     this.text.setPosition(tx, r.y + (small ? 36 : 50)).setFontSize(small ? 18 : 23).setWordWrapWidth(tw);

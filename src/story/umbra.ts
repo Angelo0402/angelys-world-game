@@ -10,10 +10,10 @@ export interface DialogueLine {
 }
 
 /** side: where the portrait sits in the subtitle box. */
-export const SPEAKERS: Record<Speaker, { name: string; color: string; accent: number; side: "left" | "right"; portrait: (l: DialogueLine) => string }> = {
+export const SPEAKERS: Record<Speaker, { name: string; color: string; accent: number; side: "left" | "right"; portrait: (l: DialogueLine) => string | null }> = {
   umbra: { name: "Queen Umbra", color: "#e0b8ff", accent: 0xb57cff, side: "right", portrait: () => "portrait_umbra" },
   angelo: { name: "Angelo", color: "#8fc4ff", accent: 0x4f8dff, side: "right", portrait: () => "portrait_angelo" },
-  sovereign: { name: "Veil Sovereign", color: "#c59bff", accent: 0x8a4fff, side: "right", portrait: () => "portrait_sovereign" },
+  sovereign: { name: "Veil Sovereign", color: "#c59bff", accent: 0x8a4fff, side: "right", portrait: () => null },
   angely: {
     name: "Angely",
     color: "#ffd36b",

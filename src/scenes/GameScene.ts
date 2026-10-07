@@ -1402,6 +1402,7 @@ export class GameScene extends Phaser.Scene {
     this.tweens.add({ targets: boss, x: arena.x1 - 300, y: HOVER_Y, duration: 2800, ease: "Sine.out" });
     await this.wait(1400);
     this.player.facing = 1;
+    this.player.sprite.setFlipX(false);
     await this.wait(1500);
 
     // She keeps drifting closer while she talks.
