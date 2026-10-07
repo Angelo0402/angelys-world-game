@@ -4,7 +4,7 @@ import json
 import hashlib
 import numpy as np
 from PIL import Image
-from build_chapter11 import pack, replace_const
+from build_chapter10 import pack, replace_const
 
 ROOT=Path(__file__).resolve().parents[1]
 SRC=ROOT/'art/source/finale'

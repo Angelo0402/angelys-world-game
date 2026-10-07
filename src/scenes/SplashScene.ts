@@ -32,7 +32,7 @@ export class SplashScene extends Phaser.Scene {
             : info.mode === "chase" ? "Outrun the danger and reach the portal"
               : "Reach the portal";
     const goal = info.boss
-      ? info.chapter === 11 ? "Face the Crystal Veil and free Angelo" : "Face Queen Umbra and bring the light back to every world"
+      ? info.chapter === 10 ? "Face the Crystal Veil and free Angelo" : "Face Queen Umbra and bring the light back to every world"
       : `${info.weapon ? `Find the ${WEAPON_NAMES[info.weapon]}  •  ` : ""}${what}  •  ${info.tip}`;
     this.add
       .text(GAME_W / 2, GAME_H - 70, goal, { fontFamily: FONT, fontSize: "19px", color: "#fff4d6", stroke: "#2a1640", strokeThickness: 4, align: "center", wordWrap: { width: GAME_W - 120 } })

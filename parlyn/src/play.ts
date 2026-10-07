@@ -32,12 +32,12 @@ const PLAYER_W = 40;
 const FOG: Record<number, number> = {
   1: 0x152418, 2: 0x16122a, 3: 0x2a1208, 4: 0x0c1a28,
   5: 0x140818, 6: 0x182438, 7: 0x062028, 8: 0x2a1c0c,
-  9: 0x241428, 10: 0x142414, 11: 0x181028, 12: 0x281008, 13: 0x081820,
+  9: 0x241428, 10: 0x181028,
 };
 const GROUND_COL: Record<number, number> = {
   1: 0x3d6a32, 2: 0x3a3558, 3: 0x6a2e18, 4: 0xcfe8ff,
   5: 0x2a2048, 6: 0x8aa6c8, 7: 0x1a5a68, 8: 0xb8883a,
-  9: 0xc46aa8, 10: 0x4a7a32, 11: 0x6a58b0, 12: 0x8a3a18, 13: 0x2a7a88,
+  9: 0xc46aa8, 10: 0x6a58b0,
 };
 
 type Solid = { x: number; y: number; w: number; h: number; oneWay?: boolean; kind?: string; id?: string };
@@ -160,7 +160,7 @@ export class PlaySession {
     for (const k of CHAPTERS[this.ch].enemies) if (k in SPRITES) addSheet(k as SpriteKey);
     if (this.info.boss && this.ch === 5) addSheet("umbra");
     if (this.info.boss && this.ch === 8) addSheet("sandworm");
-    if (this.info.boss && this.ch === 11) {
+    if (this.info.boss && this.ch === 10) {
       addSheet("crystalveil");
       addSheet("crystalveil_beam");
       addSheet("angelo_cage");
@@ -426,7 +426,7 @@ export class PlaySession {
       this.boss = { kind: "worm", hp: 18, max: 18, actor: new Actor(this.renderer, "sandworm", 640, GROUND_Y + 40, 200), phase: 0, cd: 1.4 };
       this.boss.actor.play("idle");
     }
-    if (this.info.boss && this.ch === 11) {
+    if (this.info.boss && this.ch === 10) {
       const a = this.level.arena!;
       const cx = (a.x0 + a.x1) / 2;
       this.boss = { kind: "veil", hp: 26, max: 26, actor: new Actor(this.renderer, "crystalveil", cx + 180, GROUND_Y, 228), phase: 0, cd: 1.1 };

@@ -1,10 +1,13 @@
 import { LAST_LEVEL, WEAPON_ORDER, type WeaponId } from "./config";
 
 const KEY = "angelys-world-save-v1";
+const CHAPTER_LAYOUT_VERSION = 2;
 
 export interface SaveData {
   /** Highest unlocked level index (see LEVELS). */
   level: number;
+  /** Version 2 removes Mosswood and moves the final chapter to indices 18/19. */
+  chapterLayoutVersion: number;
   weapons: WeaponId[];
   /** Queen Umbra has been defeated at least once. */
   cleared: boolean;
@@ -14,12 +17,13 @@ export interface SaveData {
   sfx: boolean;
 }
 
-const DEFAULTS: SaveData = { level: LAST_LEVEL, weapons: ["sword", "bow", "hammer", "boomerang", "wand", "cog", "ray"], cleared: false, finaleSeen: false, music: true, sfx: true };
+const DEFAULTS: SaveData = { level: LAST_LEVEL, chapterLayoutVersion: CHAPTER_LAYOUT_VERSION, weapons: ["sword", "bow", "hammer", "boomerang", "wand", "cog", "ray"], cleared: false, finaleSeen: false, music: true, sfx: true };
 
 let cache: SaveData | null = null;
 
 function normalize(out: SaveData): SaveData {
   return { ...out,
+    chapterLayoutVersion: CHAPTER_LAYOUT_VERSION,
     level: Number.isFinite(out.level) ? Math.max(0, Math.min(LAST_LEVEL, Math.floor(out.level))) : 0,
     weapons: WEAPON_ORDER.filter(w => out.weapons.includes(w)),
     finaleSeen: out.finaleSeen === true,
@@ -33,6 +37,11 @@ function migrate(raw: Record<string, unknown>): SaveData {
   if (!Array.isArray(raw.weapons)) out.weapons = out.sword ? ["sword"] : [];
   // A finished save from before chapter 8 stopped at Coral Palace (index 13).
   if (out.cleared && out.level < 14) out.level = 14;
+  // Map the retired two-level chapter only once. Old Mosswood saves start the
+  // new final route; old Crystal Veil saves keep their route/boss progress.
+  if (raw.chapterLayoutVersion !== CHAPTER_LAYOUT_VERSION && typeof raw.level === "number") {
+    out.level = raw.level >= 20 ? raw.level - 2 : raw.level >= 18 ? 18 : out.level;
+  }
   out.finaleSeen = raw.finaleSeen === true;
   delete out.unlocked;
   delete out.sword;

@@ -147,18 +147,7 @@ export const ENEMY_TYPES: Record<string, EnemyType> = {
     projectile: { sheet: "fx_orb", speed: 280, aimed: true, tint: 0xfff27a, scale: 0.36 },
     attackSfx: "ghost_orb", body: [0.55, 0.55], keepDistance: 240, heartDrop: 0.2,
   },
-  // Chapter 10: Mosswood
-  leafslime: {
-    key: "leafslime", height: 62, hp: 2, speed: 54, attack: "shoot", range: 340, cooldown: 2400, windup: 520,
-    projectile: { sheet: "fx_orb", speed: 200, aimed: false, tint: 0xb6ff4a, scale: 0.34 },
-    attackSfx: "puff_attack", body: [0.55, 0.62], keepDistance: 150,
-  },
-  candywitch: {
-    key: "candywitch", height: 86, hp: 2, speed: 78, flying: true, attack: "shoot", range: 460, cooldown: 2300, windup: 560,
-    projectile: { sheet: "fx_orb", speed: 250, aimed: true, tint: 0xff6ad5, scale: 0.34 },
-    attackSfx: "ghost_orb", body: [0.5, 0.55], keepDistance: 230, heartDrop: 0.2,
-  },
-  // Chapter 11: The Crystal Veil
+  // Chapter 10: The Crystal Veil
   shardknight: {
     key: "shardknight", height: 96, hp: 3, speed: 72, attack: "lunge", range: 130, cooldown: 1800, windup: 460,
     attackSfx: "skeleton_swing", body: [0.42, 0.82],

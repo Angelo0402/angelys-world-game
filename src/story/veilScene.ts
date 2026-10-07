@@ -114,7 +114,8 @@ export async function veilFinale(scene: GameScene,angelo: Phaser.GameObjects.Spr
   if (!await shot.delay(800)) return false;
   angelo.setVisible(false);
   girl.setVisible(false);
-  const pair = shot.sprite("final_pair_side","walk",meet,GROUND_Y+4,155).setFlipX(true);
+  // The painted pair walks left. Mirror only when the gate is to their right.
+  const pair = shot.sprite("final_pair_side","walk",meet,GROUND_Y+4,155).setFlipX(portalX > meet);
   if (!await shot.tween({targets:pair,x:portalX,duration:Math.max(1500,Math.abs(meet-portalX)*7),ease:"Sine.easeInOut"})) return false;
   pair.destroy();
 

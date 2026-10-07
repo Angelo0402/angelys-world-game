@@ -1,8 +1,8 @@
 # Angely's World
 
-A mobile-first 2D side-scrolling platformer with painted 2.5D scenery. [Download the latest APK](./Angelys-World.apk) (`com.angelysworld.game`, version 1.3-chapter11-finale / code 5). This is the single current APK in the repository; the two older APK files have been retired. The optional Parlyn/Three.js renderer remains available as source.
+A mobile-first 2D side-scrolling platformer with painted 2.5D scenery. [Download the latest APK](./Angelys-World.apk) (`com.angelysworld.game`, version 1.4-final-chapter10 / code 7). This is the single current APK in the repository; the two older APK files have been retired. The optional Parlyn/Three.js renderer remains available as source.
 
-Chapter 11 is the final chapter. Crystal Veil has 160 HP, three escalating attack phases, and capped waves of existing enemies including skeletons and Chapter 3 lava enemies. Each stomp removes 0.25 HP and does not cancel an attack. After the rescue and a happy hug, Angelo offers Angely his hand. They walk into the same blue portal viewed from behind. Both disappear, the portal closes, and “TO BE CONTINUED...” appears with one “BACK TO LEVELS” button. Chapter 5-2 also uses the new painted blue portal. Chapters 12 and 13 and their exclusive art have been removed; older saves retain weapons/audio settings and clamp progress to the 22 current levels.
+Chapter 10 is the final chapter. Crystal Veil has 160 HP, three escalating attack phases, and capped waves of existing enemies including skeletons and Chapter 3 lava enemies. Each stomp removes 0.25 HP and does not cancel an attack. After the rescue and a happy hug, Angelo offers Angely his hand. Their joined side walk faces toward the portal; then both turn away from the camera and enter the same blue portal holding hands. Both disappear, the portal closes, and “TO BE CONTINUED...” appears with one “BACK TO LEVELS” button. Chapter 5-2 also uses the new painted blue portal. The old Chapter 10 (Mosswood) and Chapters 12 and 13 have been removed. The former Crystal Veil Chapter 11 is now Chapter 10, directly after Chapter 9; older saves retain weapons/audio settings and clamp progress to the 20 current levels.
 
 ## Run it
 
@@ -62,7 +62,7 @@ Handy URL flags:
 
 ## Gameplay
 
-Eleven chapters, two levels each. Levels differ in how they play, not just in their obstacles:
+Ten chapters, two levels each. Levels differ in how they play, not just in their obstacles:
 
 - **Modes:** `run` (free side-scrolling), `chase` (the screen scrolls by itself while a collapse or an avalanche chases Angely), `climb` (a one-screen-wide vertical tower) and `swim` (underwater: JUMP is a swim stroke).
 - **Goals:** defeat N enemies, collect N star gems, or just reach the (already open) portal.
@@ -88,10 +88,8 @@ Eleven chapters, two levels each. Levels differ in how they play, not just in th
 | 8-2 | Dune Worm | boss | Sand worm and another reunion with Angelo |
 | 9-1 | Gumdrop Trail | run / 10 enemies | Bubble Ray |
 | 9-2 | Bubble Falls | run / 6 gems | Springs and platforms |
-| 10-1 | Dewpath | run / 10 enemies | Leaf slimes |
-| 10-2 | Candy Canopy | run / 6 gems | Candy witches |
-| 11-1 | Shattered Causeway | run / 12 enemies | Crystal route, checkpoints and mixed enemies |
-| 11-2 | The Veil Crown | final boss | Crystal Veil, family reunion, shared blue portal and ending |
+| 10-1 | Shattered Causeway | run / 12 enemies | Crystal route, checkpoints and mixed enemies |
+| 10-2 | The Veil Crown | final boss | Crystal Veil, family reunion, shared blue portal and ending |
 
 Part two of 5-2 is a cutscene where Angely doesn't fight. A giant golem rises, her dad Angelo (blue hoodie) arrives through a blue portal, defeats it, talks with her and leaves ("Angely, I'll be watching you. I'll be back. I have stuff to do, but be careful."). His frames come from the character sheet in `art/source/angelo_reference_sheet.png`. The lines are in `src/story/angelo.ts`.
 
@@ -113,7 +111,7 @@ Queen Umbra: walking into her arena starts a cutscene. The camera locks, she flo
 - Enemies left far behind despawn so new ones spawn near Angely, so a kill goal never stalls.
 - Angely has 5 hearts. Every hit removes one, followed by 0.8 seconds of invulnerability. Heart pickups restore one.
 - Falling into a pit or lava costs a heart and respawns you at the last checkpoint flag.
-- Unlocked levels, weapons and the final victory are saved in `localStorage`. Older chapter saves migrate automatically.
+- Unlocked levels, weapons and the final victory are saved in `localStorage`. Older chapter saves migrate automatically, with a layout version that maps former Crystal Veil indices 20/21 to 18/19 once and preserves already migrated progress.
 
 Controls: on touch screens, use the left joystick (a small push walks, a full push runs), JUMP, the weapon button (SWORD / BOW / HAMMER), SWAP, and pause. On a keyboard, use A/D or the arrow keys to move, W, Up or Space to jump, J or K to attack, Q, E or L to swap weapons, and Esc to pause. Walking into a crate pushes it.
 
@@ -125,7 +123,7 @@ Xbox (or any standard) controller: left stick or D-pad to move (a light push wal
 - `art/source/gen/` holds the current art: player, enemy, prop, item, portal and VFX sheets plus backgrounds and chapter splashes, all generated in one consistent style on flat white (or black, for effects) backgrounds. The older hand-supplied atlases are kept in `art/source/` for reference.
 - `tools/atlas_config.py` maps each animation to frames. `G(atlas, row, first, last)` picks frames from the rows that `tools/segment.py` detects automatically. Player sheets are normalised to the same character size using her hair area; enemy sheets are normalised by walk height.
 - `public/assets/runtime/` holds the cut WebP sheets the game loads, exported at about 2x on-screen size. These are generated, so don't edit them by hand.
-- `art/source/chapter11/` and `art/source/finale/` hold the regenerated Chapter 11 and 112 new finale frames. Their `layout.json` files record reviewed extraction rectangles and feet/center pivots. The dedicated packers preserve native alpha and use fixed padded cells: 256x256 for solo characters, 384x384 for pairs and 512x512 for the blue portal. `generation.json` records prompts and selected sources.
+- `art/source/chapter10/` and `art/source/finale/` hold the regenerated Chapter 10 and 112 new finale frames. Their `layout.json` files record reviewed extraction rectangles and feet/center pivots. The dedicated packers preserve native alpha and use fixed padded cells: 256x256 for solo characters, 384x384 for pairs and 512x512 for the blue portal. `generation.json` records prompts and selected sources.
 - `art/source/hud/` contains the seven distinct weapon icons. The HUD keeps five hearts, blue joystick, purple attack/swap, gold jump, and sound/pause shifted left.
 
 ## Sharpness and frame rate
@@ -150,7 +148,7 @@ Every sound is currently a WebAudio synth placeholder (`src/audio/AudioManager.t
 src/
   main.ts                 Phaser config (Scale.FIT, variable-step Arcade physics)
   render.ts               device-resolution canvas, camera zoom, adaptive quality
-  config.ts               chapters, the 10 levels and their set pieces, weapons
+  config.ts               chapters, the 20 levels and their set pieces, weapons
   scenes/                 Boot, Title (level select), Splash, Game, Hud
   entities/               Player, Enemy (idle > patrol/chase > windup > attack > hurt > dead), enemyTypes, Boss (Queen Umbra)
   world/level.ts          deterministic level layout assembled from set pieces

@@ -1,5 +1,5 @@
 import { GROUND_Y, type LevelInfo, type LevelMode, type PieceKind, type WeaponId } from "../config";
-import { crystalCauseway, crystalCrownArena } from "./chapter11";
+import { crystalCauseway, crystalCrownArena } from "./chapter10";
 
 export interface Segment {
   x0: number;
@@ -107,7 +107,7 @@ function emptyLevel(mode: LevelMode): LevelDef {
 
 export function buildLevel(info: LevelInfo): LevelDef {
   const r = rng(info.seed);
-  const L = info.chapter === 11 ? (info.boss ? crystalCrownArena(emptyLevel("run")) : crystalCauseway(emptyLevel("run")))
+  const L = info.chapter === 10 ? (info.boss ? crystalCrownArena(emptyLevel("run")) : crystalCauseway(emptyLevel("run")))
     : info.boss && info.chapter === 8 ? duneArena(emptyLevel("run"))
     : info.boss ? bossLevel(emptyLevel("run"), info.chapter)
     : info.mode === "climb" ? buildClimb(info, r)
@@ -467,7 +467,7 @@ function bossLevel(L: LevelDef, chapter?: number): LevelDef {
     { x: x0 + 270, y: GROUND_Y - 150, prop: "plat_medium" },
     { x: x1 - 270, y: GROUND_Y - 150, prop: "plat_medium" },
   );
-  if (chapter === 11) {
+  if (chapter === 10) {
     L.platforms.push({ x: (x0 + x1) / 2, y: GROUND_Y - 268, prop: "plat_float" });
   }
   L.hearts.push({ x: 1050, y: GROUND_Y - 290 }, { x: 1400, y: GROUND_Y - 40 });

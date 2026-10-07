@@ -11,7 +11,7 @@ type Phase = 1 | 2 | 3;
 type State = "intro" | "walk" | "claw" | "slam" | "shoot" | "burst" | "erupt" | "beam" | "hurt" | "recover" | "enrage" | "dead";
 export const VEIL_BOSS_NAME = "CRYSTAL VEIL";
 
-/** Chapter 11: face the target, telegraph, strike, then expose the core. */
+/** Chapter 10: face the target, telegraph, strike, then expose the core. */
 export class CrystalVeilBoss {
   readonly maxHp = 160;
   hp = this.maxHp;

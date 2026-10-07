@@ -327,7 +327,7 @@ export class GameScene extends Phaser.Scene {
     const meta = PROPS[key as keyof typeof PROPS];
     const fill = ({
       1: 0x3b2414, 2: 0x2a2d3c, 3: 0x1d1418, 4: 0x2c3a52, 5: 0x1c1230, 6: 0xd8dcef, 7: 0x1d4a5a,
-      8: 0x3a2a14, 9: 0x6a1878, 10: 0x1c3a16, 11: 0x1a1438, 12: 0x1d1418, 13: 0x0d3048,
+      8: 0x3a2a14, 9: 0x6a1878, 10: 0x1a1438,
     } as Record<number, number>)[c] ?? 0x1b0f2e;
     const ground = this.level.ground;
     for (const seg of ground) {
@@ -343,7 +343,7 @@ export class GameScene extends Phaser.Scene {
         this.add
           .image(seg.x0 + w * i + w / 2, top, key)
           .setOrigin(0.5, 0)
-          .setDisplaySize(w + (c === 11 ? 20 : 2), meta.height)
+          .setDisplaySize(w + (c === 10 ? 20 : 2), meta.height)
           .setDepth(10 + (i % 2) * 0.01 + (seg.y < GROUND_Y ? 0.02 : 0));
       }
     }
@@ -394,10 +394,10 @@ export class GameScene extends Phaser.Scene {
 
   private buildProps() {
     const L = this.level;
-    if (this.chapter.id === 11) {
+    if (this.chapter.id === 10) {
       for (const g of L.ground) {
         for (const x of [g.x0+60,g.x1-50]) {
-          this.add.image(x,g.y+3,"crystal_cluster_11").setOrigin(.5,1).setDepth(6).setDisplaySize(110,95).setAlpha(.7);
+          this.add.image(x,g.y+3,"crystal_cluster_10").setOrigin(.5,1).setDepth(6).setDisplaySize(110,95).setAlpha(.7);
         }
       }
     }
@@ -423,7 +423,7 @@ export class GameScene extends Phaser.Scene {
     for (const s of L.stars) this.stars.push(this.addBobber("starshield", s.x, s.y, 52));
 
     this.portal = new Portal(this, L.portal.x, !this.info.boss, L.portal.y);
-    if (this.info.chapter === 11 && this.info.boss && L.arena) {
+    if (this.info.chapter === 10 && this.info.boss && L.arena) {
       this.veilCage = new CageAngelo(this, L.arena.x1 - 210);
     }
     if (this.info.goal === "reach") this.portal.open(true);
@@ -1183,7 +1183,7 @@ export class GameScene extends Phaser.Scene {
       p.stompBounce(this.keyboardJumpHeld());
       Audio.sfx("stomp");
       this.fx("fx_dust", "puff", p.x, hb.top + 10, 0.3);
-      b.takeDamage(this.info.chapter === 11 ? .25 : 2, "stomp", p.x);
+      b.takeDamage(this.info.chapter === 10 ? .25 : 2, "stomp", p.x);
     } else if (b.harmful) p.hurt(b.x);
   }
 
@@ -1362,7 +1362,7 @@ export class GameScene extends Phaser.Scene {
       await this.wormIntro();
       return;
     }
-    if (this.info.chapter === 11) {
+    if (this.info.chapter === 10) {
       await this.veilIntro();
       return;
     }
@@ -1420,11 +1420,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   onBossHp(hp: number, max: number, dmg: number) {
-    const name = this.info.chapter === 2 ? SENTINEL_NAME : this.info.chapter === 8 ? WORM_NAME : this.info.chapter === 11 ? VEIL_NAME : BOSS_NAME;
+    const name = this.info.chapter === 2 ? SENTINEL_NAME : this.info.chapter === 8 ? WORM_NAME : this.info.chapter === 10 ? VEIL_NAME : BOSS_NAME;
     this.registry.set("boss", { name, hp, max });
-    this.cameras.main.shake(90, this.info.chapter === 11 ? .0015 : .005);
+    this.cameras.main.shake(90, this.info.chapter === 10 ? .0015 : .005);
     this.bossDamage += dmg;
-    if (this.bossDamage >= (this.info.chapter === 11 ? 32 : 7) && hp > 0) {
+    if (this.bossDamage >= (this.info.chapter === 10 ? 32 : 7) && hp > 0) {
       this.bossDamage = 0;
       const a = this.level.arena!;
       const h = this.addHeart(Phaser.Math.Between(a.x0 + 200, a.x1 - 200), GROUND_Y - 40);
@@ -1433,7 +1433,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   onBossPhase2() {
-    if (this.info.chapter === 11) {
+    if (this.info.chapter === 10) {
       this.cameras.main.flash(300, 160, 120, 255);
       const phase = this.boss && "phase" in this.boss ? this.boss.phase : 2;
       this.toast((phase === 3 ? VEIL_PHASE3 : VEIL_PHASE2).text);
@@ -1475,7 +1475,7 @@ export class GameScene extends Phaser.Scene {
       await this.wormOutro();
       return;
     }
-    if (this.info.chapter === 11) {
+    if (this.info.chapter === 10) {
       await this.veilOutro();
       return;
     }

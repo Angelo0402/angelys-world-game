@@ -1,4 +1,4 @@
-"""Cut the Chapter 11-2 sheets (Crystal Veil boss, its shard projectile, caged Angelo).
+"""Cut the Chapter 10-2 sheets (Crystal Veil boss, its shard projectile, caged Angelo).
 
 The sources are hand-laid transparent sheets whose frames sit close together, so
 glow from one frame can reach into the next. Each frame is cut at the emptiest

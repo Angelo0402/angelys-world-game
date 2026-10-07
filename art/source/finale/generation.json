@@ -6,8 +6,8 @@
       "key": "angelo_motion",
       "prompt": "Use case: fantasy platformer animation sprites. True transparent alpha background. EXACTLY 4 columns x 4 rows, 16 equal square cells. All characters face RIGHT in side-view. Every character is SMALL: full silhouette including hands, hair and shoes occupies central55% of cell width and height. Huge transparent gutters, absolutely no touching or overlapping neighboring cells. Feet fixed at80% of every cell height. Uniform camera, proportions, body size and baseline between frames. Crisp hand-painted cartoon game style with soft shading and clean outlines, matches references. FULL BODY in EVERY frame; no cropped toes, hair, hands or knees. No floor, ground, shadow, glow, text, letters, grid lines or backdrop. Reference1 gives Angelo's exact identity: tan dad, short black hair, royal blue hoodie, charcoal pants and gray sneakers. Reference2 shows family identity/style. Angelo ALONE, no girl. ROW1: four subtle happy idle/breathing frames. ROW2: walking right cycle first four phases. ROW3: walking right cycle next four phases with alternating foot/arm positions. ROW4: four gentle talking gestures: open mouth, hand on chest, palm forward, smile. Keep identical height throughout.",
       "refs": [
-        "C:\\Users\\Angelo\\Documents\\Codex\\2026-10-06\\yo-te-env-o-el-link\\work\\angelys-world-repo\\art\\source\\chapter11\\angelo_veil.png",
-        "C:\\Users\\Angelo\\Documents\\Codex\\2026-10-06\\yo-te-env-o-el-link\\work\\angelys-world-repo\\art\\source\\chapter11\\veil_hug.png"
+        "C:\\Users\\Angelo\\Documents\\Codex\\2026-10-06\\yo-te-env-o-el-link\\work\\angelys-world-repo\\art\\source\\chapter10\\angelo_veil.png",
+        "C:\\Users\\Angelo\\Documents\\Codex\\2026-10-06\\yo-te-env-o-el-link\\work\\angelys-world-repo\\art\\source\\chapter10\\veil_hug.png"
       ],
       "sourcePath": "C:\\Users\\Angelo\\.codex\\generated_images\\01a112ff-de2a-7973-8bec-195bfa31efe7\\exec-d6339ed6-0bb8-48fb-b31c-796067b7c961.png",
       "file": "angelo_motion.png"
@@ -16,7 +16,7 @@
       "key": "angely_motion",
       "prompt": "Use case: fantasy platformer animation sprites. True transparent alpha background. EXACTLY 4 columns x 4 rows, 16 equal square cells. All characters face RIGHT in side-view. Every character is SMALL: full silhouette including hands, hair and shoes occupies central55% of cell width and height. Huge transparent gutters, absolutely no touching or overlapping neighboring cells. Feet fixed at80% of every cell height. Uniform camera, proportions, body size and baseline between frames. Crisp hand-painted cartoon game style with soft shading and clean outlines, matches references. FULL BODY in EVERY frame; no cropped toes, hair, hands or knees. No floor, ground, shadow, glow, text, letters, grid lines or backdrop. Reference shows Angely's exact identity: young girl with shoulder-length dark brown hair, cream short-sleeved T-shirt, teal shorts, white ankle socks and red sneakers. Angely ALONE, no dad. Preserve her child proportions and outfit. ROW1: four calm happy idle/breathing frames. ROW2: walking right cycle first four phases. ROW3: walking right cycle next four phases with clear alternating feet. ROW4: four gentle talking/smiling gestures, hands relaxed or at chest. No weapons, no accessories, no extra characters.",
       "refs": [
-        "C:\\Users\\Angelo\\Documents\\Codex\\2026-10-06\\yo-te-env-o-el-link\\work\\angelys-world-repo\\art\\source\\chapter11\\veil_hug.png"
+        "C:\\Users\\Angelo\\Documents\\Codex\\2026-10-06\\yo-te-env-o-el-link\\work\\angelys-world-repo\\art\\source\\chapter10\\veil_hug.png"
       ],
       "sourcePath": "C:\\Users\\Angelo\\.codex\\generated_images\\01a112ff-de2a-7973-8bec-195bfa31efe7\\exec-6f1ea795-3242-4795-b575-c4f4fdde2e75.png",
       "file": "angely_motion.png",
@@ -26,7 +26,7 @@
       "key": "angelo_emotions",
       "prompt": "Create NEW animation sprite artwork for Angely's World, reference is ONLY character identity and style. SQUARE 1:1 image, EXACTLY4columns4rows, sixteen equal square cells. True ALPHA TRANSPARENCY everywhere outside the characters; no brown/black/white backdrop, floor, shadow or glow. Every full-body figure must be VERY SMALL, no more than50% width and50% height of its cell; plenty of transparent empty space. Feet at80% localcellheight. Full hair, hands, knees and shoes visible, including wide poses. Keep same camera, head/body proportions, baseline and character scale. All poses RIGHT-facing side-view. Clean hand-painted fantasy cartoon with soft shading, crisp outline. No text, labels or gridlines. Angelo ALONE: tan dad, short black hair, royal blue hoodie, charcoal trousers, gray sneakers, exactly reference identity. Row1:4frames standing to kneeling gently down on one knee to greet daughter (no daughter drawn). Row2:4frames gently reaching his hand rightward, fingers relaxed, smiling. Row3:4frames smiling with eyesopen, soft closedeye smile, slight happy laugh, calm smile. Row4:4frames friendly wave up/out/across/down. Lower kneeling body stays at same scale, do NOT enlarge kneeling figure to fill the cell.",
       "refs": [
-        "C:\\Users\\Angelo\\Documents\\Codex\\2026-10-06\\yo-te-env-o-el-link\\work\\angelys-world-repo\\art\\source\\chapter11\\angelo_veil.png"
+        "C:\\Users\\Angelo\\Documents\\Codex\\2026-10-06\\yo-te-env-o-el-link\\work\\angelys-world-repo\\art\\source\\chapter10\\angelo_veil.png"
       ],
       "sourcePath": "C:\\Users\\Angelo\\.codex\\generated_images\\01a112ff-de2a-7973-8bec-195bfa31efe7\\exec-326a41bb-b97a-4eec-b9c8-97a7f85b8d3f.png",
       "file": "angelo_emotions.png"
@@ -44,7 +44,7 @@
       "key": "pair_reunion",
       "prompt": "NEW fantasy platformer sprite art, refsONLYidentity/style. Square1:1 canvas, actual transparent alpha. EXACTLY4columns2rows, EIGHT separate equally sized cells, large empty alpha gutters. Both complete characters including entire hair, knees, hands and shoe soles must fit well INSIDE each cell, at most55%cellwidth/height. No glow crossing boundaries. Same character scale/camera/baseline in all frames, feet at80%cellheight. NO floor, shadows, backdrop, labels, letters or grid. Polished soft-shaded cartoon, crisp outlines. Dad Angelo: tan, short black hair, royal BLUE HOODIE, charcoal pants, gray sneakers. Girl Angely: shoulder-length darkbrown hair, cream Tshirt, teal shorts, white socks, red sneakers. Dad visibly taller than girl, consistent proportions. ExactlyTWOcharacters percell, AngelyonLEFT and AngeloonRIGHT. FirstROW4frames reunion approach: girl reaches toward dad, dad bends knees, kneels on one knee, both open arms. SecondROW4frames happy father-daughter hug: embrace begins, full gentle hug, eyes closed happy hug, dad pats girl's hair. Same body scale even kneeling; do not grow poses. No hearts or extra effects baked into image.",
       "refs": [
-        "C:\\Users\\Angelo\\Documents\\Codex\\2026-10-06\\yo-te-env-o-el-link\\work\\angelys-world-repo\\art\\source\\chapter11\\veil_hug.png"
+        "C:\\Users\\Angelo\\Documents\\Codex\\2026-10-06\\yo-te-env-o-el-link\\work\\angelys-world-repo\\art\\source\\chapter10\\veil_hug.png"
       ],
       "sourcePath": "C:\\Users\\Angelo\\.codex\\generated_images\\01a112ff-de2a-7973-8bec-195bfa31efe7\\exec-2ff2bafd-107a-4c61-bc11-6b2d9ab9f87b.png",
       "file": "pair_reunion.png",
@@ -54,8 +54,8 @@
       "key": "pair_back",
       "prompt": "NEW fantasy platformer sprite art, refsONLYidentity/style. Square1:1 canvas, actual transparent alpha. EXACTLY4columns2rows, EIGHT separate equally sized cells, large empty alpha gutters. Both complete characters including entire hair, knees, hands and shoe soles must fit well INSIDE each cell, at most55%cellwidth/height. No glow crossing boundaries. Same character scale/camera/baseline in all frames, feet at80%cellheight. NO floor, shadows, backdrop, labels, letters or grid. Polished soft-shaded cartoon, crisp outlines. Dad Angelo: tan, short black hair, royal BLUE HOODIE, charcoal pants, gray sneakers. Girl Angely: shoulder-length darkbrown hair, cream Tshirt, teal shorts, white socks, red sneakers. Dad visibly taller than girl, consistent proportions. ExactlyTWOcharacters percell, VIEWED COMPLETELY FROM BEHIND, walking AWAY from camera. We see BACKS of heads/clothes, NO faces. AngeloonLEFT, AngelyonRIGHT, holding hands continuously: his right hand holds her left hand between them. Eight consecutive subtle walking-away phases, alternating left/right foot stepping and raised heels, soft happy affectionate posture, dad's hood rests on upper back below short black hair, girl's brown hair covers upperback above creamshirt. Do not draw any portal in this image. No side-facing views. All8frames preserve same scale (distance shrink will be animated by engine).",
       "refs": [
-        "C:\\Users\\Angelo\\Documents\\Codex\\2026-10-06\\yo-te-env-o-el-link\\work\\angelys-world-repo\\art\\source\\chapter11\\angelo_veil.png",
-        "C:\\Users\\Angelo\\Documents\\Codex\\2026-10-06\\yo-te-env-o-el-link\\work\\angelys-world-repo\\art\\source\\chapter11\\veil_hug.png"
+        "C:\\Users\\Angelo\\Documents\\Codex\\2026-10-06\\yo-te-env-o-el-link\\work\\angelys-world-repo\\art\\source\\chapter10\\angelo_veil.png",
+        "C:\\Users\\Angelo\\Documents\\Codex\\2026-10-06\\yo-te-env-o-el-link\\work\\angelys-world-repo\\art\\source\\chapter10\\veil_hug.png"
       ],
       "sourcePath": "C:\\Users\\Angelo\\.codex\\generated_images\\01a112ff-de2a-7973-8bec-195bfa31efe7\\exec-52eba2b5-c83e-4731-863e-30604181e3b9.png",
       "file": "pair_back.png"
@@ -63,7 +63,7 @@
     {
       "key": "angelo_back",
       "refs": [
-        "C:\\Users\\Angelo\\Documents\\Codex\\2026-10-06\\yo-te-env-o-el-link\\work\\angelys-world-repo\\art\\source\\chapter11\\angelo_veil.png"
+        "C:\\Users\\Angelo\\Documents\\Codex\\2026-10-06\\yo-te-env-o-el-link\\work\\angelys-world-repo\\art\\source\\chapter10\\angelo_veil.png"
       ],
       "prompt": "NEW illustration-story fantasy platformer sprite sheet. ReferenceONLYidentity/style. Squarecanvas4columns2rows EIGHT full-body Angelo poses. Back view ONLY, no faces visible, walking AWAY. Tan dadshortblackhair royalbluehoodie withhooddownonback charcoalpants gray sneakers. Eight walking-away phases alternatinglegsandarms,gentlemotion. Transparent alpha outsidefigures, no background/floor/shadows/text/grid/effects. EveryfigureVERY SMALL<=50%cellheight/width with huge alpha gutters,feetbaseline80%cellheight. Same body proportions/scale/camera in all frames. Full hair,handsandshoesinsideeachcellwithblankmargin,NOcroppedlimbs. Match clean soft-shaded cartoon references.",
       "sourcePath": "C:\\Users\\Angelo\\.codex\\generated_images\\01a112ff-de2a-7973-8bec-195bfa31efe7\\exec-c2735050-1883-4e21-a869-118aa71f1770.png",
@@ -83,10 +83,10 @@
       "file": "pair_side.png",
       "prompt": "NEW illustration-story fantasy platformer sprite sheet. ReferenceONLYidentity/style. Squarecanvas4columns2rows EIGHT full-body father/daughterpairs. PairwalksLEFT togetherholdinghandscontinuously,girlLEFTdadRIGHT. DadAngelo tan shortblackhair royalBLUEHOODIE charcoalpants graysneakers, girlAngely darkbrownshoulderlengthhair cream Tshirt tealshorts whitesocks redsneakers. Eightwalkphases withclearalternatingfeet, samecamera/size/proportions, dadvisiblytallerthangirl. Soft happy smiles and clean softshadedcartoonidentity. Transparent alphaoutsidefigures,no floor/background/shadows/text/grid/effects. EverycompletepairVERYSMALL<=60%cellwidth/heightwithhugealphagutters, feetbaseline80%cellheight. Completehairhandsandshoessolesinsidecellswithatleast15%blankmargin,absolutelynocroppedlimbs,noboundarytouching.",
       "refs": [
-        "../chapter11/veil_hug.png"
+        "../chapter10/veil_hug.png"
       ],
       "sourcePath": "C:\\Users\\Angelo\\.codex\\generated_images\\01a112ff-de2a-7973-8bec-195bfa31efe7\\exec-569fcf08-f0a6-447d-9807-5db54dca0438.png",
-      "review": "Generated figures face right; engine mirrors the joined pair for its leftward walk."
+      "review": "The painted pair walks left, with Angelo leading toward the left. Keep unmirrored for the leftward gate approach; mirror only if the gate is on the right. The girl looks affectionately toward her dad."
     },
     {
       "key": "blue_portal",

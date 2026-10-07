@@ -76,14 +76,13 @@ _atlas("vfx2", "vfx2", mask="black")
 for c in (1, 2, 3, 4, 5, 6, 7, 8, 9):
     _atlas(f"props_{c}", f"props2_ch{c}")
 _atlas("props_10", "props_ch10", mask="alpha")
-_atlas("props_11", "props_ch11", mask="alpha")
 
 # 4x5 black-background sheets. row0_px is the idle-row height in the runtime sheet.
 GRID_PX = {
-    "leafslime": 156, "candywitch": 176, "shardknight": 210, "voidwraith": 188,
+    "shardknight": 210, "voidwraith": 188,
     "galaxmaw": 168, "stormgolem": 240, "sovereign": 300,
 }
-GRID_FLY = {"candywitch", "voidwraith", "galaxmaw"}
+GRID_FLY = {"voidwraith", "galaxmaw"}
 for e, px in GRID_PX.items():
     _atlas(f"e_{e}", f"e_{e}", mask="grid", row0_px=px)
 
@@ -330,19 +329,10 @@ for c in (1, 2, 3, 4, 5, 6, 7, 8, 9):
 PROPS["spikes_6"] = ("props_6", (370, 432, 854, 670), None, 100)
 PROPS["block_6"] = ("props_6", (914, 453, 1239, 680), None, 84)
 
-# Mosswood and Crystal Veil platforms are loose sheets (ground, three floats, hazard),
+# Crystal Veil platforms are loose sheets (ground, three floats, hazard),
 # not the old 3-row prop layout. Crates and blocks are cut from the solid deck.
 _LOOSE = {
     10: {
-        "ground": ((17, 21, 1008, 358), 640),
-        "plat_l": ((85, 379, 938, 706), 250),
-        "plat_m": ((247, 725, 777, 973), 168),
-        "plat_s": ((329, 998, 695, 1218), 112),
-        "spikes": ((161, 1230, 862, 1485), 150),
-        "crate": ((200, 150, 310, 260), 84),
-        "block": ((560, 140, 670, 250), 84),
-    },
-    11: {
         "ground": ((10, 29, 1014, 375), 640),
         "plat_l": ((170, 380, 852, 665), 240),
         "plat_m": ((268, 721, 754, 953), 160),
@@ -366,7 +356,6 @@ BACKDROPS = {
     "bg8": ("gen/bg_ch8.png", 800),
     "bg9": ("gen/bg_ch9.png", 800),
     "bg10": ("gen/bg_ch10.png", 800),
-    "bg11": ("gen/bg_ch11.png", 800),
     # Title / chapter select and chapter splashes use the original hand-supplied art.
     "title_bg": ("chapter1_enchanted_forest_background.png", 800),
     "title_splash": ("title_splash.png", 1080),
@@ -380,7 +369,6 @@ BACKDROPS = {
     "splash8": ("gen/splash_ch8b.png", 720),
     "splash9": ("gen/splash_ch9b.png", 720),
     "splash10": ("gen/splash_ch10.png", 720),
-    "splash11": ("gen/splash_ch11.png", 720),
 }
 
 # Dialogue portraits: (source, crop box, output px). Angely's face comes from the

@@ -3,8 +3,8 @@ export const GAME_H = 576;
 export const GROUND_Y = 500;
 export const MAX_HEARTS = 5;
 
-export type ChapterId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
-export const LAST_CHAPTER: ChapterId = 11;
+export type ChapterId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+export const LAST_CHAPTER: ChapterId = 10;
 export type MusicTrack =
   | "music_title"
   | "music_forest"
@@ -170,22 +170,9 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
   },
   10: {
     id: 10,
-    name: "Mosswood",
+    name: "The Crystal Veil",
     splash: "splash10",
     background: "bg10",
-    music: "music_forest",
-    enemies: ["leafslime", "candywitch", "leafslime", "candywitch"],
-    maxAlive: 4,
-    spawnEvery: 1.85,
-    pitKind: "pit",
-    grip: 1,
-    ambient: { color: 0xc6ff7a, count: 28 },
-  },
-  11: {
-    id: 11,
-    name: "The Crystal Veil",
-    splash: "splash11",
-    background: "bg11",
     music: "music_shadow",
     enemies: ["shardknight", "voidwraith", "galaxmaw", "stormgolem", "skeleton", "firebat", "lavablob", "magmagolem"],
     maxAlive: 4,
@@ -265,10 +252,8 @@ export const LEVELS: LevelInfo[] = [
   { chapter: 8, stage: 2, name: "Dune Worm", mode: "run", goal: "boss", need: 0, terrain: "flat", seed: 109, pieces: [], boss: true, tip: "The sand worm rises from the dune. Hit it while it is up!" },
   { chapter: 9, stage: 1, name: "Gumdrop Trail", mode: "run", goal: "kills", need: 10, terrain: "hills", seed: 113, pieces: ["hops", "spring", "steps", "spikes", "crateWall"], weapon: "ray", tip: "Grab the Bubble Ray and zap the squishies!" },
   { chapter: 9, stage: 2, name: "Bubble Falls", mode: "run", goal: "gems", need: 6, terrain: "cliffs", seed: 127, pieces: ["hops", "movingBridge", "crumble", "spring", "spikes", "steps"], tip: "Bounce the springs and find every star gem" },
-  { chapter: 10, stage: 1, name: "Dewpath", mode: "run", goal: "kills", need: 10, terrain: "hills", seed: 131, pieces: ["hops", "steps", "spikes", "spring", "hops"], tip: "Leaf slimes spit. Jump the glob, or shoot it down." },
-  { chapter: 10, stage: 2, name: "Candy Canopy", mode: "run", goal: "gems", need: 6, terrain: "cliffs", seed: 139, pieces: ["spring", "crateWall", "movingBridge", "spikes", "steps", "hops"], tip: "Candy witches hover. Collect every star gem." },
-  { chapter: 11, stage: 1, name: "Shattered Causeway", mode: "run", goal: "kills", need: 12, terrain: "cliffs", seed: 149, pieces: [], tip: "Cross the crystal bridges. Clear twelve guardians to reach the crown." },
-  { chapter: 11, stage: 2, name: "The Veil Crown", mode: "run", goal: "boss", need: 0, terrain: "flat", seed: 151, pieces: [], boss: true, tip: "Watch the pink warnings. Strike the core after each attack to free Angelo." },
+  { chapter: 10, stage: 1, name: "Shattered Causeway", mode: "run", goal: "kills", need: 12, terrain: "cliffs", seed: 149, pieces: [], tip: "Cross the crystal bridges. Clear twelve guardians to reach the crown." },
+  { chapter: 10, stage: 2, name: "The Veil Crown", mode: "run", goal: "boss", need: 0, terrain: "flat", seed: 151, pieces: [], boss: true, tip: "Watch the pink warnings. Strike the core after each attack to free Angelo." },
 ].map((l, i) => L(l as Omit<LevelInfo, "index">, i));
 
 export const LAST_LEVEL = LEVELS.length - 1;

@@ -1,0 +1,36 @@
+{
+  "provider": "built-in image_gen",
+  "baseCommit": "54464d5d7527538fba2098a20db630943d3dda9c",
+  "jobs": [
+    {
+      "key": "boss_motion_final",
+      "path": "C:\\Users\\Angelo\\.codex\\generated_images\\01a112ff-de2a-7973-8bec-195bfa31efe7\\exec-c0a37418-9c1e-46c5-b7f4-186503163f16.png",
+      "prompt": "Correct this sprite sheet's SPACING. Recreate exactly the same16 crystal golem poses, same character identity and high quality, on actual transparent alpha. Exactly4 columns4 rows, uniform square grid. Critical change: EVERY CHARACTER MUST BE MUCH SMALLER inside its own cell, approximately55% of the cell height and at most55% of cell width, including the extended slash pose and raised arms. Leave HUGE transparent gutters, approximately35% of cell width between neighboring figures and35% of cell height between rows. Each figure's feet at80% of local cell height, centered horizontally. The highest crystal in every standing pose is at25% of cell height. No glow, shard, hand, foot or extended attack can cross a cell boundary. Full body always visible, even raised arms and wide slash. All16 poses facing right; first row idle four frames, second row walking four frames, third row claw attack windup/raise/rightward strike/recovery, fourth row slam crouch/raise/impact/recover. Preserve character proportions between frames. Do not fill empty space. Absolutely no text or grid marks."
+    },
+    {
+      "key": "chapter10_background",
+      "path": "C:\\Users\\Angelo\\.codex\\generated_images\\01a112ff-de2a-7973-8bec-195bfa31efe7\\exec-168f073c-13ce-4d79-a8fa-af0b8ab3365a.png",
+      "prompt": "Use case: fantasy 2.5D platformer background. Generate NEW Chapter11 'The Crystal Veil' environment for Angely's World. Polished hand-painted family-friendly fantasy game art, dramatic rich indigo obsidian crystal cavern, cyan and violet faceted crystals, ruined arched stone architecture and enormous circular distant portal at center, moody depth, airy glowing violet mist, subtle floating crystal fragments in distance. Wide16:9 composition 1920x1080. Side-on gameplay camera, no isometric floor, no characters, no foreground platforms or floor surface in the playable area; leave bottom quarter atmospheric dark negative space for separately rendered stage terrain. Foreground play area must be quiet and readable with contrast for sprites. Background mountains and pillars fade with depth, portal soft and not overexposed. Large crystals mostly near outer edges; center spacious. Painterly cartoon rendering, precise forms, visually matches a warmly drawn girl adventurer and crystal monsters. No text, no UI, no watermark."
+    },
+    {
+      "key": "boss_magic",
+      "path": "C:\\Users\\Angelo\\.codex\\generated_images\\01a112ff-de2a-7973-8bec-195bfa31efe7\\exec-11cc97f1-419e-4026-aec5-c81aacf31425.png",
+      "prompt": "Produce a NEW16-frame animation sheet using reference ONLY for Crystal Veil character identity and spacing/style. Same obsidian golem, same cyan/violet crystal crown and shoulder fists, purple diamond core. Polished fantasy hand-painted cartoon, same RIGHT-FACING three-quarter side perspective. True transparent ALPHA background. Exactly4cols4rows uniform square grid. Every character SMALL inside its cell, at most55% cell width AND height, with enormous transparent gutters (35% between figures and rows). Feet fixed at80% of each cell height; centered horizontally. FULL BODY including raised fists, crystals, glow visible and comfortably contained. No limb or crystal crosses cell boundaries. Consistent body size/proportions all16. No floor shadows, labels, text, grid lines. Row1: four shot-casting poses: arm pulls in, crystal charged at hand, extends hand RIGHT to release, relaxed recover. Row2: four summon poses: crouch, spread hands, palms upward, recover. Row3: four beam charge poses: crouch brace, arms draw back, both palms forward aimed RIGHT, hold pose. Row4: four eruption poses: gather energy overhead, crystals pulse, hands slam down, recovery. No separate effects/projectiles around character."
+    },
+    {
+      "key": "boss_reaction",
+      "path": "C:\\Users\\Angelo\\.codex\\generated_images\\01a112ff-de2a-7973-8bec-195bfa31efe7\\exec-f3bb0c73-b5ae-4c63-a370-7849c7176bea.png",
+      "prompt": "Produce a NEW16-frame animation sheet using reference ONLY for Crystal Veil character identity and spacing/style. Same obsidian golem, same cyan/violet crystal crown and shoulder fists, purple diamond core. Polished fantasy hand-painted cartoon, same RIGHT-FACING three-quarter side perspective. True transparent ALPHA background. Exactly4cols4rows uniform square grid. Every character SMALL inside its cell, at most55% cell width AND height, with enormous transparent gutters (35% between figures and rows). Feet fixed at80% of each cell height; centered horizontally. FULL BODY including raised fists, crystals, glow visible and comfortably contained. No limb or crystal crosses cell boundaries. Consistent body size/proportions all16. No floor shadows, labels, text, grid lines. Row1: four hurt/recoil poses: core dims, torso recoils, steady stance, recover. Row2: four stagger poses: kneel and support on fist, breathe, head lifts, return stance. Row3: four enrage loop poses with brighter magenta chest core and cyan crystals but same anatomy and size. Row4: four death sequence poses: crystals dim and cracked, kneels, core fades and head slumps, dark inert rubble with recognizable crystal armor. Do not make character vanish; rubble entirely inside own cell."
+    },
+    {
+      "key": "chapter10_fx",
+      "path": "C:\\Users\\Angelo\\.codex\\generated_images\\01a112ff-de2a-7973-8bec-195bfa31efe7\\exec-88e45f1f-e64c-41ad-9aa6-74a0b0f38e18.png",
+      "prompt": "NEW transparent spell VFX sheet only, matched cyan/violet magical crystal aesthetic; no golem and no characters. Exactly4 columns4 rows,16 equally sized square cells. Each effect is small and contained in central55% of each cell, huge empty gutters, no cross-cell glows, no labels or grid lines. Row1: four sharp rightward horizontal cyan-violet crystal projectile flying frames, consistent shape and center. Row2: four impact burst frames progressing from pinpoint to crisp diamond-shaped violet spark explosion then dissipating. Row3: four ground spike eruption frames small crystal cluster grows to tall cyan-violet jagged spike then retracts, bottom anchored at local80% cell height. Row4: four beam animation frames, slender horizontal laser/crystal stream extending right, centered in each cell, entire ray including both ends fully visible within central60% cell width. All isolated TRUE transparent alpha no white/checker."
+    }
+  ],
+  "chapterHistory": {
+    "current": 10,
+    "original": 11,
+    "note": "Renumbered after deleting Mosswood; original generation prompts preserved."
+  }
+}

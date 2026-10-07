@@ -1918,96 +1918,6 @@ export const SPRITES = {
       }
     }
   },
-  "leafslime": {
-    "file": "assets/runtime/leafslime.webp",
-    "frameWidth": 315,
-    "frameHeight": 198,
-    "originX": 0.5,
-    "originY": 0.9798,
-    "bodyHeight": 138,
-    "anims": {
-      "idle": {
-        "start": 0,
-        "end": 4,
-        "fps": 8,
-        "repeat": -1,
-        "h": 134
-      },
-      "walk": {
-        "start": 5,
-        "end": 9,
-        "fps": 10,
-        "repeat": -1,
-        "h": 128
-      },
-      "attack": {
-        "start": 10,
-        "end": 14,
-        "fps": 14,
-        "repeat": 0,
-        "h": 167
-      },
-      "hurt": {
-        "start": 15,
-        "end": 15,
-        "fps": 10,
-        "repeat": 0,
-        "h": 166
-      },
-      "dead": {
-        "start": 16,
-        "end": 19,
-        "fps": 8,
-        "repeat": 0,
-        "h": 140
-      }
-    }
-  },
-  "candywitch": {
-    "file": "assets/runtime/candywitch.webp",
-    "frameWidth": 237,
-    "frameHeight": 185,
-    "originX": 0.5,
-    "originY": 0.5,
-    "bodyHeight": 177,
-    "anims": {
-      "idle": {
-        "start": 0,
-        "end": 4,
-        "fps": 8,
-        "repeat": -1,
-        "h": 176
-      },
-      "walk": {
-        "start": 5,
-        "end": 9,
-        "fps": 10,
-        "repeat": -1,
-        "h": 152
-      },
-      "attack": {
-        "start": 10,
-        "end": 14,
-        "fps": 14,
-        "repeat": 0,
-        "h": 144
-      },
-      "hurt": {
-        "start": 15,
-        "end": 15,
-        "fps": 10,
-        "repeat": 0,
-        "h": 141
-      },
-      "dead": {
-        "start": 16,
-        "end": 19,
-        "fps": 8,
-        "repeat": 0,
-        "h": 157
-      }
-    }
-  },
   "shardknight": {
     "file": "assets/runtime/shardknight.webp",
     "frameWidth": 256,
@@ -3507,89 +3417,47 @@ export const PROPS = {
   "ground_10": {
     "file": "assets/runtime/props/ground_10.webp",
     "width": 640,
-    "height": 217.6,
-    "surface": 0.297
-  },
-  "plat_l_10": {
-    "file": "assets/runtime/props/plat_l_10.webp",
-    "width": 250,
-    "height": 95.8,
-    "surface": 0.167
-  },
-  "plat_m_10": {
-    "file": "assets/runtime/props/plat_m_10.webp",
-    "width": 168,
-    "height": 78.8,
-    "surface": 0.184
-  },
-  "plat_s_10": {
-    "file": "assets/runtime/props/plat_s_10.webp",
-    "width": 112,
-    "height": 67.4,
-    "surface": 0.178
-  },
-  "spikes_10": {
-    "file": "assets/runtime/props/spikes_10.webp",
-    "width": 150,
-    "height": 54.6,
-    "surface": 0.376
-  },
-  "crate_10": {
-    "file": "assets/runtime/props/crate_10.webp",
-    "width": 84,
-    "height": 84.0,
-    "surface": 0.0
-  },
-  "block_10": {
-    "file": "assets/runtime/props/block_10.webp",
-    "width": 84,
-    "height": 84.0,
-    "surface": 0.0
-  },
-  "ground_11": {
-    "file": "assets/runtime/props/ground_11.webp",
-    "width": 640,
     "height": 92.7,
     "surface": 0.0267
   },
-  "plat_l_11": {
-    "file": "assets/runtime/props/plat_l_11.webp",
+  "plat_l_10": {
+    "file": "assets/runtime/props/plat_l_10.webp",
     "width": 210,
     "height": 201.9,
     "surface": 0.4324
   },
-  "plat_m_11": {
-    "file": "assets/runtime/props/plat_m_11.webp",
+  "plat_m_10": {
+    "file": "assets/runtime/props/plat_m_10.webp",
     "width": 164,
     "height": 189.8,
     "surface": 0.4403
   },
-  "plat_s_11": {
-    "file": "assets/runtime/props/plat_s_11.webp",
+  "plat_s_10": {
+    "file": "assets/runtime/props/plat_s_10.webp",
     "width": 116,
     "height": 144.2,
     "surface": 0.4931
   },
-  "spikes_11": {
-    "file": "assets/runtime/props/spikes_11.webp",
+  "spikes_10": {
+    "file": "assets/runtime/props/spikes_10.webp",
     "width": 150,
     "height": 108.8,
     "surface": 0.2586
   },
-  "crate_11": {
-    "file": "assets/runtime/props/crate_11.webp",
+  "crate_10": {
+    "file": "assets/runtime/props/crate_10.webp",
     "width": 84,
     "height": 98.8,
     "surface": 0.1939
   },
-  "block_11": {
-    "file": "assets/runtime/props/block_11.webp",
+  "block_10": {
+    "file": "assets/runtime/props/block_10.webp",
     "width": 84,
     "height": 92.6,
     "surface": 0.144
   },
-  "crystal_cluster_11": {
-    "file": "assets/runtime/props/crystal_cluster_11.webp",
+  "crystal_cluster_10": {
+    "file": "assets/runtime/props/crystal_cluster_10.webp",
     "width": 156,
     "height": 160.1,
     "surface": 0.1455
@@ -3607,7 +3475,6 @@ export const BACKDROPS = {
   "bg8": "assets/runtime/backdrops/bg8.jpg",
   "bg9": "assets/runtime/backdrops/bg9.jpg",
   "bg10": "assets/runtime/backdrops/bg10.jpg",
-  "bg11": "assets/runtime/backdrops/bg11.jpg",
   "title_bg": "assets/runtime/backdrops/title_bg.jpg",
   "title_splash": "assets/runtime/backdrops/title_splash.jpg",
   "splash1": "assets/runtime/backdrops/splash1.jpg",
@@ -3620,7 +3487,6 @@ export const BACKDROPS = {
   "splash8": "assets/runtime/backdrops/splash8.jpg",
   "splash9": "assets/runtime/backdrops/splash9.jpg",
   "splash10": "assets/runtime/backdrops/splash10.jpg",
-  "splash11": "assets/runtime/backdrops/splash11.jpg",
   "portrait_angely": "assets/runtime/backdrops/portrait_angely.webp",
   "portrait_angely_wow": "assets/runtime/backdrops/portrait_angely_wow.webp",
   "portrait_angely_happy": "assets/runtime/backdrops/portrait_angely_happy.webp",

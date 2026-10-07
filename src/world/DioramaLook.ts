@@ -16,10 +16,7 @@ const LOOK: Record<number, { sun: number; haze: number; bounce: number }> = {
   7: { sun: 0x7ad4ff, haze: 0x0d4a5a, bounce: 0x4ec8e0 },
   8: { sun: 0xffc878, haze: 0x5a3a18, bounce: 0xe0a040 },
   9: { sun: 0xff8ad4, haze: 0x4a1860, bounce: 0xff64c8 },
-  10: { sun: 0xb8ff8a, haze: 0x1c3a16, bounce: 0x7ad44a },
-  11: { sun: 0xd0a0ff, haze: 0x1a1438, bounce: 0xb57cff },
-  12: { sun: 0xff8a4a, haze: 0x3a1418, bounce: 0xff7040 },
-  13: { sun: 0x80d0ff, haze: 0x0d3048, bounce: 0x40b0e0 },
+  10: { sun: 0xd0a0ff, haze: 0x1a1438, bounce: 0xb57cff },
 };
 
 export class DioramaLook {
