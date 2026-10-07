@@ -440,6 +440,7 @@ export class Player {
     this.hearts = Math.max(0, this.hearts - 1);
     this.scene.onHeartsChanged(this.hearts);
     Audio.sfx("player_hurt");
+    Audio.playVoice("angely_bark_04"); // "Ouch!"
     this.scene.cameras.main.shake(160, 0.008);
     this.invulnUntil = this.scene.time.now + INVULN_MS;
     if (this.hearts <= 0) {
@@ -493,6 +494,7 @@ export class Player {
   private die() {
     this.state = "dead";
     Audio.sfx("player_defeat");
+    Audio.playVoice("angely_bark_05"); // "Again! Again!"
     this.body.setVelocity(-this.facing * 120, -260);
     this.setAnim("angely", "defeat", true);
     this.scene.onPlayerDefeated(true);

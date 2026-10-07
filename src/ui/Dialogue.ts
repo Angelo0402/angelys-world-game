@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { Audio } from "../audio/AudioManager";
+import type { SfxName } from "../audio/manifest";
 import { FONT, GAME_H, GAME_W } from "../config";
 import { Gamepad, PAD } from "../input/gamepad";
 import { SPEAKERS, type DialogueLine } from "../story/umbra";
@@ -126,6 +127,8 @@ export class Dialogue {
     this.startedAt = this.scene.time.now;
     this.box.setVisible(true).setAlpha(1);
     this.box.setData("who", line.who);
+    // Voice acting: play the line's clip once (cuts off the previous one).
+    if (line.voice) Audio.playVoice(line.voice as SfxName);
     if (r === BOX) this.onLine?.(line);
   }
 
@@ -144,11 +147,13 @@ export class Dialogue {
 
   private skipAll() {
     if (!this.blocking) return;
+    Audio.stopVoice();
     this.finish();
   }
 
   private finish() {
     this.blocking = false;
+    Audio.stopVoice();
     this.catcher.setVisible(false);
     this.skip.setVisible(false);
     this.box.setVisible(false);
@@ -172,9 +177,11 @@ export class Dialogue {
     }
     const n = Math.min(this.full.length, Math.floor(((time - this.startedAt) / 1000) * CPS));
     if (n > this.shown) {
-      if (Math.floor(n / 2) !== Math.floor(this.shown / 2) && this.full[n - 1] !== " ") {
+      // Typewriter blips only when there is no real voice clip for this line.
+      const voice = this.lines[this.index]?.voice;
+      if ((!voice || !Audio.hasVoice(voice)) && Math.floor(n / 2) !== Math.floor(this.shown / 2) && this.full[n - 1] !== " ") {
         const who = this.box.getData("who");
-        Audio.sfx(who === "umbra" ? "voice_umbra" : who === "angelo" ? "voice_angelo" : "voice_angely");
+        Audio.sfx(who === "umbra" || who === "sovereign" ? "voice_umbra" : who === "angelo" ? "voice_angelo" : "voice_angely");
       }
       this.shown = n;
       this.text.setText(this.full.slice(0, n));

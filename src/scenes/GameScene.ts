@@ -20,6 +20,7 @@ import { CageAngelo } from "../entities/CageAngelo";
 import { CrystalVeilBoss } from "../entities/CrystalVeilBoss";
 import { Sandworm } from "../entities/Sandworm";
 import { VEIL_DEFEAT, VEIL_INTRO, VEIL_NAME, VEIL_PHASE2, VEIL_PHASE3 } from "../story/crystalveil";
+import { SOVEREIGN_FALL, SOVEREIGN_TAUNT } from "../story/sovereign";
 import { WORM_INTRO, WORM_NAME } from "../story/worm";
 import { UMBRA_DEFEAT, UMBRA_INTRO, UMBRA_PHASE2, type DialogueLine } from "../story/umbra";
 import { useTouchUi } from "../ui/screen";
@@ -268,6 +269,10 @@ export class GameScene extends Phaser.Scene {
     }
     this.chaseStartAt = this.time.now + 2600;
     this.floodStartAt = this.time.now + 4000;
+    // "Let's go!" when the level starts (skipped during intro cutscenes)
+    this.time.delayedCall(700, () => {
+      if (!this.cutscene) Audio.playVoice("angely_bark_01");
+    });
 
     if (new URLSearchParams(location.search).has("debug")) this.physics.world.createDebugGraphic();
   }
@@ -762,6 +767,7 @@ export class GameScene extends Phaser.Scene {
       if (!Phaser.Geom.Rectangle.Overlaps(pb, gb)) continue;
       g.taken = true;
       Audio.sfx("gem");
+      Audio.playVoice("angely_bark_03"); // "Got one!"
       this.tweens.killTweensOf(g.sprite);
       this.tweens.add({ targets: g.sprite, scale: 1.6, alpha: 0, y: g.sprite.y - 40, duration: 400, onComplete: () => g.sprite.destroy() });
       this.fx("fx_spark", "hit", g.sprite.x, g.sprite.y, 0.35, 0x9ff5ff);
@@ -847,6 +853,7 @@ export class GameScene extends Phaser.Scene {
     wp.glow.stop();
     this.tweens.killTweensOf(wp.sprite);
     Audio.sfx("weapon_pickup");
+    Audio.playVoice("angely_bark_07"); // "Star power!"
     this.cameras.main.flash(300, 255, 230, 180);
     this.fx("fx_spark", "hit", wp.sprite.x, wp.sprite.y, 0.5, 0xffe27a);
     this.tweens.add({ targets: wp.sprite, x: this.player.x, y: this.player.body.top - 60, scale: wp.sprite.scale * 1.3, angle: 0, duration: 400, ease: "Back.out" });
@@ -868,6 +875,7 @@ export class GameScene extends Phaser.Scene {
     if (stomping) {
       p.stompBounce(this.keyboardJumpHeld());
       Audio.sfx("stomp");
+      Audio.playVoice("angely_bark_08"); // "Bye-bye!"
       this.fx("fx_dust", "puff", e.x, e.body.top + 10, 0.28);
       e.takeDamage(1, "stomp", p.x);
       return;
@@ -1137,6 +1145,7 @@ export class GameScene extends Phaser.Scene {
         updateSave({ cleared: true });
         this.cameras.main.flash(600, 255, 255, 255);
         Audio.music("music_victory");
+        Audio.playVoice("angely_bark_02"); // "Woohoo!"
         this.game.events.emit("hud:victory");
       }
     });
@@ -1296,6 +1305,7 @@ export class GameScene extends Phaser.Scene {
     await this.wait(1000);
     this.scriptX = null;
     this.player.facing = 1;
+    await this.say(SOVEREIGN_TAUNT);
     await this.say(VEIL_INTRO,line => cage.react(line.who === "angelo" ? "grip" : "idle",1800));
     this.cinema(false,500);
     await this.wait(550);
@@ -1332,6 +1342,7 @@ export class GameScene extends Phaser.Scene {
     await this.wait(1000);
     this.boss?.vanish();
     await this.say(VEIL_DEFEAT);
+    await this.say([SOVEREIGN_FALL]);
     this.veilState = "rescue";
     Audio.music("music_title");
     const angelo = cage ? await cage.release() : undefined;
@@ -1437,6 +1448,7 @@ export class GameScene extends Phaser.Scene {
       this.cameras.main.flash(300, 160, 120, 255);
       const phase = this.boss && "phase" in this.boss ? this.boss.phase : 2;
       this.toast((phase === 3 ? VEIL_PHASE3 : VEIL_PHASE2).text);
+      Audio.playVoice("sovereign_03"); // "You crack my crown?!"
       return;
     }
     this.cameras.main.flash(300, 200, 120, 255);

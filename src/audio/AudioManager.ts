@@ -208,6 +208,39 @@ class AudioManagerImpl {
 
   // ---------------------------------------------------------------- SFX
 
+  /** True when a real MP3 is registered AND loaded for this clip. */
+  hasVoice(name: string): boolean {
+    return !!(AUDIO_FILES[name as SfxName] && this.game?.cache.audio.exists(name));
+  }
+
+  private voiceSound?: Phaser.Sound.BaseSound;
+
+  /** Play a voice clip, cutting off any voice currently playing. */
+  playVoice(name: SfxName) {
+    if (!this.sfxOn) return;
+    try {
+      this.voiceSound?.stop();
+    } catch {
+      /* already stopped */
+    }
+    this.voiceSound = undefined;
+    if (this.hasVoice(name) && this.game) {
+      const s = this.game.sound.add(name);
+      s.play();
+      this.voiceSound = s;
+    }
+  }
+
+  /** Stop the current voice clip (e.g. when skipping a cutscene). */
+  stopVoice() {
+    try {
+      this.voiceSound?.stop();
+    } catch {
+      /* already stopped */
+    }
+    this.voiceSound = undefined;
+  }
+
   sfx(name: SfxName) {
     if (!this.sfxOn) return;
     const now = performance.now();
