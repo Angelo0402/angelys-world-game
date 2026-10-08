@@ -1,0 +1,174 @@
+{
+  "sprites": {
+    "umbra": {
+      "file": "assets/runtime/umbra.webp",
+      "frameWidth": 298,
+      "frameHeight": 320,
+      "originX": 0.5,
+      "originY": 0.5,
+      "bodyHeight": 312,
+      "anims": {
+        "idle": {
+          "start": 0,
+          "end": 5,
+          "fps": 6,
+          "repeat": -1,
+          "h": 309
+        },
+        "cast": {
+          "start": 6,
+          "end": 10,
+          "fps": 10,
+          "repeat": 0,
+          "h": 288
+        },
+        "hurt": {
+          "start": 11,
+          "end": 12,
+          "fps": 8,
+          "repeat": 0,
+          "h": 250
+        },
+        "dead": {
+          "start": 13,
+          "end": 16,
+          "fps": 8,
+          "repeat": 0,
+          "h": 250
+        },
+        "taunt": {
+          "start": 17,
+          "end": 19,
+          "fps": 6,
+          "repeat": -1,
+          "h": 309
+        }
+      }
+    },
+    "angelo": {
+      "file": "assets/runtime/angelo.webp",
+      "frameWidth": 321,
+      "frameHeight": 251,
+      "originX": 0.313,
+      "originY": 0.9841,
+      "bodyHeight": 232,
+      "anims": {
+        "idle": {
+          "start": 0,
+          "end": 3,
+          "fps": 5,
+          "repeat": -1,
+          "h": 231
+        },
+        "run": {
+          "start": 4,
+          "end": 11,
+          "fps": 14,
+          "repeat": -1,
+          "h": 211
+        },
+        "talk": {
+          "start": 12,
+          "end": 15,
+          "fps": 7,
+          "repeat": -1,
+          "h": 233
+        },
+        "wave": {
+          "start": 16,
+          "end": 19,
+          "fps": 7,
+          "repeat": -1,
+          "h": 237
+        },
+        "arms": {
+          "start": 20,
+          "end": 21,
+          "fps": 2,
+          "repeat": -1,
+          "h": 238
+        },
+        "welcome": {
+          "start": 22,
+          "end": 23,
+          "fps": 5,
+          "repeat": 0,
+          "h": 238
+        },
+        "stance": {
+          "start": 24,
+          "end": 24,
+          "fps": 1,
+          "repeat": -1,
+          "h": 208
+        },
+        "crouch": {
+          "start": 25,
+          "end": 25,
+          "fps": 1,
+          "repeat": -1,
+          "h": 189
+        },
+        "leap": {
+          "start": 26,
+          "end": 26,
+          "fps": 1,
+          "repeat": -1,
+          "h": 229
+        },
+        "kick": {
+          "start": 27,
+          "end": 28,
+          "fps": 12,
+          "repeat": 0,
+          "h": 202
+        },
+        "drop": {
+          "start": 29,
+          "end": 29,
+          "fps": 1,
+          "repeat": -1,
+          "h": 152
+        },
+        "punch": {
+          "start": 30,
+          "end": 32,
+          "fps": 12,
+          "repeat": 0,
+          "h": 209
+        },
+        "uppercut": {
+          "start": 33,
+          "end": 34,
+          "fps": 10,
+          "repeat": 0,
+          "h": 205
+        },
+        "land": {
+          "start": 35,
+          "end": 35,
+          "fps": 1,
+          "repeat": -1,
+          "h": 173
+        },
+        "walk": {
+          "start": 36,
+          "end": 43,
+          "fps": 8,
+          "repeat": -1,
+          "h": 220
+        }
+      }
+    }
+  },
+  "umbraSourceFrames": 20,
+  "umbraLayout": "10x2; 298x320; native alpha; WebP quality 90",
+  "angeloBaseHash": "9c081b77c24935259eb8b66a133fa2ac01ca6fa35188db48ccddd73ab94c9e1d",
+  "sourceHashes": {
+    "umbra_cast.png": "f15c9b51c92008223b0ec265169003d9e7a217216cf38723ff8515384f437df1",
+    "umbra_dead.png": "01b6e2227b11290d641ecd990a61d1a684d1c1eca732426d3a7bab673b37a2cf",
+    "umbra_hurt.png": "2962b73b09e12029f78936e40e03fffc2fa2e65696d5f9e2e2442533207042f0",
+    "umbra_idle.png": "e309bc3803ad5ff0d5bf68225abd3bcf3931d6498ab74f3f66516d95b420f473",
+    "umbra_taunt.png": "e5512a8b661690c3658853beccd96576abd8337e196b25822c2b534c45c33bf9"
+  }
+}

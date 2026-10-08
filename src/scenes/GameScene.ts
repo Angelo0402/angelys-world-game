@@ -23,7 +23,7 @@ import { VEIL_DEFEAT, VEIL_INTRO, VEIL_NAME, VEIL_PHASE2, VEIL_PHASE3 } from "..
 import { SOVEREIGN_FALL, SOVEREIGN_TAUNT } from "../story/sovereign";
 import { WORM_INTRO, WORM_NAME } from "../story/worm";
 import { SENTINEL_INTRO } from "../story/sentinel";
-import { UMBRA_DEFEAT, UMBRA_INTRO, UMBRA_PHASE2, type DialogueLine } from "../story/umbra";
+import { UMBRA_DEFEAT, UMBRA_INTRO, UMBRA_PHASE2, UMBRA_VICTORY, type DialogueLine } from "../story/umbra";
 import { useTouchUi } from "../ui/screen";
 import { buildLevel, groundAt, groundY, type LevelDef, type PlatformDef, type Spot } from "../world/level";
 import { Mechanics } from "../world/Mechanics";
@@ -1425,7 +1425,8 @@ export class GameScene extends Phaser.Scene {
 
     // She keeps drifting closer while she talks.
     this.tweens.add({ targets: boss, x: arena.x1 - 420, duration: 9000, ease: "Sine.inOut" });
-    await this.say(UMBRA_INTRO);
+    await this.say(UMBRA_INTRO, (line) => boss.sprite.play(line.text.startsWith("Then come") ? "umbra:taunt" : "umbra:idle", true));
+    boss.sprite.play("umbra:idle", true);
 
     this.cinema(false, 600);
     this.registry.set("boss", { name: BOSS_NAME, hp: boss.hp, max: boss.maxHp });
@@ -1522,10 +1523,13 @@ export class GameScene extends Phaser.Scene {
     this.player.sprite.setFlipX(this.player.facing < 0);
     await this.wait(500);
     await this.say(UMBRA_DEFEAT);
-    this.boss!.vanish();
+    await this.wait(850);
+    await (this.boss as Boss).playDeath();
     if (this.bossShade) this.tweens.add({ targets: this.bossShade, fillColor: 0xffe7a3, fillAlpha: 0, duration: 1800 });
-    this.cameras.main.flash(700, 255, 240, 200);
-    await this.wait(1400);
+    this.cameras.main.flash(700, 205, 160, 255);
+    await this.wait(650);
+    await this.say(UMBRA_VICTORY);
+    await this.wait(1100);
 
     await angeloCutscene(this, this.level.arena!);
 

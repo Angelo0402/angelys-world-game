@@ -41,5 +41,9 @@ export const UMBRA_DEFEAT: DialogueLine[] = [
   { who: "umbra", text: "No... this light... it's so warm...", voice: "umbra_08" },
   { who: "umbra", text: "Angely... you are brighter than any shadow I have ever known.", voice: "umbra_09" },
   { who: "umbra", text: "The stars... the worlds... they are yours again. Take care of them, little light...", voice: "umbra_10" },
+];
+
+export const UMBRA_VICTORY: DialogueLine[] = [
   { who: "angely", face: "happy", text: "Every world is free! Time to bring the light back home!", voice: "angely_04" },
+  { who: "angely", face: "determined", text: "The darkness is gone... but the light was never mine alone. It belongs to everyone.", voice: "angely_33" },
 ];

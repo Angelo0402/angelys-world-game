@@ -382,6 +382,9 @@ def main():
     if os.path.exists("art/source/finale/layout.json"):
         from build_finale import build as build_finale
         build_finale()
+    if os.path.exists("art/source/upgrades/umbra_idle.png"):
+        from build_character_upgrades import build as build_character_upgrades
+        build_character_upgrades()
     print("packed stargem + starshield")
 
 

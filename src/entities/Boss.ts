@@ -275,7 +275,7 @@ export class Boss {
         this.x = end;
         this.state = "tired";
         this.sprite.setAngle(0);
-        this.sprite.play("umbra:dead", true);
+        this.sprite.play("umbra:hurt", true);
         this.sprite.anims.pause(this.sprite.anims.currentAnim!.frames[0]);
         this.y = GROUND_Y - 74;
         this.until = time + (this.phase === 2 ? 1500 : 2000);
@@ -373,14 +373,44 @@ export class Boss {
     Audio.sfx("boss_defeat");
     this.scene.cameras.main.shake(700, 0.01);
     this.scene.tweens.add({ targets: this, y: GROUND_Y - 100, duration: 900, ease: "Quad.out" });
-    this.scene.time.delayedCall(600, () => this.sprite.play("umbra:dead", true));
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 6; i++) {
       this.scene.time.delayedCall(i * 160, () =>
         this.scene.fx("fx_explode", "boom", this.x + Phaser.Math.Between(-70, 70), this.y + Phaser.Math.Between(-90, 60), 0.35, i % 2 ? 0xffe27a : 0xb08cff),
       );
     }
-    this.scene.time.delayedCall(1700, () => this.aura.stop());
     this.scene.onBossDefeated();
+  }
+
+  /** Play the authored four-frame dissolve and let its purple fragments rise away. */
+  async playDeath() {
+    this.warn.setVisible(false);
+    this.aura.stop();
+    this.sprite.setAlpha(1).play("umbra:dead", true);
+    const ashes = this.scene.add
+      .particles(this.x, this.y, "dot", {
+        x: { min: -80, max: 80 },
+        y: { min: -90, max: 80 },
+        speedY: { min: -155, max: -45 },
+        speedX: { min: -55, max: 55 },
+        lifespan: { min: 900, max: 1800 },
+        scale: { start: 0.75, end: 0 },
+        alpha: { start: 0.9, end: 0 },
+        tint: [0xe0b8ff, 0xb57cff, 0x6a2fb0],
+        frequency: 45,
+      })
+      .setDepth(46);
+    for (let i = 0; i < 12; i++) {
+      this.scene.time.delayedCall(i * 105, () => {
+        this.scene.fx("fx_spark", "hit", this.x + Phaser.Math.Between(-72, 72), this.y + Phaser.Math.Between(-105, 65), 0.28, i % 2 ? 0xe0b8ff : 0x8b4dcc);
+      });
+    }
+    this.scene.tweens.add({ targets: this.shadow, alpha: 0, scaleX: 3.1, scaleY: 0.35, duration: 1250, ease: "Sine.easeOut" });
+    await this.scene.wait(1050);
+    this.scene.tweens.add({ targets: this, y: this.y - 26, duration: 850, ease: "Sine.easeIn" });
+    this.scene.tweens.add({ targets: this.sprite, alpha: 0, duration: 850, ease: "Sine.easeIn" });
+    await this.scene.wait(850);
+    ashes.stop();
+    this.scene.time.delayedCall(1800, () => ashes.destroy());
   }
 
   /** Fade out entirely (after the farewell lines). */

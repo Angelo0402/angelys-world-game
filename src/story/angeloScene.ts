@@ -196,10 +196,11 @@ export async function angeloCutscene(scene: GameScene, arena: { x0: number; x1: 
       angelo.play(`angelo:${anim}`);
       angelo.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => res());
     });
-  const runTo = async (x: number, msPerPx = 1.5) => {
+  const runTo = async (x: number, msPerPx = 1.5, anim = "run") => {
     angelo.setFlipX(x < angelo.x);
-    pose("run");
+    pose(anim);
     await tween({ targets: angelo, x, duration: Math.max(260, Math.abs(angelo.x - x) * msPerPx) });
+    pose("idle");
   };
   const hitStop = (ms: number) => {
     tweens.pauseAll();
@@ -277,7 +278,7 @@ export async function angeloCutscene(scene: GameScene, arena: { x0: number; x1: 
   await scene.wait(700);
 
   // ---- father and daughter
-  await runTo(player.x + 150, 1.6);
+  await runTo(player.x + 150, 1.6, "walk");
   angelo.setFlipX(angelo.x > player.x);
   player.facing = angelo.x > player.x ? 1 : -1;
   pose("arms");
@@ -290,7 +291,7 @@ export async function angeloCutscene(scene: GameScene, arena: { x0: number; x1: 
   await reunionHug(scene, angelo);
 
   // ---- he leaves through his rift
-  await runTo(rift.x + 40, 1.4);
+  await runTo(rift.x + 40, 1.4, "walk");
   rift.surge();
   angelo.setTintFill(0xbfe0ff);
   await tween({ targets: angelo, x: rift.x, alpha: 0, scaleX: angelo.scaleX * 0.4, duration: 320, ease: "Quad.easeIn" });
@@ -315,9 +316,10 @@ export async function reunionHug(scene: GameScene, angelo: Phaser.GameObjects.Sp
   const pose = (anim: string) => angelo.play(`angelo:${anim}`, true);
   angelo.setFlipX(angelo.x > player.x);
   player.facing = angelo.x > player.x ? 1 : -1;
-  pose("run");
+  pose("walk");
   const meet = player.x + (angelo.x > player.x ? HUG_DX * 2 : -HUG_DX * 2);
   await tween({ targets: angelo, x: meet, duration: Math.max(280, Math.abs(angelo.x - meet) * 1.8) });
+  pose("idle");
   angelo.setFlipX(angelo.x > player.x);
   player.facing = angelo.x > player.x ? 1 : -1;
   await scene.wait(160);
@@ -392,8 +394,9 @@ export async function angeloPraise(scene: GameScene, arena: { x0: number; x1: nu
   await scene.say(ANGELO_LEAVES_RIFT, (l) => pose(l.who === "angelo" ? "talk" : "idle"));
 
   angelo.setFlipX(rift.x < angelo.x);
-  pose("run");
+  pose("walk");
   await tween({ targets: angelo, x: rift.x, duration: Math.max(400, Math.abs(angelo.x - rift.x) * 2) });
+  pose("idle");
   rift.surge();
   Audio.sfx("portal_enter");
   angelo.setTintFill(0xbfe0ff);

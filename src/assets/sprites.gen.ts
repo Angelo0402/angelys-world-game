@@ -280,31 +280,38 @@ export const SPRITES = {
     "anims": {
       "idle": {
         "start": 0,
-        "end": 3,
+        "end": 5,
         "fps": 6,
         "repeat": -1,
         "h": 309
       },
       "cast": {
-        "start": 4,
-        "end": 5,
-        "fps": 8,
+        "start": 6,
+        "end": 10,
+        "fps": 10,
         "repeat": 0,
         "h": 288
       },
       "hurt": {
-        "start": 6,
-        "end": 6,
+        "start": 11,
+        "end": 12,
         "fps": 8,
         "repeat": 0,
         "h": 250
       },
       "dead": {
-        "start": 7,
-        "end": 8,
-        "fps": 4,
+        "start": 13,
+        "end": 16,
+        "fps": 8,
         "repeat": 0,
-        "h": 214
+        "h": 250
+      },
+      "taunt": {
+        "start": 17,
+        "end": 19,
+        "fps": 6,
+        "repeat": -1,
+        "h": 309
       }
     }
   },
@@ -682,6 +689,13 @@ export const SPRITES = {
         "fps": 1,
         "repeat": -1,
         "h": 173
+      },
+      "walk": {
+        "start": 36,
+        "end": 43,
+        "fps": 8,
+        "repeat": -1,
+        "h": 220
       }
     }
   },
