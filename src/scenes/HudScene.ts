@@ -168,7 +168,7 @@ export class HudScene extends Phaser.Scene {
     this.gemIcon = this.add.image(GAME_W / 2 - 122, 39, "hud_gem").setDisplaySize(44, 54).setVisible(false);
     this.killPanel = this.add.container(0, 0, [kp, this.killText, this.lockIcon, this.gemIcon, lvl]);
 
-    const pause = this.add.container(GAME_W - 78, 40);
+    const pause = this.add.container(78, 40);
     pause.add(hudDisc(this, "hud_pause", 28)).setSize(64, 64).setInteractive({ useHandCursor: true });
     pause.on("pointerup", () => {
       if (this.overlay || this.cinema) return;
@@ -176,7 +176,7 @@ export class HudScene extends Phaser.Scene {
       this.game.events.emit("pause-request");
     });
 
-    const mute = this.add.container(GAME_W - 146, 40);
+    const mute = this.add.container(146, 40);
     const mg = hudDisc(this, "hud_sound", 24);
     const drawMute = () => {
       mg.setTexture(!Audio.musicOn && !Audio.sfxOn ? "hud_sound_off" : "hud_sound");

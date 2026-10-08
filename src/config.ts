@@ -108,7 +108,7 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
     splash: "splash5",
     background: "bg5",
     music: "music_shadow",
-    enemies: ["skeleton", "ghost", "frostwolf", "firebat", "magmagolem", "icewisp"],
+    enemies: ["skeleton", "ghost", "frostwolf", "firebat", "magmagolem", "icewisp", "lavablob", "shardknight", "voidwraith"],
     maxAlive: 4,
     spawnEvery: 1.6,
     pitKind: "pit",

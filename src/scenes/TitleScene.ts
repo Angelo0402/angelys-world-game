@@ -229,7 +229,7 @@ export class TitleScene extends Phaser.Scene {
     });
     this.input.on("pointerup", () => { scrolling = false; });
     if (save.level > 0 || save.weapons.length) {
-      const reset = new Button(this, GAME_W - 78, 18, "RESET", () => {
+      const reset = new Button(this, 78, GAME_H - 28, "RESET", () => {
         if (window.confirm("Reset all progress? Unlocked levels and weapons will be lost.")) {
           updateSave({ level: 0, weapons: [], cleared: false, finaleSeen: false });
           this.scene.restart({ select: true });

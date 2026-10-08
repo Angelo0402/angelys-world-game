@@ -767,7 +767,7 @@ export class GameScene extends Phaser.Scene {
       if (!Phaser.Geom.Rectangle.Overlaps(pb, gb)) continue;
       g.taken = true;
       Audio.sfx("gem");
-      Audio.playVoice("angely_bark_03"); // "Got one!"
+      if (Math.random() < 0.5) Audio.playVoice("angely_bark_03"); // "Got one!" (random, avoids overlap glitch)
       this.tweens.killTweensOf(g.sprite);
       this.tweens.add({ targets: g.sprite, scale: 1.6, alpha: 0, y: g.sprite.y - 40, duration: 400, onComplete: () => g.sprite.destroy() });
       this.fx("fx_spark", "hit", g.sprite.x, g.sprite.y, 0.35, 0x9ff5ff);
@@ -875,7 +875,7 @@ export class GameScene extends Phaser.Scene {
     if (stomping) {
       p.stompBounce(this.keyboardJumpHeld());
       Audio.sfx("stomp");
-      Audio.playVoice("angely_bark_08"); // "Bye-bye!"
+      if (Math.random() < 0.35) Audio.playVoice("angely_bark_08"); // "Bye-bye!" (random, avoids overlap glitch)
       this.fx("fx_dust", "puff", e.x, e.body.top + 10, 0.28);
       e.takeDamage(1, "stomp", p.x);
       return;
