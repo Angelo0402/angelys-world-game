@@ -315,13 +315,6 @@ export const SPRITES = {
       }
     }
   },
-        "end": 8,
-        "fps": 4,
-        "repeat": 0,
-        "h": 214
-      }
-    }
-  },
   "angely_boomerang": {
     "file": "assets/runtime/angely_boomerang.webp",
     "frameWidth": 220,
