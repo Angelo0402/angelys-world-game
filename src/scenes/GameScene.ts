@@ -22,6 +22,7 @@ import { Sandworm } from "../entities/Sandworm";
 import { VEIL_DEFEAT, VEIL_INTRO, VEIL_NAME, VEIL_PHASE2, VEIL_PHASE3 } from "../story/crystalveil";
 import { SOVEREIGN_FALL, SOVEREIGN_TAUNT } from "../story/sovereign";
 import { WORM_INTRO, WORM_NAME } from "../story/worm";
+import { SENTINEL_INTRO } from "../story/sentinel";
 import { UMBRA_DEFEAT, UMBRA_INTRO, UMBRA_PHASE2, type DialogueLine } from "../story/umbra";
 import { useTouchUi } from "../ui/screen";
 import { buildLevel, groundAt, groundY, type LevelDef, type PlatformDef, type Spot } from "../world/level";
@@ -100,6 +101,7 @@ export class GameScene extends Phaser.Scene {
   private bossShade?: Phaser.GameObjects.Rectangle;
   private bossDamage = 0;
   private nextVeilWave = 0;
+  private sentinelWaveAt = 0;
   private veilWave = 0;
   private veilSummons = new Set<Phaser.Time.TimerEvent>();
   private veilMarks = new Set<Phaser.GameObjects.GameObject>();
@@ -671,6 +673,7 @@ export class GameScene extends Phaser.Scene {
     if (this.boss && !this.cutscene) this.boss.update(time, delta);
     else this.boss?.update(time, 0);
     if (this.veilState === "fight" && !frozen) this.updateVeilWaves(time);
+    if (!frozen) this.updateSentinelWaves(time);
     this.mech.update(time, delta);
     this.updateFlood(time, delta);
 
@@ -1220,17 +1223,32 @@ export class GameScene extends Phaser.Scene {
   }
 
   private async sentinelIntro() {
-    // No cutscene - the Sentinel just rises and fights.
     const arena = this.level.arena!;
+    const cam = this.cameras.main;
+    this.cutscene = true;
+    cam.stopFollow();
+    cam.setScroll(0, 0);
+    Audio.stopMusic();
+    this.cinema(true, 700);
     this.mech.addBarrier(arena.x0 - 20);
     this.mech.addBarrier(arena.x1 + 20);
+    await this.wait(600);
     Audio.sfx("boss_roar");
-    this.cameras.main.shake(600, 0.006);
+    cam.shake(600, 0.006);
     const sentinel = new RuinSentinel(this, arena.x1 - 200, arena);
     (this as any).boss = sentinel;
+    await this.wait(800);
+    this.player.facing = 1;
+    this.player.sprite.setFlipX(false);
+    await this.say(SENTINEL_INTRO);
+    this.cinema(false, 500);
     this.registry.set("boss", { name: SENTINEL_NAME, hp: sentinel.hp, max: sentinel.maxHp });
     this.game.events.emit("hud:banner", SENTINEL_NAME);
+    Audio.music("music_boss");
     sentinel.begin();
+    this.cutscene = false;
+    // Backup enemies join the fight periodically (the boss was too easy alone).
+    this.sentinelWaveAt = this.time.now + 8000;
   }
 
   private async wormIntro() {
@@ -1501,6 +1519,7 @@ export class GameScene extends Phaser.Scene {
     await this.wait(1900);
     this.cinema(true, 700);
     this.player.facing = this.boss!.x > this.player.x ? 1 : -1;
+    this.player.sprite.setFlipX(this.player.facing < 0);
     await this.wait(500);
     await this.say(UMBRA_DEFEAT);
     this.boss!.vanish();
@@ -1673,6 +1692,23 @@ export class GameScene extends Phaser.Scene {
       });
       this.veilSummons.add(timer);
     }
+  }
+
+  /** Ruin Sentinel backup: spawn chapter-2 enemies periodically during the fight. */
+  private updateSentinelWaves(time: number) {
+    if (!this.sentinelWaveAt || time < this.sentinelWaveAt) return;
+    const boss = this.boss;
+    if (!(boss instanceof RuinSentinel) || !boss.alive || !this.player.alive || this.cutscene) return;
+    const arena = this.level.arena;
+    if (!arena) return;
+    this.sentinelWaveAt = time + 12000;
+    const alive = this.enemies.filter(e => e.alive).length;
+    if (alive >= 3) return;
+    const pool = ["skeleton", "ghost", "lantern"];
+    const key = pool[Math.floor(Math.random() * pool.length)];
+    const type = ENEMY_TYPES[key];
+    const x = Phaser.Math.Between(arena.x0 + 120, arena.x1 - 120);
+    this.spawnEnemy(key, x, type.flying ? GROUND_Y - 190 : GROUND_Y - 60);
   }
 
   /** Top Y of the nearest surface at or below `fromY` (null over a pit). */
