@@ -235,36 +235,36 @@ export const SPRITES = {
     "anims": {
       "rise": {
         "start": 0,
-        "end": 3,
-        "fps": 8,
+        "end": 5,
+        "fps": 10,
         "repeat": 0,
         "h": 271
       },
       "idle": {
-        "start": 4,
-        "end": 4,
-        "fps": 1,
+        "start": 6,
+        "end": 9,
+        "fps": 6,
         "repeat": -1,
         "h": 284
       },
       "spit": {
-        "start": 5,
-        "end": 6,
-        "fps": 10,
+        "start": 10,
+        "end": 13,
+        "fps": 12,
         "repeat": 0,
         "h": 192
       },
       "hurt": {
-        "start": 7,
-        "end": 7,
+        "start": 14,
+        "end": 15,
         "fps": 8,
         "repeat": 0,
         "h": 221
       },
       "dive": {
-        "start": 8,
-        "end": 9,
-        "fps": 8,
+        "start": 16,
+        "end": 19,
+        "fps": 10,
         "repeat": 0,
         "h": 208
       }
@@ -287,20 +287,34 @@ export const SPRITES = {
       },
       "cast": {
         "start": 4,
-        "end": 5,
-        "fps": 8,
+        "end": 6,
+        "fps": 10,
         "repeat": 0,
         "h": 288
       },
       "hurt": {
-        "start": 6,
-        "end": 6,
+        "start": 10,
+        "end": 11,
         "fps": 8,
         "repeat": 0,
         "h": 250
       },
       "dead": {
-        "start": 7,
+        "start": 12,
+        "end": 15,
+        "fps": 8,
+        "repeat": 0,
+        "h": 250
+      },
+      "taunt": {
+        "start": 16,
+        "end": 19,
+        "fps": 6,
+        "repeat": -1,
+        "h": 309
+      }
+    }
+  },
         "end": 8,
         "fps": 4,
         "repeat": 0,
