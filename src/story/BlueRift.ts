@@ -20,7 +20,7 @@ export class BlueRift {
     this.scale = scaleForHeight("portal",260,"open");
     this.sprite = scene.add.sprite(x,this.y,"portal").setDepth(57).setScale(this.scale*.1).setAlpha(0);
     applyOrigin(this.sprite,"portal");
-    this.sprite.play("final_portal:open");
+    this.sprite.play("portal:glow");
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN,this.destroy,this);
   }
 
@@ -40,7 +40,7 @@ export class BlueRift {
     if (this.closed) return Promise.resolve();
     this.closed = true;
     Audio.sfx("portal_enter");
-    this.sprite.play("final_portal:close");
+    this.sprite.play("portal:idle");
     return new Promise<void>(resolve => {
       this.timer = this.scene.time.delayedCall(700,() => {
         this.scene.tweens.add({targets:this.sprite,alpha:0,scale:this.scale*.04,duration:350,onComplete:() => {

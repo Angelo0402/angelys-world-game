@@ -74,30 +74,30 @@ export async function veilFinale(scene: GameScene,angelo: Phaser.GameObjects.Spr
   p.body.setAllowGravity(false).setVelocity(0,0);
   p.sprite.setVisible(false);
   const girl = shot.sprite("angely","idle",p.x,GROUND_Y+4,112);
-  angelo.setFlipX(true).play("angelo_finale:smile",true);
+  angelo.setFlipX(true).play("angelo:idle",true);
   if (!await shot.say(VEIL_RESCUE,line => {
-    angelo.play(`angelo_finale:${line.who === "angelo" ? "talk" : "smile"}`,true);
-    girl.play(`angely_finale:${line.who === "angely" ? "talk" : "idle"}`,true);
+    angelo.play(`angelo:${line.who === "angelo" ? "talk" : "smile"}`,true);
+    girl.play(`angely:${line.who === "angely" ? "talk" : "idle"}`,true);
   })) return false;
 
-  angelo.play("angelo_finale:kneel");
-  girl.play("angely_finale:run",true);
+  angelo.play("angelo:crouch");
+  girl.play("angely:run",true);
   if (!await shot.tween({targets:girl,x:angelo.x-48,duration:600,ease:"Sine.easeInOut"})) return false;
   const meet = angelo.x-38;
   girl.setVisible(false);
   angelo.setVisible(false);
   const hug = shot.sprite("angelo_hug","approach",meet,GROUND_Y+4,142);
   if (!await shot.delay(650)) return false;
-  hug.play("final_pair_reunion:hug",true);
+  hug.play("angelo_hug:hug",true);
   Audio.sfx("heart_pickup");
   if (!await shot.delay(1900)) return false;
-  hug.play("final_pair_reunion:pat");
+  hug.play("angelo_hug:pat");
   if (!await shot.delay(900)) return false;
   hug.destroy();
 
   scene.veilState = "together";
-  girl.setPosition(meet-40,GROUND_Y+4).setVisible(true).play("angely_finale:happy",true);
-  angelo.setPosition(meet+40,GROUND_Y+4).setVisible(true).setFlipX(true).play("angelo_finale:smile",true);
+  girl.setPosition(meet-40,GROUND_Y+4).setVisible(true).play("angely:celebrate",true);
+  angelo.setPosition(meet+40,GROUND_Y+4).setVisible(true).setFlipX(true).play("angelo:idle",true);
   const portalX = scene.level.arena!.x0+340;
   const gate = shot.sprite("portal","open",portalX,GROUND_Y-122,260,64).setAlpha(0);
   const gateScale = gate.scale;
@@ -105,12 +105,12 @@ export async function veilFinale(scene: GameScene,angelo: Phaser.GameObjects.Spr
   Audio.sfx("portal_unlock");
   if (!await shot.tween({targets:gate,alpha:1,scale:gateScale,duration:950,ease:"Sine.easeOut"})) return false;
   if (!await shot.say(VEIL_FAREWELL,line => {
-    angelo.play(`angelo_finale:${line.who === "angelo" ? "reach" : "smile"}`,true);
-    girl.play(`angely_finale:${line.who === "angely" ? "talk" : "reach"}`,true);
+    angelo.play(`angelo:${line.who === "angelo" ? "reach" : "smile"}`,true);
+    girl.play(`angely:${line.who === "angely" ? "talk" : "reach"}`,true);
   })) return false;
   // Offer the hand on screen before the joined walking sprites take over.
-  angelo.play("angelo_finale:reach",true);
-  girl.play("angely_finale:reach",true);
+  angelo.play("angelo:wave",true);
+  girl.play("angely:walk",true);
   if (!await shot.delay(800)) return false;
   angelo.setVisible(false);
   girl.setVisible(false);
