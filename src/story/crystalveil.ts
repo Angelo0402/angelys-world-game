@@ -3,35 +3,37 @@ import type { DialogueLine } from "./umbra";
 export const VEIL_NAME = "CRYSTAL VEIL";
 
 export const VEIL_INTRO: DialogueLine[] = [
-  { who: "angely", face: "surprised", text: "Dad! I found you!", voice: "angely_23" },
-  { who: "angelo", text: "Angely! The crown is keeping this cage sealed.", voice: "angelo_16" },
-  { who: "angelo", text: "Watch for the pink light. Its core opens after it attacks.", voice: "angelo_17" },
-  { who: "angely", face: "determined", text: "Then I'll break its spell. Hold on, Dad!", voice: "angely_24" },
+  { who: "angelo", text: "Angely! I'm stuck up here — get me out!" },
+  { who: "angely", face: "surprised", text: "Dad?! Hold on, I'll cut you free!" },
+  { who: "angelo", text: "That crystal thing grabbed me. Don't let it get you." },
+  { who: "angely", face: "determined", text: "Stay put. I'm coming for you." },
 ];
 
-export const VEIL_PHASE2: DialogueLine = { who: "angely",
+export const VEIL_PHASE2: DialogueLine = {
+  who: "angely",
   face: "determined",
-  text: "The floor is glowing! Move before the crystals rise!", voice: "angely_25",
+  text: "The crystals are waking up. Keep moving!",
 };
 
-export const VEIL_PHASE3: DialogueLine = { who: "angely",
+export const VEIL_PHASE3: DialogueLine = {
+  who: "angely",
   face: "determined",
-  text: "Here comes the beam! Jump, then strike the core!", voice: "angely_26",
+  text: "It's glowing brighter. Hit it between the beams!",
 };
 
 export const VEIL_DEFEAT: DialogueLine[] = [
-  { who: "angelo", text: "You did it! The lock is losing its light!", voice: "angelo_18" },
-  { who: "angely", face: "happy", text: "It's over. You're coming home.", voice: "angely_27" },
+  { who: "angelo", text: "You did it! Get me out of here!" },
+  { who: "angely", face: "happy", text: "I'm coming, Dad!" },
 ];
 
 export const VEIL_RESCUE: DialogueLine[] = [
-  { who: "angelo", text: "My brave girl. You crossed the whole Veil for me.", voice: "angelo_19" },
-  { who: "angely", face: "happy", text: "Of course I did. I wasn't leaving without my dad.", voice: "angely_28" },
+  { who: "angelo", text: "That's my girl. I knew you'd find me." },
+  { who: "angely", face: "happy", text: "I wasn't going to leave you in there." },
 ];
 
 export const VEIL_FAREWELL: DialogueLine[] = [
-  { who: "angelo", text: "The blue gate is open. Take my hand, Angely.", voice: "angelo_20" },
-  { who: "angely", face: "happy", text: "We're going together this time, right?", voice: "angely_29" },
-  { who: "angelo", text: "Together. Wherever our next adventure takes us.", voice: "angelo_21" },
-  { who: "angely", face: "happy", text: "Love you, Dad. Let's go!", voice: "angely_30" },
+  { who: "angelo", text: "I have to take my gate. You take yours." },
+  { who: "angelo", text: "Keep going, okay?" },
+  { who: "angely", face: "determined", text: "I will. Love you, Dad!" },
+  { who: "angelo", text: "Love you too, kiddo. I'll be watching." },
 ];

@@ -76,6 +76,7 @@ export class Player {
   private lastFallSpeed = 0;
   private landUntil = 0;
   private moveAnimUntil = 0;
+  private lastTrailAt = 0;
 
   constructor(scene: GameScene, x: number, y: number) {
     this.scene = scene;
@@ -182,6 +183,7 @@ export class Player {
       this.jumpCut = false;
       if (!this.wasGrounded && body.velocity.y >= 0) {
         this.scene.fx("fx_dust", "puff", this.x, body.bottom, 0.22);
+        this.scene.vfx.landDust(this.x, body.bottom);
         if (this.lastFallSpeed > 380 && this.state === "normal") {
           this.landUntil = time + 120;
           this.setAnim("angely", "land", true);
@@ -229,6 +231,7 @@ export class Player {
         this.lastGrounded = -1000;
         Audio.sfx("jump");
         this.scene.fx("fx_dust", "puff", this.x, body.bottom, 0.2);
+        this.scene.vfx.jumpPoof(this.x, body.bottom);
       }
       if (body.velocity.y >= 0) this.boosted = false;
       if (this.boosted) body.setGravityY(0);
@@ -440,8 +443,8 @@ export class Player {
     this.hearts = Math.max(0, this.hearts - 1);
     this.scene.onHeartsChanged(this.hearts);
     Audio.sfx("player_hurt");
-    Audio.playVoice("angely_bark_04"); // "Ouch!"
     this.scene.cameras.main.shake(160, 0.008);
+    this.scene.vfx.hurtFlash();
     this.invulnUntil = this.scene.time.now + INVULN_MS;
     if (this.hearts <= 0) {
       this.die();
@@ -494,7 +497,6 @@ export class Player {
   private die() {
     this.state = "dead";
     Audio.sfx("player_defeat");
-    Audio.playVoice("angely_bark_05"); // "Again! Again!"
     this.body.setVelocity(-this.facing * 120, -260);
     this.setAnim("angely", "defeat", true);
     this.scene.onPlayerDefeated(true);
@@ -531,6 +533,11 @@ export class Player {
     const s = this.sprite;
     s.x = this.x;
     const swimSheet = this.sheet === "angely_swim";
+    // Golden run trail when sprinting on ground
+    if (this.grounded && Math.abs(this.body.velocity.x) > 225 && this.alive && time - this.lastTrailAt > 90) {
+      this.lastTrailAt = time;
+      this.scene.vfx.runTrail(this.x - this.facing * 20, this.body.bottom - 30);
+    }
     s.y = swimSheet ? this.body.bottom - HEIGHT / 2 + 4 : this.body.bottom + 1;
     const tilt = swimSheet && s.anims.currentAnim?.key === "angely_swim:swim" ? Phaser.Math.Clamp(this.body.velocity.y / 900, -0.35, 0.35) * this.facing : 0;
     s.rotation = Phaser.Math.Linear(s.rotation, tilt, 0.2);

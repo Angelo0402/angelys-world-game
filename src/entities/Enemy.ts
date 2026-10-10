@@ -299,6 +299,7 @@ export class Enemy {
     this.warn.setVisible(false);
     this.sprite.angle = 0;
     this.sprite.setTintFill(0xffffff);
+    this.scene.vfx.hitSpark(this.x, this.body.center.y);
     this.scene.time.delayedCall(80, () => this.sprite.active && this.restoreTint());
     if (this.hp <= 0) {
       this.die();
@@ -320,6 +321,7 @@ export class Enemy {
     this.body.enable = false;
     this.warn.destroy();
     Audio.sfx("enemy_defeat");
+    this.scene.vfx.enemyPoof(this.x, this.body.center.y);
     this.play("dead", false);
     if (this.type.flying) {
       this.scene.tweens.add({ targets: this.sprite, y: this.sprite.y + 40, duration: 400, ease: "Quad.in" });
