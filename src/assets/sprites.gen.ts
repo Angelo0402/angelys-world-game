@@ -10,91 +10,91 @@ export const SPRITES = {
     "anims": {
       "idle": {
         "start": 0,
-        "end": 3,
+        "end": 7,
         "fps": 5,
         "repeat": -1,
         "h": 243
       },
       "walk": {
-        "start": 4,
-        "end": 9,
+        "start": 8,
+        "end": 13,
         "fps": 9,
         "repeat": -1,
         "h": 239
       },
       "run": {
-        "start": 10,
-        "end": 25,
+        "start": 14,
+        "end": 29,
         "fps": 14,
         "repeat": -1,
         "h": 228
       },
       "start": {
-        "start": 26,
-        "end": 28,
+        "start": 30,
+        "end": 32,
         "fps": 18,
         "repeat": 0,
         "h": 248
       },
       "stop": {
-        "start": 29,
-        "end": 31,
+        "start": 33,
+        "end": 35,
         "fps": 14,
         "repeat": 0,
         "h": 243
       },
       "jump": {
-        "start": 32,
-        "end": 35,
+        "start": 36,
+        "end": 39,
         "fps": 20,
         "repeat": 0,
         "h": 232
       },
       "air": {
-        "start": 36,
-        "end": 36,
+        "start": 40,
+        "end": 40,
         "fps": 1,
         "repeat": -1,
         "h": 220
       },
       "fall": {
-        "start": 37,
-        "end": 38,
+        "start": 41,
+        "end": 42,
         "fps": 6,
         "repeat": -1,
         "h": 246
       },
       "land": {
-        "start": 39,
-        "end": 39,
+        "start": 43,
+        "end": 43,
         "fps": 1,
         "repeat": 0,
         "h": 208
       },
       "hurt": {
-        "start": 40,
-        "end": 41,
+        "start": 44,
+        "end": 45,
         "fps": 10,
         "repeat": 0,
         "h": 204
       },
       "celebrate": {
-        "start": 42,
-        "end": 45,
+        "start": 46,
+        "end": 49,
         "fps": 7,
         "repeat": -1,
         "h": 222
       },
       "defeat": {
-        "start": 46,
-        "end": 48,
+        "start": 50,
+        "end": 52,
         "fps": 5,
         "repeat": 0,
         "h": 180
       },
       "push": {
-        "start": 49,
-        "end": 54,
+        "start": 53,
+        "end": 58,
         "fps": 9,
         "repeat": -1,
         "h": 220
