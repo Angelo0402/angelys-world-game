@@ -5,6 +5,8 @@ export interface DialogueLine {
   text: string;
   /** Angely's portrait variant. */
   face?: "determined" | "surprised" | "happy";
+  /** Voice clip identifier for voice acting. */
+  voice?: string;
 }
 
 /** side: where the portrait sits in the subtitle box. */

@@ -17,9 +17,9 @@ export class BlueRift {
   constructor(scene: GameScene,x: number) {
     this.scene = scene;
     this.x = x;
-    this.scale = scaleForHeight("final_portal",260,"open");
-    this.sprite = scene.add.sprite(x,this.y,"final_portal").setDepth(57).setScale(this.scale*.1).setAlpha(0);
-    applyOrigin(this.sprite,"final_portal");
+    this.scale = scaleForHeight("portal",260,"open");
+    this.sprite = scene.add.sprite(x,this.y,"portal").setDepth(57).setScale(this.scale*.1).setAlpha(0);
+    applyOrigin(this.sprite,"portal");
     this.sprite.play("final_portal:open");
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN,this.destroy,this);
   }

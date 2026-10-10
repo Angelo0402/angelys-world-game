@@ -64,7 +64,7 @@ export class GameScene extends Phaser.Scene {
   kills = 0;
   boss?: Boss | Sandworm | CrystalVeilBoss | RuinSentinel;
   veilCage?: CageAngelo;
-  veilState: "idle" | "intro" | "fight" | "defeat" | "rescue" | "angelo_exit" | "angely_exit" | "done" = "idle";
+  veilState: "idle" | "intro" | "fight" | "defeat" | "rescue" | "angelo_exit" | "angely_exit" | "done" | "together" | "portal_exit" = "idle";
   mech!: Mechanics;
   portal!: Portal;
   cutscene = false;

@@ -73,7 +73,7 @@ export async function veilFinale(scene: GameScene,angelo: Phaser.GameObjects.Spr
   p.freeze();
   p.body.setAllowGravity(false).setVelocity(0,0);
   p.sprite.setVisible(false);
-  const girl = shot.sprite("angely_finale","idle",p.x,GROUND_Y+4,112);
+  const girl = shot.sprite("angely","idle",p.x,GROUND_Y+4,112);
   angelo.setFlipX(true).play("angelo_finale:smile",true);
   if (!await shot.say(VEIL_RESCUE,line => {
     angelo.play(`angelo_finale:${line.who === "angelo" ? "talk" : "smile"}`,true);
@@ -86,7 +86,7 @@ export async function veilFinale(scene: GameScene,angelo: Phaser.GameObjects.Spr
   const meet = angelo.x-38;
   girl.setVisible(false);
   angelo.setVisible(false);
-  const hug = shot.sprite("final_pair_reunion","approach",meet,GROUND_Y+4,142);
+  const hug = shot.sprite("angelo_hug","approach",meet,GROUND_Y+4,142);
   if (!await shot.delay(650)) return false;
   hug.play("final_pair_reunion:hug",true);
   Audio.sfx("heart_pickup");
@@ -99,7 +99,7 @@ export async function veilFinale(scene: GameScene,angelo: Phaser.GameObjects.Spr
   girl.setPosition(meet-40,GROUND_Y+4).setVisible(true).play("angely_finale:happy",true);
   angelo.setPosition(meet+40,GROUND_Y+4).setVisible(true).setFlipX(true).play("angelo_finale:smile",true);
   const portalX = scene.level.arena!.x0+340;
-  const gate = shot.sprite("final_portal","open",portalX,GROUND_Y-122,260,64).setAlpha(0);
+  const gate = shot.sprite("portal","open",portalX,GROUND_Y-122,260,64).setAlpha(0);
   const gateScale = gate.scale;
   gate.setScale(gateScale*.1);
   Audio.sfx("portal_unlock");
@@ -115,20 +115,20 @@ export async function veilFinale(scene: GameScene,angelo: Phaser.GameObjects.Spr
   angelo.setVisible(false);
   girl.setVisible(false);
   // The painted pair walks left. Mirror only when the gate is to their right.
-  const pair = shot.sprite("final_pair_side","walk",meet,GROUND_Y+4,155).setFlipX(portalX > meet);
+  const pair = shot.sprite("angelo_hug","walk",meet,GROUND_Y+4,155).setFlipX(portalX > meet);
   if (!await shot.tween({targets:pair,x:portalX,duration:Math.max(1500,Math.abs(meet-portalX)*7),ease:"Sine.easeInOut"})) return false;
   pair.destroy();
 
   scene.veilState = "portal_exit";
   // Turn away before the joined rear-view walk. No face is shown here.
-  const dadBack = shot.sprite("angelo_finale_back","walk",portalX-38,GROUND_Y+4,142);
-  const girlBack = shot.sprite("angely_finale_back","walk",portalX+38,GROUND_Y+4,112);
+  const dadBack = shot.sprite("angelo","walk",portalX-38,GROUND_Y+4,142);
+  const girlBack = shot.sprite("angely","walk",portalX+38,GROUND_Y+4,112);
   dadBack.anims.stop();
   girlBack.anims.stop();
   if (!await shot.delay(550)) return false;
   dadBack.destroy();
   girlBack.destroy();
-  const away = shot.sprite("final_pair_back","walk",portalX,GROUND_Y+4,155);
+  const away = shot.sprite("angelo_hug","walk",portalX,GROUND_Y+4,155);
   away.setData("finalePair",true);
   Audio.sfx("portal_enter");
   if (!await shot.tween({targets:away,y:GROUND_Y-42,scale:away.scale*.62,duration:2100,ease:"Sine.easeIn"})) return false;

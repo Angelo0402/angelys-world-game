@@ -3,7 +3,7 @@ export const GAME_H = 576;
 export const GROUND_Y = 500;
 export const MAX_HEARTS = 5;
 
-export type ChapterId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+export type ChapterId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
 export const LAST_CHAPTER: ChapterId = 10;
 export type MusicTrack =
   | "music_title"
@@ -180,6 +180,19 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
     pitKind: "pit",
     grip: 1,
     ambient: { color: 0xb7a6ff, count: 34 },
+  },
+  11: {
+    id: 11,
+    name: "The Final Horizon",
+    splash: "splash10",
+    background: "bg10",
+    music: "music_shadow",
+    enemies: [],
+    maxAlive: 0,
+    spawnEvery: 999,
+    pitKind: "pit",
+    grip: 1,
+    ambient: { color: 0xb7a6ff, count: 0 },
   },
 };
 

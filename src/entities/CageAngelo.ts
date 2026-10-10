@@ -17,13 +17,13 @@ export class CageAngelo {
   constructor(scene: GameScene, x: number) {
     this.scene = scene;
     this.x = x;
-    this.actor = scene.add.sprite(x,this.y-18,"angelo_finale").setDepth(69)
-      .setScale(scaleForHeight("angelo_finale",142,"idle"));
-    applyOrigin(this.actor,"angelo_finale");
+    this.actor = scene.add.sprite(x,this.y-18,"angelo").setDepth(69)
+      .setScale(scaleForHeight("angelo",142,"idle"));
+    applyOrigin(this.actor,"angelo");
     this.actor.play("angelo_finale:idle");
-    this.cage = scene.add.sprite(x,this.y,"veil_cage").setDepth(72)
-      .setScale(scaleForHeight("veil_cage",210,"idle"));
-    applyOrigin(this.cage,"veil_cage");
+    this.cage = scene.add.sprite(x,this.y,"angelo_cage").setDepth(72)
+      .setScale(scaleForHeight("angelo_cage",210,"idle"));
+    applyOrigin(this.cage,"angelo_cage");
     this.cage.play("veil_cage:idle");
   }
 
