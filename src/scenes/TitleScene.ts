@@ -28,12 +28,14 @@ export class TitleScene extends Phaser.Scene {
       } catch (e) {
         console.warn("[chapterSelect] title_bg failed:", e);
       }
-      this.add.rectangle(0, 0, GAME_W, GAME_H, 0x120d1f, 0.3).setOrigin(0);
+      this.add.rectangle(0, 0, GAME_W, GAME_H, 0x120d1f, 0.15).setOrigin(0);
       try {
         this.showChapterSelect();
       } catch (e) {
         console.error("[chapterSelect] FATAL:", e);
-        titleText(this, GAME_W / 2, GAME_H / 2, "Error loading chapters", 32);
+        const msg = e instanceof Error ? e.message : String(e);
+        titleText(this, GAME_W / 2, GAME_H / 2 - 20, "Error loading chapters", 32);
+        titleText(this, GAME_W / 2, GAME_H / 2 + 20, msg.slice(0, 80), 16, "#ff9a9a");
       }
     } else {
       this.showTitle();
