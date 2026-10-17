@@ -90,6 +90,7 @@ export class GameScene extends Phaser.Scene {
   private portalArrow!: Phaser.GameObjects.Container;
   private ambient!: Phaser.GameObjects.Particles.ParticleEmitter;
   public vfx!: VisualFX;
+  private hitStopActive = false;
   private swordStone?: Phaser.GameObjects.Sprite;
   private weaponPickup?: { sprite: Phaser.GameObjects.Sprite; kind: WeaponId; glow: Phaser.GameObjects.Particles.ParticleEmitter };
   private nextSpawn = 0;
@@ -885,12 +886,25 @@ export class GameScene extends Phaser.Scene {
     return any;
   }
 
+  /** Hit-stop: freeze the world for a few frames on impact (game feel). */
+  hitStop(ms = 70): void {
+    if (this.hitStopActive || this.physics.world.isPaused) return;
+    this.hitStopActive = true;
+    this.physics.pause();
+    this.time.delayedCall(ms, () => {
+      this.physics.resume();
+      this.hitStopActive = false;
+    });
+  }
+
   swordHit(r: Phaser.Geom.Rectangle, hits: Set<unknown>) {
     const before = hits.size;
     this.hitArea(r, hits, 1, "sword", this.player.x);
     if (hits.size > before) {
       Audio.sfx("sword_hit");
-      this.cameras.main.shake(70, 0.004);
+      this.cameras.main.shake(90, 0.006);
+      this.hitStop(60);
+      this.player.applyRecoil(this.player.facing);
     }
     if (!hits.has(this.mech) && this.mech.swordAt(r)) hits.add(this.mech);
     this.projectiles.getChildren().forEach((obj) => {
@@ -902,6 +916,7 @@ export class GameScene extends Phaser.Scene {
   hammerHit(r: Phaser.Geom.Rectangle, hits: Set<unknown>, impactX: number, floorY: number, grounded: boolean) {
     Audio.sfx("hammer_smash");
     this.cameras.main.shake(160, grounded ? 0.01 : 0.005);
+    this.hitStop(90);
     if (grounded) {
       this.fx("fx_dust", "puff", impactX - 30, floorY, 0.4);
       this.fx("fx_dust", "puff", impactX + 30, floorY, 0.4);

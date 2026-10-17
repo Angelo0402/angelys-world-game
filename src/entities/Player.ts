@@ -77,6 +77,14 @@ export class Player {
   private landUntil = 0;
   private moveAnimUntil = 0;
   private lastTrailAt = 0;
+  private recoilVx = 0;
+  private recoilUntil = 0;
+
+  /** Slight bounce-back when a melee hit lands (game feel). */
+  applyRecoil(attackDir: 1 | -1): void {
+    this.recoilVx = -attackDir * 170;
+    this.recoilUntil = this.scene.time.now + 120;
+  }
 
   constructor(scene: GameScene, x: number, y: number) {
     this.scene = scene;
@@ -208,7 +216,7 @@ export class Player {
       let speed = this.swim ? SWIM_SPEED : SPEED;
       if (this.state === "attack" && !this.airAttack) speed *= this.attackWeapon === "hammer" ? 0.1 : 0.25;
       if (this.pushing) speed = PUSH_SPEED;
-      const target = input.axis * speed;
+      const target = input.axis * speed + (time < this.recoilUntil ? this.recoilVx : 0);
       const vx = body.velocity.x;
       const braking = target === 0 || Math.sign(target) !== Math.sign(vx);
       const accel = !grounded ? AIR_ACCEL : braking ? GROUND_DECEL * this.grip : GROUND_ACCEL * Math.max(0.45, this.grip);
