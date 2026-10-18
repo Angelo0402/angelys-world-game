@@ -17,7 +17,7 @@ export class CageAngelo {
   constructor(scene: GameScene, x: number) {
     this.scene = scene;
     this.x = x;
-    this.actor = scene.add.sprite(x,this.y-18,"angelo").setDepth(69)
+    this.actor = scene.add.sprite(x,this.y-34,"angelo").setDepth(69)
       .setScale(scaleForHeight("angelo",142,"idle"));
     applyOrigin(this.actor,"angelo");
     this.actor.play("angelo_finale:idle");
