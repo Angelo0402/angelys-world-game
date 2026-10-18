@@ -19,9 +19,22 @@ export class TitleScene extends Phaser.Scene {
     Audio.duck(false);
     this.cameras.main.fadeIn(500, 18, 13, 31);
     if (data?.select) {
-      coverImage(this, "title_bg").setTint(0x9a94c0);
-      this.add.rectangle(0, 0, GAME_W, GAME_H, 0x120d1f, 0.3).setOrigin(0);
-      this.showChapterSelect();
+      // Solid fallback first: the selector must remain visible if a texture fails.
+      this.add.rectangle(0, 0, GAME_W, GAME_H, 0x1b0f2e).setOrigin(0);
+      try {
+        if (this.textures.exists("title_bg")) coverImage(this, "title_bg").setTint(0x9a94c0);
+      } catch (error) {
+        console.warn("[chapterSelect] title_bg failed:", error);
+      }
+      this.add.rectangle(0, 0, GAME_W, GAME_H, 0x120d1f, 0.15).setOrigin(0);
+      try {
+        this.showChapterSelect();
+      } catch (error) {
+        console.error("[chapterSelect] FATAL:", error);
+        const message = error instanceof Error ? error.message : String(error);
+        titleText(this, GAME_W / 2, GAME_H / 2 - 20, "Error loading chapters", 32);
+        titleText(this, GAME_W / 2, GAME_H / 2 + 20, message.slice(0, 80), 16, "#ff9a9a");
+      }
     } else {
       this.showTitle();
     }
@@ -114,7 +127,9 @@ export class TitleScene extends Phaser.Scene {
   private showChapterSelect() {
     const save = loadSave();
     titleText(this, GAME_W / 2, 18, "CHOOSE A LEVEL", 28);
-    const ids = (Object.keys(CHAPTERS).map(Number) as ChapterId[]).sort((a, b) => a - b);
+    const ids = (Object.keys(CHAPTERS).map(Number) as ChapterId[])
+      .filter((id) => levelsOf(id).length > 0)
+      .sort((a, b) => a - b);
     const nav: NavItem[] = [];
     let initial = 0;
     let picked = false;
@@ -126,15 +141,21 @@ export class TitleScene extends Phaser.Scene {
       this.cameras.main.fadeOut(300, 18, 13, 31);
       this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("Splash", { level: index }));
     };
-    // ---- vertical scroll list (Angelo: scroll de arriba para abajo) ----
+    // Geometry masks render as an opaque black wall on some Android GPUs.
+    // Keep the list unmasked and cull cards outside the viewport instead.
     const LIST_TOP = 60;
     const LIST_H = GAME_H - LIST_TOP - 10;
     const CW = 1100;
     const CH = 200;
     const GAP = 16;
     const list = this.add.container(GAME_W / 2, LIST_TOP);
-    const maskG = this.make.graphics().fillRect(0, LIST_TOP, GAME_W, LIST_H);
-    list.setMask(maskG.createGeometryMask());
+    const cards: Phaser.GameObjects.Container[] = [];
+    const cullCards = () => {
+      for (const card of cards) {
+        const worldY = list.y + card.y;
+        card.setVisible(worldY + CH / 2 > LIST_TOP - CH && worldY - CH / 2 < LIST_TOP + LIST_H + CH);
+      }
+    };
     let y = CH / 2;
     ids.forEach((id) => {
       const x = 0;
@@ -146,16 +167,34 @@ export class TitleScene extends Phaser.Scene {
       const gold = id === 5 ? 0xd2a4ff : 0xffd36b;
       frame.fillStyle(0x1b0f2e, 0.88).fillRoundedRect(-CW / 2, -CH / 2, CW, CH, 24);
       frame.lineStyle(4, locked ? 0x5a5470 : gold, 1).strokeRoundedRect(-CW / 2, -CH / 2, CW, CH, 24);
-      // thumbnail on left
+      // Thumbnail failures must not take down the entire chapter selector.
       const TW = 360, TH = 168;
       const tx = -CW / 2 + 16 + TW / 2;
-      const img = this.add.image(tx, 0, ch.splash);
-      img.setScale(Math.max(TW / img.width, TH / img.height));
-      img.setCrop((img.width - TW / img.scale) / 2, (img.height - TH / img.scale) / 2, TW / img.scale, TH / img.scale);
-      if (locked) img.setTint(0x333344);
+      try {
+        if (this.textures.exists(ch.splash)) {
+          const img = this.add.image(tx, 0, ch.splash);
+          if (img.width > 0 && img.height > 0) {
+            img.setScale(Math.max(TW / img.width, TH / img.height));
+            const sourceWidth = TW / img.scaleX;
+            const sourceHeight = TH / img.scaleY;
+            if (
+              Number.isFinite(sourceWidth) && Number.isFinite(sourceHeight)
+              && sourceWidth > 0 && sourceHeight > 0
+              && sourceWidth <= img.width && sourceHeight <= img.height
+            ) {
+              img.setCrop((img.width - sourceWidth) / 2, (img.height - sourceHeight) / 2, sourceWidth, sourceHeight);
+            }
+            card.add(img);
+          }
+        } else {
+          console.warn(`[chapterSelect] missing texture: ${ch.splash}`);
+        }
+      } catch (error) {
+        console.warn(`[chapterSelect] thumbnail failed for ${ch.splash}:`, error);
+      }
       const thumbFrame = this.add.graphics();
       thumbFrame.lineStyle(3, locked ? 0x5a5470 : gold, 0.9).strokeRoundedRect(tx - TW / 2, -TH / 2, TW, TH, 12);
-      card.add([frame, img, thumbFrame]);
+      card.add([frame, thumbFrame]);
       if (locked) {
         const lock = this.add.graphics();
         drawLock(lock, tx, 0, 1.1);
@@ -214,10 +253,11 @@ export class TitleScene extends Phaser.Scene {
         nav.push({ x: GAME_W / 2 + px + pw / 2, y: LIST_TOP + y + py, focus: (on) => draw(on), activate: () => start(l.index) });
       });
       list.add(card);
+      cards.push(card);
       y += CH + GAP;
     });
     const contentH = y - GAP + CH / 2;
-    // drag to scroll
+    // Drag to scroll; culling avoids the Android geometry-mask bug.
     let dragY = 0;
     let scrolling = false;
     this.input.on("pointerdown", (p: Phaser.Input.Pointer) => { dragY = p.y; scrolling = true; });
@@ -225,9 +265,13 @@ export class TitleScene extends Phaser.Scene {
       if (!scrolling || !p.isDown) return;
       const dy = p.y - dragY;
       dragY = p.y;
-      if (Math.abs(dy) > 2) list.y = Phaser.Math.Clamp(list.y + dy, LIST_TOP + LIST_H - contentH, LIST_TOP);
+      if (Math.abs(dy) > 2) {
+        list.y = Phaser.Math.Clamp(list.y + dy, LIST_TOP + LIST_H - contentH, LIST_TOP);
+        cullCards();
+      }
     });
     this.input.on("pointerup", () => { scrolling = false; });
+    cullCards();
     if (save.level > 0 || save.weapons.length) {
       const reset = new Button(this, 78, GAME_H - 28, "RESET", () => {
         if (window.confirm("Reset all progress? Unlocked levels and weapons will be lost.")) {
