@@ -103,6 +103,8 @@ export class GameScene extends Phaser.Scene {
   private lastPortalHint = 0;
   private pauseBlockedUntil = 0;
   private lastLowHealth = 0;
+  private lowHealthActive = false;
+  private lowHealthVignette?: Phaser.GameObjects.Image;
   private jumpHeld = false;
   // chase
   private chaseOn = false;
@@ -148,6 +150,9 @@ export class GameScene extends Phaser.Scene {
     this.bossStarted = false;
     this.bossShade = undefined;
     this.bossDamage = 0;
+    this.lastLowHealth = 0;
+    this.lowHealthActive = false;
+    this.lowHealthVignette = undefined;
     this.nextSpawn = 0;
     this.nextDespawn = 0;
     this.chaseOn = false;
@@ -197,6 +202,11 @@ export class GameScene extends Phaser.Scene {
     this.player = new Player(this, startX, startY);
     this.player.grip = this.chapter.grip;
     this.player.swim = swim;
+    this.lowHealthVignette = this.add.image(0, 0, "vignette")
+      .setDisplaySize(GAME_W + 32, GAME_H + 32)
+      .setTintFill(0xff1f2d)
+      .setAlpha(0)
+      .setDepth(9997);
     this.setupWeapons();
 
     this.physics.add.collider(this.player.rect, this.groundGroup);
@@ -313,6 +323,7 @@ export class GameScene extends Phaser.Scene {
     this.ambient.setPosition(view.x, view.y);
     this.water?.setPosition(view.x, view.y);
     this.bubbles?.setPosition(view.x, view.y);
+    this.lowHealthVignette?.setPosition(view.centerX, view.centerY);
     this.look?.place(view, this.far, span, t, ty);
   }
 
@@ -626,6 +637,7 @@ export class GameScene extends Phaser.Scene {
 
     if (this.level.mode === "chase") this.updateChase(time, delta);
     this.placeScreenLayers();
+    this.updateLowHealthFeedback(time);
     this.portal.update(time, delta);
 
     if (this.ending) {
@@ -661,10 +673,30 @@ export class GameScene extends Phaser.Scene {
     if (!frozen && !this.info.boss) this.spawnTick(time);
     this.updatePortalArrow(time);
 
-    if (this.player.hearts === 1 && this.player.alive && time - this.lastLowHealth > 4000) {
-      this.lastLowHealth = time;
-      Audio.sfx("low_health");
+  }
+
+  private updateLowHealthFeedback(time: number) {
+    const vignette = this.lowHealthVignette;
+    if (!vignette) return;
+    const low = this.player.hearts === 1 && this.player.alive && !this.ending;
+    if (!low) {
+      if (this.lowHealthActive) {
+        this.lowHealthActive = false;
+        this.tweens.killTweensOf(vignette);
+        vignette.setAlpha(0);
+      }
+      return;
     }
+    if (!this.lowHealthActive) {
+      this.lowHealthActive = true;
+      this.lastLowHealth = time - 1200;
+    }
+    if (time - this.lastLowHealth < 1200) return;
+    this.lastLowHealth = time;
+    Audio.sfx("low_health");
+    this.tweens.killTweensOf(vignette);
+    vignette.setAlpha(0.52);
+    this.tweens.add({ targets: vignette, alpha: 0.16, duration: 900, ease: "Sine.out" });
   }
 
   private scriptedInput(): FrameInput {

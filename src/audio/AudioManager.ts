@@ -280,7 +280,7 @@ class AudioManagerImpl {
       case "fall": this.tone(t, 700, 0.6, "triangle", 0.22, 90); break;
       case "chapter_transition": this.noise(t, 0.6, 0.15, 400, "bandpass", 4000); break;
       case "button": this.tone(t, 660, 0.05, "square", 0.12); break;
-      case "low_health": this.tone(t, 880, 0.09, "square", 0.12); this.tone(t + 0.14, 880, 0.09, "square", 0.12); break;
+      case "low_health": this.tone(t, 74, 0.12, "sine", 0.34, 48); this.tone(t + 0.18, 66, 0.14, "sine", 0.3, 44); break;
       case "bow_shoot": this.tone(t, 1200, 0.12, "triangle", 0.18, 500); this.noise(t, 0.1, 0.2, 4000, "highpass"); break;
       case "arrow_hit": this.tone(t, 900, 0.08, "square", 0.14, 1400); break;
       case "hammer_swing": this.noise(t, 0.3, 0.3, 500, "bandpass", 1600); break;
