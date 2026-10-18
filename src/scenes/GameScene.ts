@@ -897,6 +897,43 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  /** Impact frame: 2-frame white flash overlay on strong hits (game feel). */
+  impactFrame(): void {
+    const flash = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0xffffff, 0.85)
+      .setOrigin(0).setScrollFactor(0).setDepth(9999);
+    this.time.delayedCall(33, () => flash.setFillStyle(0x000000, 0.6));
+    this.time.delayedCall(66, () => flash.destroy());
+  }
+
+  /** Slow-mo: dramatic slowdown on boss kill (game feel). */
+  bossKillSlowMo(): void {
+    this.time.timeScale = 0.3;
+    this.tweens.timeScale = 0.3;
+    this.time.delayedCall(400, () => {
+      this.time.timeScale = 1;
+      this.tweens.timeScale = 1;
+    });
+  }
+
+  /** Floating damage number (game feel). */
+  damageNumber(x: number, y: number, amount: number, crit = false): void {
+    const txt = this.add.text(x, y - 20, `${amount}`, {
+      fontSize: crit ? "28px" : "20px",
+      color: crit ? "#ffd700" : "#ffffff",
+      stroke: "#000000",
+      strokeThickness: 4,
+      fontStyle: "bold",
+    }).setOrigin(0.5).setDepth(9998);
+    this.tweens.add({
+      targets: txt,
+      y: y - 60,
+      alpha: 0,
+      duration: 600,
+      ease: "Quad.out",
+      onComplete: () => txt.destroy(),
+    });
+  }
+
   swordHit(r: Phaser.Geom.Rectangle, hits: Set<unknown>) {
     const before = hits.size;
     this.hitArea(r, hits, 1, "sword", this.player.x);
@@ -917,6 +954,7 @@ export class GameScene extends Phaser.Scene {
     Audio.sfx("hammer_smash");
     this.cameras.main.shake(160, grounded ? 0.01 : 0.005);
     this.hitStop(90);
+    this.impactFrame();
     if (grounded) {
       this.fx("fx_dust", "puff", impactX - 30, floorY, 0.4);
       this.fx("fx_dust", "puff", impactX + 30, floorY, 0.4);
@@ -1473,6 +1511,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   onBossDefeated() {
+    this.bossKillSlowMo();
     void this.bossOutro();
   }
 
