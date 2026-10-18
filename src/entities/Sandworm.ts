@@ -196,7 +196,7 @@ export class Sandworm {
     });
   }
 
-  takeDamage(amount: number, _kind: DamageKind, _fromX: number): boolean {
+  takeDamage(amount: number, kind: DamageKind, _fromX: number): boolean {
     if (!this.vulnerable) return false;
     const now = this.scene.time.now;
     if (now < this.hitUntil) return false;
@@ -205,7 +205,7 @@ export class Sandworm {
     Audio.sfx("boss_hit");
     this.sprite.setTintFill(0xffffff);
     this.scene.time.delayedCall(80, () => this.sprite.active && this.state !== "dead" && this.sprite.clearTint());
-    this.scene.onBossHp(this.hp, this.maxHp, amount);
+    this.scene.onBossHp(this.hp, this.maxHp, amount, kind === "hammer");
     if (this.hp <= 0) {
       this.die();
       return true;

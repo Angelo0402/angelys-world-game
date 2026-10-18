@@ -152,14 +152,14 @@ export class RuinSentinel {
     this.until = time + 600;
   }
 
-  takeDamage(amount: number, _kind: DamageKind, _fromX: number): boolean {
+  takeDamage(amount: number, kind: DamageKind, _fromX: number): boolean {
     if (this.state === "dead") return false;
     const time = this.scene.time.now;
     if (time < this.hitUntil) return false;
 
     this.hp -= amount;
     this.hitUntil = time + 300;
-    this.scene.onBossHp(this.hp, this.maxHp, amount);
+    this.scene.onBossHp(this.hp, this.maxHp, amount, kind === "hammer");
 
     if (this.hp <= 0) {
       this.die();

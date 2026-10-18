@@ -1485,9 +1485,11 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  onBossHp(hp: number, max: number, dmg: number) {
+  onBossHp(hp: number, max: number, dmg: number, crit = false) {
     const name = this.info.chapter === 2 ? SENTINEL_NAME : this.info.chapter === 8 ? WORM_NAME : this.info.chapter === 11 ? VEIL_NAME : BOSS_NAME;
     this.registry.set("boss", { name, hp, max });
+    const hitbox = this.boss?.hitbox();
+    if (hitbox) this.damageNumber(hitbox.centerX, hitbox.top, dmg, crit);
     this.cameras.main.shake(90, 0.005);
     this.bossDamage += dmg;
     if (this.bossDamage >= 7 && hp > 0 && this.info.chapter !== 11) {
