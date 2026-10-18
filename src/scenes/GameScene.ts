@@ -1783,7 +1783,11 @@ export class GameScene extends Phaser.Scene {
   private impactProjectile(pr: Phaser.Physics.Arcade.Sprite) {
     if (!pr.active) return;
     const sheet = pr.getData("sheet") as ProjectileSheet;
-    if (sheet === "fx_fireball") Audio.sfx("fire_impact");
+    if (sheet === "fx_fireball") {
+      Audio.sfx("fire_impact");
+      const floor = this.surfaceBelow(pr.x, pr.y) ?? pr.y;
+      this.vfx.explosionShockwave(pr.x, floor - 3);
+    }
     if (sheet === "fx_dust") this.fx("fx_dust", "puff", pr.x, pr.y + 20, 0.3, 0xc9ff9a);
     else this.fx(sheet, "impact", pr.x, pr.y, pr.scale);
     pr.destroy();

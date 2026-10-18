@@ -73,6 +73,24 @@ export class VisualFX {
     this.scene.time.delayedCall(400, () => emitter.destroy());
   }
 
+  /** Flat expanding ring that makes a ground-level explosion read as a shockwave. */
+  explosionShockwave(x: number, y: number, tint = 0xffb14a): void {
+    const ring = this.scene.add.ellipse(x, y, 72, 22, tint, 0)
+      .setStrokeStyle(5, tint, 0.95)
+      .setScale(0.35)
+      .setDepth(89)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    this.scene.tweens.add({
+      targets: ring,
+      scaleX: 3.8,
+      scaleY: 2.4,
+      alpha: 0,
+      duration: 420,
+      ease: "Quad.out",
+      onComplete: () => ring.destroy(),
+    });
+  }
+
   /** Purple-ish poof when an enemy dies. */
   enemyPoof(x: number, y: number, tint: number = 0x9b5de5): void {
     const emitter = this.scene.add.particles(x, y, "dot", {
