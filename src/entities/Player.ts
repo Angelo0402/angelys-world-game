@@ -453,6 +453,7 @@ export class Player {
     Audio.sfx("player_hurt");
     this.scene.cameras.main.shake(160, 0.008);
     this.scene.vfx.hurtFlash();
+    this.scene.impactFrame();
     this.invulnUntil = this.scene.time.now + INVULN_MS;
     if (this.hearts <= 0) {
       this.die();
