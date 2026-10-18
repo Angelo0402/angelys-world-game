@@ -907,12 +907,18 @@ export class GameScene extends Phaser.Scene {
 
   /** Slow-mo: dramatic slowdown on boss kill (game feel). */
   bossKillSlowMo(): void {
+    const previousClockScale = this.time.timeScale;
+    const previousTweenScale = this.tweens.timeScale;
     this.time.timeScale = 0.3;
     this.tweens.timeScale = 0.3;
-    this.time.delayedCall(400, () => {
-      this.time.timeScale = 1;
-      this.tweens.timeScale = 1;
-    });
+    const restore = () => {
+      this.time.timeScale = previousClockScale;
+      this.tweens.timeScale = previousTweenScale;
+      this.events.off(Phaser.Scenes.Events.SHUTDOWN, restore);
+    };
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, restore);
+    // The scene clock is slowed too, so 120 game-ms lasts about 400 real-ms.
+    this.time.delayedCall(120, restore);
   }
 
   /** Floating damage number (game feel). */
