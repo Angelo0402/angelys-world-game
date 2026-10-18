@@ -237,7 +237,7 @@ export class CrystalVeilBoss {
     if (kind === "stomp") amount = .25;
     this.hp = Math.max(0,this.hp-amount);
     Audio.sfx("boss_hit");
-    this.scene.onBossHp(this.hp,this.maxHp,amount,kind === "hammer");
+    this.scene.onBossHp(this.hp, this.maxHp, amount);
     if (!this.hp) { this.die(); return true; }
     const phase: Phase = this.hp <= this.maxHp*.3 ? 3 : this.hp <= this.maxHp*.6 ? 2 : 1;
     if (phase > this.phase) {

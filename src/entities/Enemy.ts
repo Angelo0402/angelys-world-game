@@ -300,7 +300,6 @@ export class Enemy {
     this.sprite.angle = 0;
     this.sprite.setTintFill(0xffffff);
     this.scene.vfx.hitSpark(this.x, this.body.center.y);
-    this.scene.damageNumber(this.x, this.body.center.y - 20, amount, kind === "hammer");
     this.scene.time.delayedCall(80, () => this.sprite.active && this.restoreTint());
     if (this.hp <= 0) {
       this.die();

@@ -953,25 +953,6 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(120, restore);
   }
 
-  /** Floating damage number (game feel). */
-  damageNumber(x: number, y: number, amount: number, crit = false): void {
-    const txt = this.add.text(x, y - 20, `${amount}`, {
-      fontSize: crit ? "28px" : "20px",
-      color: crit ? "#ffd700" : "#ffffff",
-      stroke: "#000000",
-      strokeThickness: 4,
-      fontStyle: "bold",
-    }).setOrigin(0.5).setDepth(9998);
-    this.tweens.add({
-      targets: txt,
-      y: y - 60,
-      alpha: 0,
-      duration: 600,
-      ease: "Quad.out",
-      onComplete: () => txt.destroy(),
-    });
-  }
-
   swordHit(r: Phaser.Geom.Rectangle, hits: Set<unknown>) {
     const before = hits.size;
     this.hitArea(r, hits, 1, "sword", this.player.x);
@@ -1523,11 +1504,9 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  onBossHp(hp: number, max: number, dmg: number, crit = false) {
+  onBossHp(hp: number, max: number, dmg: number) {
     const name = this.info.chapter === 2 ? SENTINEL_NAME : this.info.chapter === 8 ? WORM_NAME : this.info.chapter === 11 ? VEIL_NAME : BOSS_NAME;
     this.registry.set("boss", { name, hp, max });
-    const hitbox = this.boss?.hitbox();
-    if (hitbox) this.damageNumber(hitbox.centerX, hitbox.top, dmg, crit);
     this.cameras.main.shake(90, 0.005);
     this.bossDamage += dmg;
     if (this.bossDamage >= 7 && hp > 0 && this.info.chapter !== 11) {
