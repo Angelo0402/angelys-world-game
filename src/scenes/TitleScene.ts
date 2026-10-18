@@ -167,6 +167,7 @@ export class TitleScene extends Phaser.Scene {
       const gold = id === 5 ? 0xd2a4ff : 0xffd36b;
       frame.fillStyle(0x1b0f2e, 0.88).fillRoundedRect(-CW / 2, -CH / 2, CW, CH, 24);
       frame.lineStyle(4, locked ? 0x5a5470 : gold, 1).strokeRoundedRect(-CW / 2, -CH / 2, CW, CH, 24);
+      card.add(frame);
       // Thumbnail failures must not take down the entire chapter selector.
       const TW = 360, TH = 168;
       const tx = -CW / 2 + 16 + TW / 2;
@@ -194,7 +195,7 @@ export class TitleScene extends Phaser.Scene {
       }
       const thumbFrame = this.add.graphics();
       thumbFrame.lineStyle(3, locked ? 0x5a5470 : gold, 0.9).strokeRoundedRect(tx - TW / 2, -TH / 2, TW, TH, 12);
-      card.add([frame, thumbFrame]);
+      card.add(thumbFrame);
       if (locked) {
         const lock = this.add.graphics();
         drawLock(lock, tx, 0, 1.1);
