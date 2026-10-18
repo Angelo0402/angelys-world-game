@@ -422,7 +422,7 @@ export class GameScene extends Phaser.Scene {
     for (const s of L.stars) this.stars.push(this.addBobber("starshield", s.x, s.y, 52));
 
     this.portal = new Portal(this, L.portal.x, !this.info.boss, L.portal.y);
-    if (this.info.chapter === 11 && this.info.boss && L.arena) {
+    if (this.info.chapter === 10 && this.info.boss && L.arena) {
       this.veilCage = new CageAngelo(this, (L.arena.x0 + L.arena.x1) / 2);
     }
     if (this.info.goal === "reach") this.portal.open(true);
@@ -1445,7 +1445,7 @@ export class GameScene extends Phaser.Scene {
       await this.wormIntro();
       return;
     }
-    if (this.info.chapter === 11) {
+    if (this.info.chapter === 10) {
       await this.veilIntro();
       return;
     }
@@ -1505,7 +1505,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   onBossHp(hp: number, max: number, dmg: number) {
-    const name = this.info.chapter === 2 ? SENTINEL_NAME : this.info.chapter === 8 ? WORM_NAME : this.info.chapter === 11 ? VEIL_NAME : BOSS_NAME;
+    const name = this.info.chapter === 2 ? SENTINEL_NAME : this.info.chapter === 8 ? WORM_NAME : this.info.chapter === 10 ? VEIL_NAME : BOSS_NAME;
     this.registry.set("boss", { name, hp, max });
     this.cameras.main.shake(90, 0.005);
     this.bossDamage += dmg;
@@ -1518,7 +1518,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   onBossPhase2() {
-    if (this.info.chapter === 11) {
+    if (this.info.chapter === 10) {
       this.cameras.main.flash(300, 160, 120, 255);
       const phase = this.boss && "phase" in this.boss ? this.boss.phase : 2;
       this.game.events.emit("hud:subtitle", phase === 3 ? VEIL_PHASE3 : VEIL_PHASE2);
@@ -1561,7 +1561,7 @@ export class GameScene extends Phaser.Scene {
       await this.wormOutro();
       return;
     }
-    if (this.info.chapter === 11) {
+    if (this.info.chapter === 10) {
       await this.veilOutro();
       return;
     }

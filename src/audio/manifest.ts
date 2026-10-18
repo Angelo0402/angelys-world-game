@@ -64,6 +64,7 @@ export type SfxName =
   | "angely_16" | "angely_17" | "angely_18" | "angely_19" | "angely_20"
   | "angely_21" | "angely_22" | "angely_23" | "angely_24" | "angely_25"
   | "angely_26" | "angely_27" | "angely_28" | "angely_29" | "angely_30"
+  | "angely_31" | "angely_32"
   | "angely_bark_01" | "angely_bark_02" | "angely_bark_03" | "angely_bark_04"
   | "angely_bark_05" | "angely_bark_06" | "angely_bark_07" | "angely_bark_08"
   | "umbra_01" | "umbra_02" | "umbra_03" | "umbra_04" | "umbra_05"
@@ -114,6 +115,8 @@ export const AUDIO_FILES: Partial<Record<SfxName | MusicTrack, string>> = {
   angely_28: "angely_28.mp3",
   angely_29: "angely_29.mp3",
   angely_30: "angely_30.mp3",
+  angely_31: "angely_31.mp3",
+  angely_32: "angely_32.mp3",
   angely_bark_01: "angely_bark_01.mp3",
   angely_bark_02: "angely_bark_02.mp3",
   angely_bark_03: "angely_bark_03.mp3",
