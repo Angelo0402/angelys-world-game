@@ -19,24 +19,9 @@ export class TitleScene extends Phaser.Scene {
     Audio.duck(false);
     this.cameras.main.fadeIn(500, 18, 13, 31);
     if (data?.select) {
-      // Solid background first — never pure black even if title_bg fails
-      this.add.rectangle(0, 0, GAME_W, GAME_H, 0x1b0f2e).setOrigin(0);
-      try {
-        if (this.textures.exists("title_bg")) {
-          coverImage(this, "title_bg").setTint(0x9a94c0);
-        }
-      } catch (e) {
-        console.warn("[chapterSelect] title_bg failed:", e);
-      }
-      this.add.rectangle(0, 0, GAME_W, GAME_H, 0x120d1f, 0.15).setOrigin(0);
-      try {
-        this.showChapterSelect();
-      } catch (e) {
-        console.error("[chapterSelect] FATAL:", e);
-        const msg = e instanceof Error ? e.message : String(e);
-        titleText(this, GAME_W / 2, GAME_H / 2 - 20, "Error loading chapters", 32);
-        titleText(this, GAME_W / 2, GAME_H / 2 + 20, msg.slice(0, 80), 16, "#ff9a9a");
-      }
+      coverImage(this, "title_bg").setTint(0x9a94c0);
+      this.add.rectangle(0, 0, GAME_W, GAME_H, 0x120d1f, 0.3).setOrigin(0);
+      this.showChapterSelect();
     } else {
       this.showTitle();
     }
@@ -142,21 +127,14 @@ export class TitleScene extends Phaser.Scene {
       this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("Splash", { level: index }));
     };
     // ---- vertical scroll list (Angelo: scroll de arriba para abajo) ----
-    // NOTE: no geometry mask — it black-screens on some Android GPUs.
-    // Manual culling hides cards outside the visible area instead.
     const LIST_TOP = 60;
     const LIST_H = GAME_H - LIST_TOP - 10;
     const CW = 1100;
     const CH = 200;
     const GAP = 16;
     const list = this.add.container(GAME_W / 2, LIST_TOP);
-    const cards: Phaser.GameObjects.Container[] = [];
-    const cullCards = () => {
-      for (const card of cards) {
-        const wy = list.y + card.y;
-        card.setVisible(wy + CH / 2 > LIST_TOP - CH && wy - CH / 2 < LIST_TOP + LIST_H + CH);
-      }
-    };
+    const maskG = this.make.graphics().fillRect(0, LIST_TOP, GAME_W, LIST_H);
+    list.setMask(maskG.createGeometryMask());
     let y = CH / 2;
     ids.forEach((id) => {
       const x = 0;
@@ -168,30 +146,16 @@ export class TitleScene extends Phaser.Scene {
       const gold = id === 5 ? 0xd2a4ff : 0xffd36b;
       frame.fillStyle(0x1b0f2e, 0.88).fillRoundedRect(-CW / 2, -CH / 2, CW, CH, 24);
       frame.lineStyle(4, locked ? 0x5a5470 : gold, 1).strokeRoundedRect(-CW / 2, -CH / 2, CW, CH, 24);
-      // thumbnail on left (bulletproof: skip crop on bad dimensions)
+      // thumbnail on left
       const TW = 360, TH = 168;
       const tx = -CW / 2 + 16 + TW / 2;
-      try {
-        if (this.textures.exists(ch.splash)) {
-          const img = this.add.image(tx, 0, ch.splash);
-          if (img.width > 0 && img.height > 0) {
-            img.setScale(Math.max(TW / img.width, TH / img.height));
-            const sw = TW / img.scaleX, sh = TH / img.scaleY;
-            if (Number.isFinite(sw) && Number.isFinite(sh) && sw > 0 && sh > 0 && sw <= img.width && sh <= img.height) {
-              img.setCrop((img.width - sw) / 2, (img.height - sh) / 2, sw, sh);
-            }
-            if (locked) img.setTint(0x333344);
-            card.add(img);
-          }
-        } else {
-          console.warn(`[chapterSelect] missing texture: ${ch.splash}`);
-        }
-      } catch (e) {
-        console.warn(`[chapterSelect] thumbnail failed for ${ch.splash}:`, e);
-      }
+      const img = this.add.image(tx, 0, ch.splash);
+      img.setScale(Math.max(TW / img.width, TH / img.height));
+      img.setCrop((img.width - TW / img.scale) / 2, (img.height - TH / img.scale) / 2, TW / img.scale, TH / img.scale);
+      if (locked) img.setTint(0x333344);
       const thumbFrame = this.add.graphics();
       thumbFrame.lineStyle(3, locked ? 0x5a5470 : gold, 0.9).strokeRoundedRect(tx - TW / 2, -TH / 2, TW, TH, 12);
-      card.add([frame, thumbFrame]);
+      card.add([frame, img, thumbFrame]);
       if (locked) {
         const lock = this.add.graphics();
         drawLock(lock, tx, 0, 1.1);
@@ -250,11 +214,10 @@ export class TitleScene extends Phaser.Scene {
         nav.push({ x: GAME_W / 2 + px + pw / 2, y: LIST_TOP + y + py, focus: (on) => draw(on), activate: () => start(l.index) });
       });
       list.add(card);
-      cards.push(card);
       y += CH + GAP;
     });
     const contentH = y - GAP + CH / 2;
-    // drag to scroll (with manual culling instead of GPU mask)
+    // drag to scroll
     let dragY = 0;
     let scrolling = false;
     this.input.on("pointerdown", (p: Phaser.Input.Pointer) => { dragY = p.y; scrolling = true; });
@@ -262,13 +225,9 @@ export class TitleScene extends Phaser.Scene {
       if (!scrolling || !p.isDown) return;
       const dy = p.y - dragY;
       dragY = p.y;
-      if (Math.abs(dy) > 2) {
-        list.y = Phaser.Math.Clamp(list.y + dy, LIST_TOP + LIST_H - contentH, LIST_TOP);
-        cullCards();
-      }
+      if (Math.abs(dy) > 2) list.y = Phaser.Math.Clamp(list.y + dy, LIST_TOP + LIST_H - contentH, LIST_TOP);
     });
     this.input.on("pointerup", () => { scrolling = false; });
-    cullCards();
     if (save.level > 0 || save.weapons.length) {
       const reset = new Button(this, 78, GAME_H - 28, "RESET", () => {
         if (window.confirm("Reset all progress? Unlocked levels and weapons will be lost.")) {
