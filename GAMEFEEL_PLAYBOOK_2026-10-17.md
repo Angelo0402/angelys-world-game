@@ -65,3 +65,23 @@
 4. Revisar hitboxes justos (reel 2.1) si hay quejas de "me pegó sin tocarme".
 
 Nada de esto toca física, cámara o controles base — solo capas de feel.
+
+## Reel 5 — @motionbykrit — "Game Dev Secrets Part 3: Why a boss kill feels so GOOD"
+`https://www.instagram.com/reel/DesK-ImRqfA/`
+
+10 técnicas para que matar un boss se sienta épico (demo: "Lava Core Golem", 400 HP):
+
+| Técnica | Qué es | Estado en Angely's World |
+|---|---|---|
+| 1. Boss HP bar con checkpoints | Barra con marcas de fase (ej. checkpoint a mitad) | ❌ |
+| 2. THE TRANSITION | Transición de fase: boss se vuelve IMMUNE, cambia arena/ataques | ❌ |
+| 5. THE TWIST | El boss deja hazards atrás (fuego en el piso) | ❌ |
+| 7. THE RETRY | Si el jugador muere, mostrar qué tan cerca estuvo ("6% LEFT!") | ❌ |
+| 10. THE DEATH | Kill final: SLOW-MO → FREEZE → FLASH | ❌ (tenemos hitStop, falta la secuencia completa) |
+
+Notas:
+- El #10 conecta directo con lo que el reel 2/3 ya pedía: slow-mo en kill final (`timeScale = 0.5` ~300ms). La secuencia completa sería: último golpe → hitStop(120) → slow-mo 0.3 por 400ms → freeze 2 frames → flash blanco → muerte.
+- El #7 ("show how close") es barato: en game over de boss, mostrar "¡Te faltó X%!" — incentiva el retry.
+- El #1 (checkpoints en la barra) es UI puro, sin tocar lógica de daño.
+
+Prioridad si se retoma feel: #10 primero (extiende hitStop que ya existe), luego #7, luego #1.
