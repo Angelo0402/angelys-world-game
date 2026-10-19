@@ -2283,23 +2283,6 @@ export const SPRITES = {
       }
     }
   },
-  "fx_slash": {
-    "file": "assets/runtime/fx_slash.webp",
-    "frameWidth": 149,
-    "frameHeight": 155,
-    "originX": 0.5,
-    "originY": 0.5,
-    "bodyHeight": 147,
-    "anims": {
-      "swing": {
-        "start": 0,
-        "end": 4,
-        "fps": 20,
-        "repeat": 0,
-        "h": 127
-      }
-    }
-  },
   "fx_lava": {
     "file": "assets/runtime/fx_lava.webp",
     "frameWidth": 149,
@@ -2626,51 +2609,6 @@ export const SPRITES = {
       }
     }
   },
-  "angelo_cell": {
-    "file": "assets/runtime/angelo_cell.webp",
-    "frameWidth": 128,
-    "frameHeight": 179,
-    "originX": 0.4727,
-    "originY": 0.9553,
-    "bodyHeight": 168,
-    "anims": {
-      "idle": {
-        "start": 0,
-        "end": 3,
-        "fps": 5,
-        "repeat": -1,
-        "h": 172
-      },
-      "walk": {
-        "start": 4,
-        "end": 11,
-        "fps": 11,
-        "repeat": -1,
-        "h": 172
-      },
-      "worried": {
-        "start": 12,
-        "end": 13,
-        "fps": 4,
-        "repeat": -1,
-        "h": 137
-      },
-      "grip": {
-        "start": 14,
-        "end": 15,
-        "fps": 6,
-        "repeat": -1,
-        "h": 137
-      },
-      "cheer": {
-        "start": 16,
-        "end": 17,
-        "fps": 6,
-        "repeat": -1,
-        "h": 137
-      }
-    }
-  },
   "angelo_cage": {
     "file": "assets/runtime/angelo_cage.webp",
     "frameWidth": 163,
@@ -2716,44 +2654,6 @@ export const SPRITES = {
       }
     }
   },
-  "angelo_veil": {
-    "file": "assets/runtime/angelo_veil.webp",
-    "frameWidth": 256,
-    "frameHeight": 256,
-    "originX": 0.5,
-    "originY": 0.80078125,
-    "bodyHeight": 205,
-    "anims": {
-      "idle": {
-        "start": 0,
-        "end": 3,
-        "fps": 5,
-        "repeat": -1,
-        "h": 153
-      },
-      "walk": {
-        "start": 4,
-        "end": 7,
-        "fps": 8,
-        "repeat": -1,
-        "h": 148
-      },
-      "talk": {
-        "start": 8,
-        "end": 11,
-        "fps": 6,
-        "repeat": -1,
-        "h": 153
-      },
-      "wave": {
-        "start": 12,
-        "end": 15,
-        "fps": 6,
-        "repeat": -1,
-        "h": 149
-      }
-    }
-  },
   "veil_cage": {
     "file": "assets/runtime/veil_cage.webp",
     "frameWidth": 384,
@@ -2782,37 +2682,6 @@ export const SPRITES = {
         "fps": 5,
         "repeat": 0,
         "h": 257
-      }
-    }
-  },
-  "veil_reunion": {
-    "file": "assets/runtime/veil_reunion.webp",
-    "frameWidth": 384,
-    "frameHeight": 384,
-    "originX": 0.5,
-    "originY": 0.7994791666666666,
-    "bodyHeight": 307,
-    "anims": {
-      "open": {
-        "start": 0,
-        "end": 0,
-        "fps": 1,
-        "repeat": 0,
-        "h": 158
-      },
-      "hug": {
-        "start": 1,
-        "end": 2,
-        "fps": 3,
-        "repeat": -1,
-        "h": 166
-      },
-      "pat": {
-        "start": 3,
-        "end": 3,
-        "fps": 1,
-        "repeat": -1,
-        "h": 161
       }
     }
   },
@@ -2872,157 +2741,6 @@ export const SPRITES = {
         "fps": 6,
         "repeat": -1,
         "h": 143
-      }
-    }
-  },
-  "angelo_finale_back": {
-    "file": "assets/runtime/angelo_finale_back.webp",
-    "frameWidth": 256,
-    "frameHeight": 256,
-    "originX": 0.5,
-    "originY": 0.80078125,
-    "bodyHeight": 205,
-    "anims": {
-      "walk": {
-        "start": 0,
-        "end": 7,
-        "fps": 10,
-        "repeat": -1,
-        "h": 141
-      }
-    }
-  },
-  "angely_finale": {
-    "file": "assets/runtime/angely_finale.webp",
-    "frameWidth": 256,
-    "frameHeight": 256,
-    "originX": 0.5,
-    "originY": 0.80078125,
-    "bodyHeight": 205,
-    "anims": {
-      "idle": {
-        "start": 0,
-        "end": 3,
-        "fps": 5,
-        "repeat": -1,
-        "h": 115
-      },
-      "walk": {
-        "start": 4,
-        "end": 11,
-        "fps": 10,
-        "repeat": -1,
-        "h": 109
-      },
-      "talk": {
-        "start": 12,
-        "end": 15,
-        "fps": 6,
-        "repeat": -1,
-        "h": 101
-      },
-      "run": {
-        "start": 16,
-        "end": 23,
-        "fps": 12,
-        "repeat": -1,
-        "h": 113
-      },
-      "reach": {
-        "start": 24,
-        "end": 27,
-        "fps": 5,
-        "repeat": -1,
-        "h": 118
-      },
-      "happy": {
-        "start": 28,
-        "end": 31,
-        "fps": 5,
-        "repeat": -1,
-        "h": 109
-      }
-    }
-  },
-  "angely_finale_back": {
-    "file": "assets/runtime/angely_finale_back.webp",
-    "frameWidth": 256,
-    "frameHeight": 256,
-    "originX": 0.5,
-    "originY": 0.80078125,
-    "bodyHeight": 205,
-    "anims": {
-      "walk": {
-        "start": 0,
-        "end": 7,
-        "fps": 10,
-        "repeat": -1,
-        "h": 100
-      }
-    }
-  },
-  "final_pair_reunion": {
-    "file": "assets/runtime/final_pair_reunion.webp",
-    "frameWidth": 384,
-    "frameHeight": 384,
-    "originX": 0.5,
-    "originY": 0.7994791666666666,
-    "bodyHeight": 307,
-    "anims": {
-      "approach": {
-        "start": 0,
-        "end": 3,
-        "fps": 6,
-        "repeat": 0,
-        "h": 88
-      },
-      "hug": {
-        "start": 4,
-        "end": 6,
-        "fps": 4,
-        "repeat": -1,
-        "h": 94
-      },
-      "pat": {
-        "start": 7,
-        "end": 7,
-        "fps": 1,
-        "repeat": 0,
-        "h": 94
-      }
-    }
-  },
-  "final_pair_side": {
-    "file": "assets/runtime/final_pair_side.webp",
-    "frameWidth": 384,
-    "frameHeight": 384,
-    "originX": 0.5,
-    "originY": 0.7994791666666666,
-    "bodyHeight": 307,
-    "anims": {
-      "walk": {
-        "start": 0,
-        "end": 7,
-        "fps": 10,
-        "repeat": -1,
-        "h": 209
-      }
-    }
-  },
-  "final_pair_back": {
-    "file": "assets/runtime/final_pair_back.webp",
-    "frameWidth": 384,
-    "frameHeight": 384,
-    "originX": 0.5,
-    "originY": 0.7994791666666666,
-    "bodyHeight": 307,
-    "anims": {
-      "walk": {
-        "start": 0,
-        "end": 7,
-        "fps": 10,
-        "repeat": -1,
-        "h": 202
       }
     }
   },
@@ -3473,12 +3191,6 @@ export const PROPS = {
     "height": 92.6,
     "surface": 0.144
   },
-  "crystal_cluster_10": {
-    "file": "assets/runtime/props/crystal_cluster_10.webp",
-    "width": 156,
-    "height": 160.1,
-    "surface": 0.1455
-  }
 } as const;
 
 export const BACKDROPS = {
