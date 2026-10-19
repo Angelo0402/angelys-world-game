@@ -220,9 +220,9 @@ export type PieceKind =
  */
 export type LevelMode = "run" | "chase" | "climb" | "swim";
 /** kills: defeat N enemies; gems: collect N star gems; reach: the portal is open, get there; boss. */
-export type GoalKind = "kills" | "gems" | "reach" | "boss";
+type GoalKind = "kills" | "gems" | "reach" | "boss";
 /** flat ground, rolling hills (low terraces) or cliffs (tall terraces). */
-export type Terrain = "flat" | "hills" | "cliffs";
+type Terrain = "flat" | "hills" | "cliffs";
 
 export interface LevelInfo {
   index: number;

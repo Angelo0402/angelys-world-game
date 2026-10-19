@@ -3,7 +3,7 @@ import { Audio } from "../audio/AudioManager";
 import { FONT } from "../config";
 import type { NavItem } from "./padMenu";
 
-export interface ButtonOpts {
+interface ButtonOpts {
   width?: number;
   height?: number;
   color?: number;

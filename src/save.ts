@@ -3,7 +3,7 @@ import { LAST_LEVEL, WEAPON_ORDER, type WeaponId } from "./config";
 const KEY = "angelys-world-save-v1";
 const CHAPTER_LAYOUT_VERSION = 2;
 
-export interface SaveData {
+interface SaveData {
   /** Highest unlocked level index (see LEVELS). */
   level: number;
   /** Version 2 removes Mosswood and moves the final chapter to indices 18/19. */

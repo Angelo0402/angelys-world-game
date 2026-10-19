@@ -49,7 +49,7 @@ interface Pickup {
   taken: boolean;
 }
 
-export interface Goal {
+interface Goal {
   kind: LevelInfo["goal"];
   have: number;
   need: number;

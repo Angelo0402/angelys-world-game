@@ -9,7 +9,7 @@ import { GAME_H, GAME_W } from "./config";
 const MAX_SCALE = 2;
 const MIN_SCALE = 1;
 const STORE_KEY = "angelys-world-render-scale";
-export const RENDER_SCALE_EVENT = "render-scale";
+const RENDER_SCALE_EVENT = "render-scale";
 
 function deviceScale() {
   const dpr = window.devicePixelRatio || 1;
@@ -26,10 +26,6 @@ function initialScale() {
 }
 
 let scale = initialScale();
-
-export function renderScale() {
-  return scale;
-}
 
 export const CANVAS_W = () => Math.round(GAME_W * scale);
 export const CANVAS_H = () => Math.round(GAME_H * scale);

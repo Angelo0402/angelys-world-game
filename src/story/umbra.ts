@@ -1,4 +1,4 @@
-export type Speaker = "umbra" | "angely" | "angelo";
+type Speaker = "umbra" | "angely" | "angelo";
 
 export interface DialogueLine {
   who: Speaker;

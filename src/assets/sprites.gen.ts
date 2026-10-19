@@ -3512,4 +3512,3 @@ export const BACKDROPS = {
 } as const;
 
 export type SpriteKey = keyof typeof SPRITES;
-export type PropKey = keyof typeof PROPS;

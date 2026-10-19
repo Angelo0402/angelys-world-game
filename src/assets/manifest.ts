@@ -13,7 +13,6 @@ export function queueAssets(load: Phaser.Loader.LoaderPlugin) {
   for (const [key, file] of Object.entries(AUDIO_FILES)) load.audio(key, `assets/audio/${file}`);
 }
 
-export const animKey = (sheet: SpriteKey, anim: string) => `${sheet}:${anim}`;
 
 export function createAnimations(anims: Phaser.Animations.AnimationManager) {
   for (const [sheet, meta] of Object.entries(SPRITES)) {

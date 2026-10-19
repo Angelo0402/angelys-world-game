@@ -1,7 +1,7 @@
 import { GROUND_Y, type LevelInfo, type LevelMode, type PieceKind, type WeaponId } from "../config";
 import { crystalCauseway, crystalCrownArena } from "./chapter10";
 
-export interface Segment {
+interface Segment {
   x0: number;
   x1: number;
   /** Top (walkable) y of this stretch of ground. */
@@ -84,7 +84,7 @@ export interface LevelDef {
 export const BLOCK_W = 80;
 export const BLOCK_H = 70;
 export const CRATE_SIZE = 78;
-export const CLIMB_W = 1280;
+const CLIMB_W = 1280;
 const GATE_GAP = 300;
 
 function rng(seed: number) {
