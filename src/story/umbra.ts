@@ -22,23 +22,28 @@ export const SPEAKERS: Record<Speaker, { name: string; color: string; accent: nu
   },
 };
 
+// Voice wiring (2026-10-20): every clip below was content-verified by
+// transcription against its line. umbra_01-10 are Queen Umbra's own
+// recordings for THIS scene, in script order. The angely_XX clips are
+// Angely's recordings for her lines in this scene (angely_02's take
+// adds "from every world" vs the subtitle — Angelo to judge).
 export const UMBRA_INTRO: DialogueLine[] = [
-  { who: "umbra", text: "So... the little light found her way into my castle." },
-  { who: "umbra", text: "Angely. I've watched you cross my forest, my ruins, my volcano, my frozen peaks." },
-  { who: "angely", face: "surprised", text: "You were watching me the whole time?!" },
-  { who: "umbra", text: "Every step, Angely. Every enemy you stomped. Every portal you opened." },
-  { who: "angely", face: "determined", text: "Then you know why I'm here. You stole the light, and I'm taking it back!" },
-  { who: "umbra", text: "Take it back? Foolish child. Every star in this sky belongs to me now." },
-  { who: "umbra", text: "Turn around, Angely. Go home... and forget the light ever existed." },
-  { who: "angely", face: "determined", text: "No way. My friends are counting on me. I'm not going anywhere!" },
-  { who: "umbra", text: "Then come, Angely! Let's see if your heart shines brighter than my shadows!" },
+  { who: "umbra", text: "So... the little light found her way into my castle.", voice: "umbra_01" },
+  { who: "umbra", text: "Angely. I've watched you cross my forest, my ruins, my volcano, my frozen peaks.", voice: "umbra_02" },
+  { who: "angely", face: "surprised", text: "You were watching me the whole time?!", voice: "angely_01" },
+  { who: "umbra", text: "Every step, Angely. Every enemy you stomped. Every portal you opened.", voice: "umbra_03" },
+  { who: "angely", face: "determined", text: "Then you know why I'm here. You stole the light, and I'm taking it back!", voice: "angely_02" },
+  { who: "umbra", text: "Take it back? Foolish child. Every star in this sky belongs to me now.", voice: "umbra_04" },
+  { who: "umbra", text: "Turn around, Angely. Go home... and forget the light ever existed.", voice: "umbra_05" },
+  { who: "angely", face: "determined", text: "No way. My friends are counting on me. I'm not going anywhere!", voice: "angely_03" },
+  { who: "umbra", text: "Then come, Angely! Let's see if your heart shines brighter than my shadows!", voice: "umbra_06" },
 ];
 
-export const UMBRA_PHASE2: DialogueLine = { who: "umbra", text: "Impossible! How are you still standing?! ENOUGH! Feel the night's full power!" };
+export const UMBRA_PHASE2: DialogueLine = { who: "umbra", text: "Impossible! How are you still standing?! ENOUGH! Feel the night's full power!", voice: "umbra_07" };
 
 export const UMBRA_DEFEAT: DialogueLine[] = [
-  { who: "umbra", text: "No... this light... it's so warm..." },
-  { who: "umbra", text: "Angely... you shine brighter than any shadow I have ever known." },
-  { who: "umbra", text: "The stars... the worlds... they're yours again. Take care of them, little light..." },
-  { who: "angely", face: "happy", text: "Every world is free! Time to bring the light back home!" },
+  { who: "umbra", text: "No... this light... it's so warm...", voice: "umbra_08" },
+  { who: "umbra", text: "Angely... you shine brighter than any shadow I have ever known.", voice: "umbra_09" },
+  { who: "umbra", text: "The stars... the worlds... they're yours again. Take care of them, little light...", voice: "umbra_10" },
+  { who: "angely", face: "happy", text: "Every world is free! Time to bring the light back home!", voice: "angely_04" },
 ];
