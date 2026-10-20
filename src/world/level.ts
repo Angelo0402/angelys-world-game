@@ -1,5 +1,5 @@
 import { GROUND_Y, type LevelInfo, type LevelMode, type PieceKind, type WeaponId } from "../config";
-import { crystalCauseway, crystalCrownArena } from "./chapter10";
+import { crystalCrownArena } from "./chapter10";
 
 interface Segment {
   x0: number;
@@ -107,7 +107,7 @@ function emptyLevel(mode: LevelMode): LevelDef {
 
 export function buildLevel(info: LevelInfo): LevelDef {
   const r = rng(info.seed);
-  const L = info.chapter === 10 ? (info.boss ? crystalCrownArena(emptyLevel("run")) : crystalCauseway(emptyLevel("run")))
+  const L = info.chapter === 10 && info.boss ? crystalCrownArena(emptyLevel("run"))
     : info.boss && info.chapter === 8 ? duneArena(emptyLevel("run"))
     : info.boss ? bossLevel(emptyLevel("run"), info.chapter)
     : info.mode === "climb" ? buildClimb(info, r)

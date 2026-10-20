@@ -1855,6 +1855,12 @@ export class GameScene extends Phaser.Scene {
     this.game.events.emit("hud:toast", text);
   }
 
+  /** Angely spots a cracked wall: she calls for the hammer she needs (or has ready). */
+  barkBreakableWall() {
+    if (this.player.weapon === "hammer") Barks.play(this, ["bark_hammer_have"], 1);
+    else Barks.play(this, ["bark_hammer_need"], 1);
+  }
+
   get label() {
     return levelLabel(this.info);
   }

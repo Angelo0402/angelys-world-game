@@ -13,6 +13,8 @@ interface Wall {
   body: Phaser.GameObjects.Rectangle;
   parts: Phaser.GameObjects.GameObject[];
   broken: boolean;
+  /** Breakable walls announce themselves with a voice bark, once each. */
+  barked?: boolean;
 }
 
 interface Crate {
@@ -402,6 +404,16 @@ export class Mechanics {
       if (player.x > h.x && player.x < h.x + 420 && (h.y === undefined || Math.abs(player.body.bottom - h.y) < 300)) {
         h.shown = true;
         this.scene.toast(typeof h.text === "function" ? h.text() : h.text);
+      }
+    }
+
+    // Voice reaction: the first time Angely gets close to a cracked wall she
+    // calls out for the hammer (once per wall, never after it is smashed).
+    for (const w of this.walls) {
+      if (!w.def.breakable || w.broken || w.barked) continue;
+      if (Math.abs(player.x - w.def.x) < 430 && Math.abs(player.body.bottom - w.def.y) < 320) {
+        w.barked = true;
+        this.scene.barkBreakableWall();
       }
     }
   }

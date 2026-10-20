@@ -74,6 +74,7 @@ export type SfxName =
   | "bark_sq_sight" | "bark_sq_stomp" | "bark_sq_hurt" | "bark_sq_green" | "bark_sq_bounce"
   | "bark_rx_lowhp" | "bark_rx_fall" | "bark_rx_checkpoint" | "bark_rx_weapon"
   | "bark_rx_boss" | "bark_rx_gems" | "bark_rx_enemies"
+  | "bark_hammer_need" | "bark_hammer_have"
   | "bark_sight_mushroom"
   | "bark_sight_beetle"
   | "bark_sight_leafimp"
@@ -211,6 +212,8 @@ export const AUDIO_FILES: Partial<Record<SfxName | MusicTrack, string>> = {
   bark_rx_boss: "bark_rx_boss.mp3",
   bark_rx_gems: "bark_rx_gems.mp3",
   bark_rx_enemies: "bark_rx_enemies.mp3",
+  bark_hammer_need: "bark_hammer_need.mp3",
+  bark_hammer_have: "bark_hammer_have.mp3",
   bark_sight_mushroom: "bark_sight_mushroom.mp3",
   bark_sight_beetle: "bark_sight_beetle.mp3",
   bark_sight_leafimp: "bark_sight_leafimp.mp3",
