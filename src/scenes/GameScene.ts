@@ -341,7 +341,7 @@ export class GameScene extends Phaser.Scene {
     const meta = PROPS[key as keyof typeof PROPS];
     const fill = ({
       1: 0x3b2414, 2: 0x2a2d3c, 3: 0x1d1418, 4: 0x2c3a52, 5: 0x1c1230, 6: 0xd8dcef, 7: 0x1d4a5a,
-      8: 0x3a2a14, 9: 0x6a1878, 10: 0x1c3a16, 11: 0x1a1438, 12: 0x1d1418, 13: 0x0d3048,
+      8: 0x3a2a14, 9: 0x6a1878, 10: 0x0d0724, 11: 0x1a1438, 12: 0x1d1418, 13: 0x0d3048,
     } as Record<number, number>)[c] ?? 0x1b0f2e;
     const ground = this.level.ground;
     for (const seg of ground) {
