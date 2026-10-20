@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { applyOrigin, scaleForHeight } from "../assets/manifest";
 import type { SpriteKey } from "../assets/sprites.gen";
 import { Audio } from "../audio/AudioManager";
+import type { SfxName } from "../audio/manifest";
 import { Barks } from "../audio/barks";
 import { MAX_HEARTS, WEAPON_ORDER, type WeaponId } from "../config";
 import type { FrameInput } from "../input/controls";
@@ -239,7 +240,8 @@ export class Player {
         this.jumpBufferedAt = -1000;
         this.lastGrounded = -1000;
         Audio.sfx("jump");
-        Barks.play(this.scene, ["angely_bark_02"], 0.1);
+        if (this.scene.info.chapter === 9) Barks.play(this.scene, ["bark_sq_bounce", "angely_bark_02"], 0.12);
+        else Barks.play(this.scene, ["angely_bark_02"], 0.1);
         this.scene.fx("fx_dust", "puff", this.x, body.bottom, 0.2);
         this.scene.vfx.jumpPoof(this.x, body.bottom);
       }
@@ -449,13 +451,14 @@ export class Player {
     this.lastGrounded = -1000;
   }
 
-  /** Damage from enemies, projectiles and hazards. Returns true if a heart was lost. */
-  hurt(fromX: number): boolean {
+  /** Damage from enemies, projectiles and hazards. Returns true if a heart was lost.
+   *  `pool` lets the caller pick a context bark (e.g. squishy attack) over the default hurt pool. */
+  hurt(fromX: number, pool?: SfxName[]): boolean {
     if (!this.alive || this.invulnerable || this.state === "celebrate" || this.state === "pickup") return false;
     this.hearts = Math.max(0, this.hearts - 1);
     this.scene.onHeartsChanged(this.hearts);
     Audio.sfx("player_hurt");
-    Barks.play(this.scene, ["angely_bark_04", "angely_bark_06"], 0.85, true);
+    Barks.play(this.scene, pool ?? ["angely_bark_04", "angely_bark_06"], 0.85, true);
     this.scene.cameras.main.shake(160, 0.008);
     this.scene.vfx.hurtFlash();
     this.scene.impactFrame();
@@ -491,6 +494,7 @@ export class Player {
       return;
     }
     Audio.sfx("fall");
+    Barks.play(this.scene, ["bark_rx_fall"], 1, true);
     this.hearts = Math.max(0, this.hearts - 1);
     this.scene.onHeartsChanged(this.hearts);
     if (this.hearts <= 0) {

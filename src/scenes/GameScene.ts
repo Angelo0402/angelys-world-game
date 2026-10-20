@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { applyOrigin, scaleForHeight } from "../assets/manifest";
 import { PROPS, SPRITES, type SpriteKey } from "../assets/sprites.gen";
 import { Audio } from "../audio/AudioManager";
-import { Barks } from "../audio/barks";
+import { Barks, ENTRY_BARKS } from "../audio/barks";
 import {
   CHAPTERS, GAME_H, GAME_W, GROUND_Y, LAST_LEVEL, LEVELS, MAX_HEARTS, WEAPON_NAMES, WEAPON_ORDER, levelLabel, weaponsBefore,
   type ChapterDef, type LevelInfo, type WeaponId,
@@ -83,6 +83,7 @@ export class GameScene extends Phaser.Scene {
   private far!: Phaser.GameObjects.Image;
   private look?: DioramaLook;
   private hearts: Pickup[] = [];
+  private seenTypes = new Set<string>();
   private gems: Pickup[] = [];
   private stars: Pickup[] = [];
   private shieldShown = -1;
@@ -210,8 +211,9 @@ export class GameScene extends Phaser.Scene {
       .setDepth(9997);
     this.setupWeapons();
     Barks.reset();
+    this.seenTypes.clear();
     this.time.delayedCall(900, () => {
-      if (!this.cutscene && this.player?.alive) Barks.play(this, ["angely_bark_01"], 1, true);
+      if (!this.cutscene && this.player?.alive) Barks.play(this, [ENTRY_BARKS[this.info.chapter] ?? "angely_bark_01"], 1, true);
     });
 
     this.physics.add.collider(this.player.rect, this.groundGroup);
@@ -663,6 +665,19 @@ export class GameScene extends Phaser.Scene {
     }
     const frozen = this.aiFrozen || this.cutscene;
     for (const e of this.enemies) e.update(time, frozen);
+    // First-sight barks: Angely reacts the first time each enemy type gets close.
+    if (!frozen && this.player.alive) {
+      for (const e of this.enemies) {
+        const key = e.type.key;
+        if (this.seenTypes.has(key)) continue;
+        if (Math.abs(e.x - this.player.x) < 460 && Math.abs(e.body.center.y - this.player.body.center.y) < 300) {
+          this.seenTypes.add(key);
+          if (key === "squish") Barks.play(this, ["bark_sq_sight"], 0.9);
+          else if (key === "toxic" || key === "blob") Barks.play(this, ["bark_sq_green"], 0.7);
+          else Barks.play(this, ["bark_rx_enemies"], 0.3);
+        }
+      }
+    }
     this.enemies = this.enemies.filter((e) => e.alive);
     if (this.boss && !this.cutscene) this.boss.update(time, delta);
     else this.boss?.update(time, 0);
@@ -757,7 +772,10 @@ export class GameScene extends Phaser.Scene {
     this.registry.set("goal", { ...this.goal });
     const left = this.goal.need - have;
     this.portal.setRemaining(left, this.goal.kind === "gems" ? "gems" : "left");
-    if (left <= 0 && !this.portal.isOpen) this.openPortal();
+    if (left <= 0 && !this.portal.isOpen) {
+      if (this.goal.need > 0) Barks.play(this, ["bark_rx_gems"], 1, true);
+      this.openPortal();
+    }
   }
 
   private checkPickups(time: number) {
@@ -815,6 +833,7 @@ export class GameScene extends Phaser.Scene {
         this.respawn = { x: c.spot.x, y: c.spot.y - 80 };
         c.sprite.clearTint().play("flag:up");
         Audio.sfx("checkpoint");
+        Barks.play(this, ["bark_rx_checkpoint"], 0.7);
         this.toast("Checkpoint!");
         this.fx("fx_spark", "hit", c.spot.x, c.spot.y - 70, 0.3, 0xffe27a);
         this.vfx.checkpointSparkle(c.spot.x, c.spot.y - 70);
@@ -860,6 +879,7 @@ export class GameScene extends Phaser.Scene {
     });
     addWeapon("sword");
     Audio.sfx("sword_pickup");
+    Barks.play(this, ["bark_rx_weapon"], 0.8);
     this.cameras.main.flash(300, 200, 240, 255);
     stone.setTint(0x777788);
     (this.children.getByName("swordGlow") as Phaser.GameObjects.Particles.ParticleEmitter | null)?.stop();
@@ -873,6 +893,7 @@ export class GameScene extends Phaser.Scene {
     wp.glow.stop();
     this.tweens.killTweensOf(wp.sprite);
     Audio.sfx("weapon_pickup");
+    Barks.play(this, ["bark_rx_weapon"], 0.8);
     this.cameras.main.flash(300, 255, 230, 180);
     this.fx("fx_spark", "hit", wp.sprite.x, wp.sprite.y, 0.5, 0xffe27a);
     this.tweens.add({ targets: wp.sprite, x: this.player.x, y: this.player.body.top - 60, scale: wp.sprite.scale * 1.3, angle: 0, duration: 400, ease: "Back.out" });
@@ -894,12 +915,13 @@ export class GameScene extends Phaser.Scene {
     if (stomping) {
       p.stompBounce(this.keyboardJumpHeld());
       Audio.sfx("stomp");
-      Barks.play(this, ["angely_bark_03", "angely_bark_10"], 0.65);
+      if (e.type.key === "squish") Barks.play(this, ["bark_sq_stomp"], 0.75);
+      else Barks.play(this, ["angely_bark_03", "angely_bark_10"], 0.65);
       this.fx("fx_dust", "puff", e.x, e.body.top + 10, 0.28);
       e.takeDamage(1, "stomp", p.x);
       return;
     }
-    if (e.harmful) p.hurt(e.x);
+    if (e.harmful) p.hurt(e.x, e.type.key === "squish" ? ["bark_sq_hurt"] : undefined);
   }
 
   private keyboardJumpHeld() {
@@ -1210,6 +1232,7 @@ export class GameScene extends Phaser.Scene {
 
   onHeartsChanged(n: number) {
     this.registry.set("hearts", n);
+    if (n === 1 && this.player?.alive) Barks.play(this, ["bark_rx_lowhp"], 0.9);
   }
 
   onPlayerDefeated(animated: boolean) {

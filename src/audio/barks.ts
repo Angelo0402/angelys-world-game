@@ -18,6 +18,21 @@ import type { SfxName } from "./manifest";
  */
 const COOLDOWN_MS = 3000;
 
+/** Angely's line when a level of each chapter starts (chapter id → clip). */
+export const ENTRY_BARKS: Record<number, SfxName> = {
+  1: "bark_entry_forest",
+  2: "bark_entry_ruins",
+  3: "bark_entry_volcano",
+  4: "bark_entry_frozen",
+  5: "bark_entry_castle",
+  6: "bark_entry_sky",
+  7: "bark_entry_temple",
+  8: "bark_entry_desert",
+  9: "bark_entry_squish",
+  10: "bark_entry_veil",
+  11: "bark_entry_final",
+};
+
 let lastAt = -Infinity;
 let lastClip: SfxName | undefined;
 

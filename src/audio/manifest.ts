@@ -68,6 +68,12 @@ export type SfxName =
   | "angely_bark_01" | "angely_bark_02" | "angely_bark_03" | "angely_bark_04"
   | "angely_bark_05" | "angely_bark_06" | "angely_bark_07" | "angely_bark_08"
   | "angely_bark_09" | "angely_bark_10" | "angely_bark_11"
+  | "bark_entry_forest" | "bark_entry_ruins" | "bark_entry_volcano" | "bark_entry_frozen"
+  | "bark_entry_castle" | "bark_entry_sky" | "bark_entry_temple" | "bark_entry_desert"
+  | "bark_entry_squish" | "bark_entry_veil" | "bark_entry_final"
+  | "bark_sq_sight" | "bark_sq_stomp" | "bark_sq_hurt" | "bark_sq_green" | "bark_sq_bounce"
+  | "bark_rx_lowhp" | "bark_rx_fall" | "bark_rx_checkpoint" | "bark_rx_weapon"
+  | "bark_rx_boss" | "bark_rx_gems" | "bark_rx_enemies"
   | "umbra_01" | "umbra_02" | "umbra_03" | "umbra_04" | "umbra_05"
   | "umbra_06" | "umbra_07" | "umbra_08" | "umbra_09" | "umbra_10"
   | "angelo_01" | "angelo_02" | "angelo_03" | "angelo_04" | "angelo_05"
@@ -136,6 +142,29 @@ export const AUDIO_FILES: Partial<Record<SfxName | MusicTrack, string>> = {
   angely_bark_09: "angely_bark_09.mp3",
   angely_bark_10: "angely_bark_10.mp3",
   angely_bark_11: "angely_bark_11.mp3",
+  bark_entry_forest: "bark_entry_forest.mp3",
+  bark_entry_ruins: "bark_entry_ruins.mp3",
+  bark_entry_volcano: "bark_entry_volcano.mp3",
+  bark_entry_frozen: "bark_entry_frozen.mp3",
+  bark_entry_castle: "bark_entry_castle.mp3",
+  bark_entry_sky: "bark_entry_sky.mp3",
+  bark_entry_temple: "bark_entry_temple.mp3",
+  bark_entry_desert: "bark_entry_desert.mp3",
+  bark_entry_squish: "bark_entry_squish.mp3",
+  bark_entry_veil: "bark_entry_veil.mp3",
+  bark_entry_final: "bark_entry_final.mp3",
+  bark_sq_sight: "bark_sq_sight.mp3",
+  bark_sq_stomp: "bark_sq_stomp.mp3",
+  bark_sq_hurt: "bark_sq_hurt.mp3",
+  bark_sq_green: "bark_sq_green.mp3",
+  bark_sq_bounce: "bark_sq_bounce.mp3",
+  bark_rx_lowhp: "bark_rx_lowhp.mp3",
+  bark_rx_fall: "bark_rx_fall.mp3",
+  bark_rx_checkpoint: "bark_rx_checkpoint.mp3",
+  bark_rx_weapon: "bark_rx_weapon.mp3",
+  bark_rx_boss: "bark_rx_boss.mp3",
+  bark_rx_gems: "bark_rx_gems.mp3",
+  bark_rx_enemies: "bark_rx_enemies.mp3",
   umbra_01: "umbra_01.mp3",
   umbra_02: "umbra_02.mp3",
   umbra_03: "umbra_03.mp3",

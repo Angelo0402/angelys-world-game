@@ -271,7 +271,7 @@ export class Enemy {
             t.range,
             this.body.height + 20,
           );
-          if (Phaser.Geom.Rectangle.Overlaps(reach, scene.player.bounds())) scene.player.hurt(this.x);
+          if (Phaser.Geom.Rectangle.Overlaps(reach, scene.player.bounds())) scene.player.hurt(this.x, this.type.key === "squish" ? ["bark_sq_hurt"] : undefined);
         }
         break;
       case "dive":
