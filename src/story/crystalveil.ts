@@ -1,6 +1,20 @@
 import type { DialogueLine } from "./umbra";
 
 export const VEIL_NAME = "CRYSTAL VEIL";
+export const SOVEREIGN_NAME = "THE VEIL SOVEREIGN";
+
+// The Veil's true form rises when its crown breaks. sovereign_01-04 are the
+// original recordings (transcription-verified 2026-10-20): 01-03 are the
+// rise, 04 is her surrender when the Sovereign form falls.
+export const SOVEREIGN_RISE: DialogueLine[] = [
+  { who: "sovereign", text: "So, the little light crawls all the way to my veil. How persistent.", voice: "sovereign_01" },
+  { who: "sovereign", text: "I am the Veil Sovereign. Every crystal here bows to me. Kneel, child.", voice: "sovereign_02" },
+  { who: "sovereign", text: "You cracked my crown? Then feel the full shatter of the Veil!", voice: "sovereign_03" },
+];
+
+export const SOVEREIGN_FALL: DialogueLine[] = [
+  { who: "sovereign", text: "The veil breaks, little light... The crystals were never mine to keep.", voice: "sovereign_04" },
+];
 
 // Voice keys: veil_* files are THIS scene's recordings (ElevenLabs,
 // 2026-10-20, content-verified by transcription). The angelo_XX /

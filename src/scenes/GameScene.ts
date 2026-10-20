@@ -20,7 +20,7 @@ import { angeloCutscene, angeloPraise, reunionHug, Rift } from "../story/angeloS
 import { CageAngelo } from "../entities/CageAngelo";
 import { CrystalVeilBoss } from "../entities/CrystalVeilBoss";
 import { Sandworm } from "../entities/Sandworm";
-import { VEIL_DEFEAT, VEIL_FAREWELL, VEIL_INTRO, VEIL_NAME, VEIL_PHASE2, VEIL_PHASE3, VEIL_RESCUE } from "../story/crystalveil";
+import { SOVEREIGN_FALL, SOVEREIGN_NAME, SOVEREIGN_RISE, VEIL_DEFEAT, VEIL_FAREWELL, VEIL_INTRO, VEIL_NAME, VEIL_PHASE2, VEIL_PHASE3, VEIL_RESCUE } from "../story/crystalveil";
 import { VisualFX } from "../effects/VisualFX";
 import { WORM_INTRO, WORM_NAME } from "../story/worm";
 import { UMBRA_DEFEAT, UMBRA_INTRO, UMBRA_PHASE2, type DialogueLine } from "../story/umbra";
@@ -1426,6 +1426,7 @@ export class GameScene extends Phaser.Scene {
     const cam = this.cameras.main;
     cam.stopFollow();
     await this.wait(2000);
+    await this.say(SOVEREIGN_FALL);
     this.boss?.vanish();
     const cage = this.veilCage;
     if (cage) cam.pan(cage.x, GAME_H / 2 - 40, 700, "Sine.easeInOut");
@@ -1544,7 +1545,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   onBossHp(hp: number, max: number, dmg: number) {
-    const name = this.info.chapter === 2 ? SENTINEL_NAME : this.info.chapter === 8 ? WORM_NAME : this.info.chapter === 10 ? VEIL_NAME : BOSS_NAME;
+    const sovereign = this.boss instanceof CrystalVeilBoss && this.boss.form === "sovereign";
+    const name = this.info.chapter === 2 ? SENTINEL_NAME : this.info.chapter === 8 ? WORM_NAME : this.info.chapter === 10 ? (sovereign ? SOVEREIGN_NAME : VEIL_NAME) : BOSS_NAME;
     this.registry.set("boss", { name, hp, max });
     this.cameras.main.shake(90, 0.005);
     this.bossDamage += dmg;
@@ -1566,6 +1568,17 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.flash(300, 200, 120, 255);
     this.game.events.emit("hud:subtitle", UMBRA_PHASE2);
     if (this.bossShade) this.tweens.add({ targets: this.bossShade, fillAlpha: 0.55, duration: 800 });
+  }
+
+  /** The Veil's crown broke and the Sovereign rose: she speaks, then the fight resumes. */
+  onSovereignRise() {
+    this.cutscene = true;
+    this.projectiles.clear(true, true);
+    this.hazards.getChildren().forEach((h) => h.destroy());
+    void this.say(SOVEREIGN_RISE).then(() => {
+      this.cutscene = false;
+      if (this.boss instanceof CrystalVeilBoss) this.boss.beginSovereign();
+    });
   }
 
   onBossDefeated() {

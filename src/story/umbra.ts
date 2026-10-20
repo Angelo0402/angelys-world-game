@@ -1,4 +1,4 @@
-type Speaker = "umbra" | "angely" | "angelo";
+type Speaker = "umbra" | "angely" | "angelo" | "sovereign";
 
 export interface DialogueLine {
   who: Speaker;
@@ -12,6 +12,7 @@ export interface DialogueLine {
 /** side: where the portrait sits in the subtitle box. */
 export const SPEAKERS: Record<Speaker, { name: string; color: string; accent: number; side: "left" | "right"; portrait: (l: DialogueLine) => string }> = {
   umbra: { name: "Queen Umbra", color: "#e0b8ff", accent: 0xb57cff, side: "right", portrait: () => "portrait_umbra" },
+  sovereign: { name: "The Veil Sovereign", color: "#f3a6ff", accent: 0xe879f9, side: "right", portrait: () => "portrait_sovereign" },
   angelo: { name: "Angelo", color: "#8fc4ff", accent: 0x4f8dff, side: "right", portrait: () => "portrait_angelo" },
   angely: {
     name: "Angely",
