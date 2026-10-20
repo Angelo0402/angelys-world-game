@@ -2767,6 +2767,157 @@ export const SPRITES = {
         "h": 195
       }
     }
+  },
+  "angelo_finale_back": {
+    "file": "assets/runtime/angelo_finale_back.webp",
+    "frameWidth": 256,
+    "frameHeight": 256,
+    "originX": 0.5,
+    "originY": 0.80078125,
+    "bodyHeight": 205,
+    "anims": {
+      "walk": {
+        "start": 0,
+        "end": 7,
+        "fps": 10,
+        "repeat": -1,
+        "h": 141
+      }
+    }
+  },
+  "angely_finale": {
+    "file": "assets/runtime/angely_finale.webp",
+    "frameWidth": 256,
+    "frameHeight": 256,
+    "originX": 0.5,
+    "originY": 0.80078125,
+    "bodyHeight": 205,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 3,
+        "fps": 5,
+        "repeat": -1,
+        "h": 115
+      },
+      "walk": {
+        "start": 4,
+        "end": 11,
+        "fps": 10,
+        "repeat": -1,
+        "h": 109
+      },
+      "talk": {
+        "start": 12,
+        "end": 15,
+        "fps": 6,
+        "repeat": -1,
+        "h": 101
+      },
+      "run": {
+        "start": 16,
+        "end": 23,
+        "fps": 12,
+        "repeat": -1,
+        "h": 113
+      },
+      "reach": {
+        "start": 24,
+        "end": 27,
+        "fps": 5,
+        "repeat": -1,
+        "h": 118
+      },
+      "happy": {
+        "start": 28,
+        "end": 31,
+        "fps": 5,
+        "repeat": -1,
+        "h": 109
+      }
+    }
+  },
+  "angely_finale_back": {
+    "file": "assets/runtime/angely_finale_back.webp",
+    "frameWidth": 256,
+    "frameHeight": 256,
+    "originX": 0.5,
+    "originY": 0.80078125,
+    "bodyHeight": 205,
+    "anims": {
+      "walk": {
+        "start": 0,
+        "end": 7,
+        "fps": 10,
+        "repeat": -1,
+        "h": 100
+      }
+    }
+  },
+  "final_pair_reunion": {
+    "file": "assets/runtime/final_pair_reunion.webp",
+    "frameWidth": 384,
+    "frameHeight": 384,
+    "originX": 0.5,
+    "originY": 0.7994791666666666,
+    "bodyHeight": 307,
+    "anims": {
+      "approach": {
+        "start": 0,
+        "end": 3,
+        "fps": 6,
+        "repeat": 0,
+        "h": 88
+      },
+      "hug": {
+        "start": 4,
+        "end": 6,
+        "fps": 4,
+        "repeat": -1,
+        "h": 94
+      },
+      "pat": {
+        "start": 7,
+        "end": 7,
+        "fps": 1,
+        "repeat": 0,
+        "h": 94
+      }
+    }
+  },
+  "final_pair_side": {
+    "file": "assets/runtime/final_pair_side.webp",
+    "frameWidth": 384,
+    "frameHeight": 384,
+    "originX": 0.5,
+    "originY": 0.7994791666666666,
+    "bodyHeight": 307,
+    "anims": {
+      "walk": {
+        "start": 0,
+        "end": 7,
+        "fps": 10,
+        "repeat": -1,
+        "h": 209
+      }
+    }
+  },
+  "final_pair_back": {
+    "file": "assets/runtime/final_pair_back.webp",
+    "frameWidth": 384,
+    "frameHeight": 384,
+    "originX": 0.5,
+    "originY": 0.7994791666666666,
+    "bodyHeight": 307,
+    "anims": {
+      "walk": {
+        "start": 0,
+        "end": 7,
+        "fps": 10,
+        "repeat": -1,
+        "h": 202
+      }
+    }
   }
 } as const;
 

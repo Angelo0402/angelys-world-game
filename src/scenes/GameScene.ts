@@ -1443,37 +1443,44 @@ export class GameScene extends Phaser.Scene {
       await this.say(VEIL_RESCUE);
       await reunionHug(this, angelo);
     } else await this.say(VEIL_RESCUE);
-    this.veilState = "angelo_exit";
+    this.veilState = "together";
     const riftX = (this.level.arena!.x0 + this.level.arena!.x1) / 2 - 220;
     const rift = new Rift(this, riftX);
     cam.flash(240, 80, 140, 255);
     await rift.open();
     await this.say(VEIL_FAREWELL);
-    if (angelo) {
-      angelo.setFlipX(rift.x < angelo.x);
-      angelo.play("angelo:run", true);
-      await new Promise<void>((res) => this.tweens.add({ targets: angelo, x: rift.x, duration: Math.max(400, Math.abs(angelo.x - rift.x) * 2.2), onComplete: () => res() }));
-      rift.surge();
-      Audio.sfx("portal_enter");
-      angelo.setTintFill(0xbfe0ff);
-      await new Promise<void>((res) => this.tweens.add({ targets: angelo, alpha: 0, scaleX: angelo.scaleX * 0.4, duration: 280, onComplete: () => res() }));
-      angelo.destroy();
-    }
+    // The 1.5 ending, restored: Angelo and Angely leave TOGETHER through the
+    // blue gate, painted pair sheets and all — no separate exits.
+    const meetX = angelo ? (angelo.x + this.player.x) / 2 : this.player.x;
+    if (angelo) angelo.setVisible(false);
+    const p = this.player;
+    p.freeze();
+    p.body.setAllowGravity(false).setVelocity(0, 0);
+    p.sprite.setVisible(false);
+    const pair = this.add.sprite(meetX, GROUND_Y + 4, "final_pair_side").setDepth(56);
+    applyOrigin(pair, "final_pair_side");
+    pair.setScale(scaleForHeight("final_pair_side", 150, "walk"));
+    pair.setFlipX(rift.x > meetX); // the painted pair walks left; mirror when the gate is right
+    pair.play("final_pair_side:walk");
+    await new Promise<void>((res) => this.tweens.add({ targets: pair, x: rift.x, duration: Math.max(1600, Math.abs(meetX - rift.x) * 5), ease: "Sine.easeInOut", onComplete: () => res() }));
+    // At the gate they turn away — rear view — and step in together.
+    this.veilState = "portal_exit";
+    pair.setTexture("final_pair_back");
+    applyOrigin(pair, "final_pair_back");
+    pair.setScale(scaleForHeight("final_pair_back", 150, "walk"));
+    pair.play("final_pair_back:walk");
+    rift.surge();
+    Audio.sfx("portal_enter");
+    await new Promise<void>((res) => this.tweens.add({ targets: pair, y: GROUND_Y - 62, scaleX: pair.scaleX * 0.5, scaleY: pair.scaleY * 0.5, alpha: 0, duration: 1150, ease: "Sine.easeIn", onComplete: () => res() }));
+    pair.destroy();
     await rift.close();
-    this.veilState = "angely_exit";
-    this.portal.appear();
-    this.portal.open();
-    Audio.sfx("portal_unlock");
-    Audio.music("music_title");
-    cam.pan(this.player.x, GAME_H / 2, 500, "Sine.easeInOut", true, (_c, p) => {
-      if (p === 1) cam.startFollow(this.player.rect, true, 0.12, 0.1, 0, 60);
-    });
-    this.game.events.emit("hud:cinema", false);
-    this.game.events.emit("hud:banner", "THE VEIL IS OPEN");
-    this.cutscene = false;
-    this.scriptX = null;
     this.veilState = "done";
-    this.time.delayedCall(1100, () => this.toast("Angelo took the blue gate. Yours is the stone arch."));
+    this.ending = true;
+    updateSave({ cleared: true });
+    this.game.events.emit("hud:cinema", false);
+    this.cameras.main.flash(600, 255, 255, 255);
+    Audio.music("music_victory");
+    this.game.events.emit("hud:victory");
   }
 
   private async bossIntro() {
