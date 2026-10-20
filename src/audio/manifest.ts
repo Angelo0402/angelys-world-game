@@ -74,6 +74,13 @@ export type SfxName =
   | "angelo_11" | "angelo_12" | "angelo_13" | "angelo_14" | "angelo_15"
   | "angelo_16" | "angelo_17" | "angelo_18" | "angelo_19" | "angelo_20"
   | "angelo_21"
+  // Crystal Veil scene voices (ElevenLabs, generated 2026-10-20).
+  // NOTE: angelo_01-07 / angely_01-07 files are the Colossus finale
+  // recordings — do NOT wire them to Veil lines.
+  | "veil_angelo_01" | "veil_angelo_02" | "veil_angelo_03" | "veil_angelo_04"
+  | "veil_angelo_05" | "veil_angelo_06" | "veil_angelo_07"
+  | "veil_angely_01" | "veil_angely_02" | "veil_angely_03" | "veil_angely_04"
+  | "veil_angely_05" | "veil_angely_06" | "veil_angely_07"
   | "sovereign_01" | "sovereign_02" | "sovereign_03" | "sovereign_04";
 
 /**
@@ -156,6 +163,20 @@ export const AUDIO_FILES: Partial<Record<SfxName | MusicTrack, string>> = {
   angelo_19: "angelo_19.mp3",
   angelo_20: "angelo_20.mp3",
   angelo_21: "angelo_21.mp3",
+  veil_angelo_01: "veil_angelo_01.mp3",
+  veil_angelo_02: "veil_angelo_02.mp3",
+  veil_angelo_03: "veil_angelo_03.mp3",
+  veil_angelo_04: "veil_angelo_04.mp3",
+  veil_angelo_05: "veil_angelo_05.mp3",
+  veil_angelo_06: "veil_angelo_06.mp3",
+  veil_angelo_07: "veil_angelo_07.mp3",
+  veil_angely_01: "veil_angely_01.mp3",
+  veil_angely_02: "veil_angely_02.mp3",
+  veil_angely_03: "veil_angely_03.mp3",
+  veil_angely_04: "veil_angely_04.mp3",
+  veil_angely_05: "veil_angely_05.mp3",
+  veil_angely_06: "veil_angely_06.mp3",
+  veil_angely_07: "veil_angely_07.mp3",
   sovereign_01: "sovereign_01.mp3",
   sovereign_02: "sovereign_02.mp3",
   sovereign_03: "sovereign_03.mp3",
