@@ -1575,10 +1575,15 @@ export class GameScene extends Phaser.Scene {
     this.cutscene = true;
     this.projectiles.clear(true, true);
     this.hazards.getChildren().forEach((h) => h.destroy());
-    void this.say(SOVEREIGN_RISE).then(() => {
+    // Clear any bark/sfx voice from the killing blow and give the moment a
+    // beat, so her first line starts clean instead of being cut off.
+    Audio.stopVoice();
+    void (async () => {
+      await this.wait(450);
+      await this.say(SOVEREIGN_RISE);
       this.cutscene = false;
       if (this.boss instanceof CrystalVeilBoss) this.boss.beginSovereign();
-    });
+    })();
   }
 
   onBossDefeated() {

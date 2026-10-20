@@ -34,6 +34,10 @@ export class CrystalVeilBoss {
   private attackIndex = 0;
   private action = 0;
   private timers = new Set<Phaser.Time.TimerEvent>();
+  /** Deadline for leaving a non-walk state; the watchdog below enforces it. */
+  private stateUntil = 0;
+  /** True while the Sovereign transformation waits on its intro dialogue. */
+  private holdState = false;
   private effects = new Set<Phaser.GameObjects.GameObject>();
   private scene: GameScene;
   private arena: { x0: number; x1: number };
@@ -84,12 +88,23 @@ export class CrystalVeilBoss {
       this.sprite.clearTint();
       this.flashUntil = 0;
     }
+    // Watchdog: attack/enrage states exit through timed callbacks, and a
+    // callback can be dropped (e.g. the player died the same frame). Never
+    // let the boss freeze mid-pose — force it back to walking.
+    if (!this.holdState && this.stateUntil && time > this.stateUntil
+      && !["walk", "intro", "dead", "hurt", "recover"].includes(this.state)) {
+      this.cancelAction();
+      this.state = "walk";
+      this.readyAt = time + 350;
+      this.sprite.clearTint();
+      this.sprite.play(`${this.sheet}:idle`, true);
+    }
     if (this.scene.player.alive && this.state === "walk") {
       const dx = this.scene.player.x - this.x;
       this.dir = dx < 0 ? -1 : 1;
       this.sprite.setFlipX(this.dir < 0);
       if (Math.abs(dx) > 170) {
-        const speed = [0,96,125,150][this.phase];
+        const speed = this.form === "sovereign" ? 178 : [0,96,125,150][this.phase];
         this.x = Phaser.Math.Clamp(this.x + this.dir * speed * Math.min(delta,50)/1000, this.arena.x0+120, this.arena.x1-120);
         this.sprite.play(`${this.sheet}:walk`,true);
       } else this.sprite.play(`${this.sheet}:idle`,true);
@@ -104,7 +119,27 @@ export class CrystalVeilBoss {
     this.glow.setPosition(this.x, GROUND_Y - 104).setAlpha(this.alive ? .2 + this.phase*.045 + Math.sin(time/220)*.035 : 0);
   }
 
+  /** Aura color of the current form/phase, restored after attack telegraphs. */
+  private auraTint() {
+    return this.form === "sovereign" ? 0xff9df3 : this.phase === 3 ? 0xff5d7a : this.phase === 2 ? 0xffa94d : 0xb57cff;
+  }
+
   private chooseAttack(time: number, distance: number) {
+    // The Sovereign blinks across the arena every third attack — she does
+    // not walk at you, she is suddenly behind you.
+    if (this.form === "sovereign" && this.attackIndex % 3 === 2) {
+      this.attackIndex++;
+      const px = this.scene.player.x;
+      this.scene.fx("crystal_shot", "impact", this.x, GROUND_Y - 110, .9);
+      Audio.sfx("ghost_orb");
+      const side = px > this.x ? 1 : -1;
+      this.x = Phaser.Math.Clamp(px - side * 300, this.arena.x0 + 120, this.arena.x1 - 120);
+      this.dir = side;
+      this.sprite.setFlipX(this.dir < 0);
+      this.scene.fx("crystal_shot", "impact", this.x, GROUND_Y - 110, .9);
+      this.readyAt = time + 430;
+      return;
+    }
     // Predictable escalation, independent of framerate and Math.random().
     const patterns: State[][] = [
       [], ["shoot","claw","slam"], ["burst","slam","erupt","claw"], ["beam","erupt","burst","claw","slam"]
@@ -151,6 +186,7 @@ export class CrystalVeilBoss {
     this.state = state;
     this.strikeFrom = time + ms;
     this.strikeUntil = this.strikeFrom + active;
+    this.stateUntil = time + ms + active + recovery + 900;
     const meta = this.form === "sovereign" ? SPRITES.sovereign : SPRITES.crystalveil;
     const clip = (meta.anims as Record<string, { start: number }>)[this.form === "sovereign" ? "attack" : anim];
     this.glow.setTint(0xb57cff);
@@ -191,7 +227,7 @@ export class CrystalVeilBoss {
   private volley(time: number, burst: boolean) {
     this.windup(burst ? "burst" : "shoot",burst ? "summon" : "shoot",time,650*[0,1,.9,.8][this.phase],280,this.recovery(),() => {
       Audio.sfx("ghost_orb");
-      const count = burst ? (this.phase === 3 ? 5 : 3) : this.phase === 1 ? 1 : 2;
+      const count = this.form === "sovereign" ? 5 : burst ? (this.phase === 3 ? 5 : 3) : this.phase === 1 ? 1 : 2;
       for (let i=0;i<count;i++) {
         const angle = count === 1 ? 0 : Phaser.Math.DegToRad(-24+48*i/(count-1));
         const speed = 245+this.phase*30;
@@ -204,7 +240,7 @@ export class CrystalVeilBoss {
 
   private erupt(time: number) {
     const px = this.scene.player.x;
-    const spots = (this.phase === 3 ? [px-150,px,px+150] : [px,px+180*this.dir])
+    const spots = (this.form === "sovereign" ? [px-300,px-150,px,px+150,px+300] : this.phase === 3 ? [px-150,px,px+150] : [px,px+180*this.dir])
       .map(x => Phaser.Math.Clamp(x,this.arena.x0+50,this.arena.x1-50));
     this.windup("erupt","erupt",time,900*[0,1,.9,.8][this.phase],480,this.recovery(),() => {
       Audio.sfx("ground_slam");
@@ -262,6 +298,7 @@ export class CrystalVeilBoss {
       this.phase = phase;
       this.attackIndex = 0;
       this.state = "enrage";
+      this.stateUntil = time + 2000;
       this.sprite.play("crystalveil:enrage",true);
       Audio.sfx("boss_roar");
       this.scene.onBossPhase2();
@@ -269,7 +306,7 @@ export class CrystalVeilBoss {
       this.later(1100,() => {
         this.state = "walk";
         this.readyAt = this.scene.time.now+300;
-        this.glow.setTint(0xb57cff);
+        this.glow.setTint(this.auraTint());
       });
     } else {
       this.sprite.setTintFill(0xffffff);
@@ -290,6 +327,8 @@ export class CrystalVeilBoss {
     this.cancelAction();
     this.form = "sovereign";
     this.state = "enrage"; // invulnerable while the Sovereign speaks
+    this.holdState = true; // the dialogue, not a timer, ends this state
+    this.stateUntil = 0;
     this.maxHp = SOV_HP;
     this.hp = this.maxHp;
     this.phase = 3;
@@ -311,6 +350,7 @@ export class CrystalVeilBoss {
   /** Called by the scene when the Sovereign's intro dialogue ends. */
   beginSovereign() {
     if (this.state === "dead" || this.form !== "sovereign") return;
+    this.holdState = false;
     this.state = "walk";
     this.readyAt = this.scene.time.now + 700;
     this.sprite.play("sovereign:walk", true);
