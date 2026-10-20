@@ -2,7 +2,8 @@ import Phaser from "phaser";
 import { applyOrigin, scaleForHeight } from "../assets/manifest";
 import { PROPS, SPRITES, type SpriteKey } from "../assets/sprites.gen";
 import { Audio } from "../audio/AudioManager";
-import { Barks, ENTRY_BARKS } from "../audio/barks";
+import type { SfxName } from "../audio/manifest";
+import { Barks, ENTRY_BARKS, HURT_BARKS, SIGHT_BARKS, STOMP_BARKS } from "../audio/barks";
 import {
   CHAPTERS, GAME_H, GAME_W, GROUND_Y, LAST_LEVEL, LEVELS, MAX_HEARTS, WEAPON_NAMES, WEAPON_ORDER, levelLabel, weaponsBefore,
   type ChapterDef, type LevelInfo, type WeaponId,
@@ -672,8 +673,8 @@ export class GameScene extends Phaser.Scene {
         if (this.seenTypes.has(key)) continue;
         if (Math.abs(e.x - this.player.x) < 460 && Math.abs(e.body.center.y - this.player.body.center.y) < 300) {
           this.seenTypes.add(key);
-          if (key === "squish") Barks.play(this, ["bark_sq_sight"], 0.9);
-          else if (key === "toxic" || key === "blob") Barks.play(this, ["bark_sq_green"], 0.7);
+          const sight = SIGHT_BARKS[key];
+          if (sight) Barks.play(this, [sight], 0.85);
           else Barks.play(this, ["bark_rx_enemies"], 0.3);
         }
       }
@@ -916,12 +917,16 @@ export class GameScene extends Phaser.Scene {
       p.stompBounce(this.keyboardJumpHeld());
       Audio.sfx("stomp");
       if (e.type.key === "squish") Barks.play(this, ["bark_sq_stomp"], 0.75);
-      else Barks.play(this, ["angely_bark_03", "angely_bark_10"], 0.65);
+      else {
+        const fam = STOMP_BARKS[e.type.key];
+        const pool: SfxName[] = fam ? [fam, "angely_bark_03", "angely_bark_10"] : ["angely_bark_03", "angely_bark_10"];
+        Barks.play(this, pool, 0.65);
+      }
       this.fx("fx_dust", "puff", e.x, e.body.top + 10, 0.28);
       e.takeDamage(1, "stomp", p.x);
       return;
     }
-    if (e.harmful) p.hurt(e.x, e.type.key === "squish" ? ["bark_sq_hurt"] : undefined);
+    if (e.harmful) p.hurt(e.x, HURT_BARKS[e.type.key] ? [HURT_BARKS[e.type.key]] : undefined);
   }
 
   private keyboardJumpHeld() {
@@ -1761,8 +1766,9 @@ export class GameScene extends Phaser.Scene {
 
   // -------------------------------------------------------- projectiles/fx
 
-  spawnProjectile(sheet: ProjectileSheet, x: number, y: number, vx: number, vy: number, scale: number, tint?: number) {
+  spawnProjectile(sheet: ProjectileSheet, x: number, y: number, vx: number, vy: number, scale: number, tint?: number, fromKey?: string) {
     const pr = this.physics.add.sprite(x, y, sheet).setDepth(80).setScale(scale);
+    if (fromKey) pr.setData("fromKey", fromKey);
     this.projectiles.add(pr);
     applyOrigin(pr, sheet);
     if (sheet === "fx_dust") pr.setFrame(SPRITES.fx_dust.anims.puff.start + 2);
@@ -1789,7 +1795,9 @@ export class GameScene extends Phaser.Scene {
 
   private onProjectileHitPlayer(pr: Phaser.Physics.Arcade.Sprite) {
     if (!pr.active || !this.player.alive || this.cutscene) return;
-    this.player.hurt(pr.x);
+    const fromKey = pr.getData("fromKey") as string | undefined;
+    const hurtClip = fromKey ? HURT_BARKS[fromKey] : undefined;
+    this.player.hurt(pr.x, hurtClip ? [hurtClip] : undefined);
     this.impactProjectile(pr);
   }
 

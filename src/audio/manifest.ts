@@ -74,6 +74,52 @@ export type SfxName =
   | "bark_sq_sight" | "bark_sq_stomp" | "bark_sq_hurt" | "bark_sq_green" | "bark_sq_bounce"
   | "bark_rx_lowhp" | "bark_rx_fall" | "bark_rx_checkpoint" | "bark_rx_weapon"
   | "bark_rx_boss" | "bark_rx_gems" | "bark_rx_enemies"
+  | "bark_sight_mushroom"
+  | "bark_sight_beetle"
+  | "bark_sight_leafimp"
+  | "bark_sight_firefly"
+  | "bark_sight_golem"
+  | "bark_sight_ghost"
+  | "bark_sight_lantern"
+  | "bark_sight_skeleton"
+  | "bark_sight_firebat"
+  | "bark_sight_lavablob"
+  | "bark_sight_crab"
+  | "bark_sight_magmagolem"
+  | "bark_sight_frostwolf"
+  | "bark_sight_icewisp"
+  | "bark_sight_penguin"
+  | "bark_sight_yeti"
+  | "bark_sight_stormbird"
+  | "bark_sight_thunderimp"
+  | "bark_sight_jellyfish"
+  | "bark_sight_cogmoth"
+  | "bark_sight_gearcrab"
+  | "bark_sight_blob"
+  | "bark_sight_toxic"
+  | "bark_sight_sandwisp"
+  | "bark_sight_anglerfish"
+  | "bark_sight_shardknight"
+  | "bark_sight_voidwraith"
+  | "bark_sight_galaxmaw"
+  | "bark_sight_stormgolem"
+  | "bark_hurt_mushroom"
+  | "bark_hurt_ghost"
+  | "bark_hurt_firebat"
+  | "bark_hurt_frostwolf"
+  | "bark_hurt_yeti"
+  | "bark_hurt_jellyfish"
+  | "bark_hurt_gearcrab"
+  | "bark_hurt_shardknight"
+  | "bark_hurt_penguin"
+  | "bark_hurt_skeleton"
+  | "bark_stomp_big"
+  | "bark_stomp_fly"
+  | "bark_stomp_crab"
+  | "bark_stomp_spooky"
+  | "bark_stomp_goo"
+  | "bark_stomp_knight"
+  | "bark_stomp_small"
   | "umbra_01" | "umbra_02" | "umbra_03" | "umbra_04" | "umbra_05"
   | "umbra_06" | "umbra_07" | "umbra_08" | "umbra_09" | "umbra_10"
   | "angelo_01" | "angelo_02" | "angelo_03" | "angelo_04" | "angelo_05"
@@ -165,6 +211,52 @@ export const AUDIO_FILES: Partial<Record<SfxName | MusicTrack, string>> = {
   bark_rx_boss: "bark_rx_boss.mp3",
   bark_rx_gems: "bark_rx_gems.mp3",
   bark_rx_enemies: "bark_rx_enemies.mp3",
+  bark_sight_mushroom: "bark_sight_mushroom.mp3",
+  bark_sight_beetle: "bark_sight_beetle.mp3",
+  bark_sight_leafimp: "bark_sight_leafimp.mp3",
+  bark_sight_firefly: "bark_sight_firefly.mp3",
+  bark_sight_golem: "bark_sight_golem.mp3",
+  bark_sight_ghost: "bark_sight_ghost.mp3",
+  bark_sight_lantern: "bark_sight_lantern.mp3",
+  bark_sight_skeleton: "bark_sight_skeleton.mp3",
+  bark_sight_firebat: "bark_sight_firebat.mp3",
+  bark_sight_lavablob: "bark_sight_lavablob.mp3",
+  bark_sight_crab: "bark_sight_crab.mp3",
+  bark_sight_magmagolem: "bark_sight_magmagolem.mp3",
+  bark_sight_frostwolf: "bark_sight_frostwolf.mp3",
+  bark_sight_icewisp: "bark_sight_icewisp.mp3",
+  bark_sight_penguin: "bark_sight_penguin.mp3",
+  bark_sight_yeti: "bark_sight_yeti.mp3",
+  bark_sight_stormbird: "bark_sight_stormbird.mp3",
+  bark_sight_thunderimp: "bark_sight_thunderimp.mp3",
+  bark_sight_jellyfish: "bark_sight_jellyfish.mp3",
+  bark_sight_cogmoth: "bark_sight_cogmoth.mp3",
+  bark_sight_gearcrab: "bark_sight_gearcrab.mp3",
+  bark_sight_blob: "bark_sight_blob.mp3",
+  bark_sight_toxic: "bark_sight_toxic.mp3",
+  bark_sight_sandwisp: "bark_sight_sandwisp.mp3",
+  bark_sight_anglerfish: "bark_sight_anglerfish.mp3",
+  bark_sight_shardknight: "bark_sight_shardknight.mp3",
+  bark_sight_voidwraith: "bark_sight_voidwraith.mp3",
+  bark_sight_galaxmaw: "bark_sight_galaxmaw.mp3",
+  bark_sight_stormgolem: "bark_sight_stormgolem.mp3",
+  bark_hurt_mushroom: "bark_hurt_mushroom.mp3",
+  bark_hurt_ghost: "bark_hurt_ghost.mp3",
+  bark_hurt_firebat: "bark_hurt_firebat.mp3",
+  bark_hurt_frostwolf: "bark_hurt_frostwolf.mp3",
+  bark_hurt_yeti: "bark_hurt_yeti.mp3",
+  bark_hurt_jellyfish: "bark_hurt_jellyfish.mp3",
+  bark_hurt_gearcrab: "bark_hurt_gearcrab.mp3",
+  bark_hurt_shardknight: "bark_hurt_shardknight.mp3",
+  bark_hurt_penguin: "bark_hurt_penguin.mp3",
+  bark_hurt_skeleton: "bark_hurt_skeleton.mp3",
+  bark_stomp_big: "bark_stomp_big.mp3",
+  bark_stomp_fly: "bark_stomp_fly.mp3",
+  bark_stomp_crab: "bark_stomp_crab.mp3",
+  bark_stomp_spooky: "bark_stomp_spooky.mp3",
+  bark_stomp_goo: "bark_stomp_goo.mp3",
+  bark_stomp_knight: "bark_stomp_knight.mp3",
+  bark_stomp_small: "bark_stomp_small.mp3",
   umbra_01: "umbra_01.mp3",
   umbra_02: "umbra_02.mp3",
   umbra_03: "umbra_03.mp3",

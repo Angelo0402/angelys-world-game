@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { applyOrigin, scaleForHeight } from "../assets/manifest";
 import { SPRITES } from "../assets/sprites.gen";
 import { Audio } from "../audio/AudioManager";
+import { HURT_BARKS } from "../audio/barks";
 import type { GameScene } from "../scenes/GameScene";
 import type { EnemyType } from "./enemyTypes";
 
@@ -219,7 +220,7 @@ export class Enemy {
           vx = Math.cos(ang) * p.speed;
           vy = Math.sin(ang) * p.speed;
         }
-        scene.spawnProjectile(p.sheet, ox, oy, vx, vy, p.scale, p.tint);
+        scene.spawnProjectile(p.sheet, ox, oy, vx, vy, p.scale, p.tint, this.type.key);
         this.setState("recover", 450);
         break;
       }
@@ -271,7 +272,7 @@ export class Enemy {
             t.range,
             this.body.height + 20,
           );
-          if (Phaser.Geom.Rectangle.Overlaps(reach, scene.player.bounds())) scene.player.hurt(this.x, this.type.key === "squish" ? ["bark_sq_hurt"] : undefined);
+          if (Phaser.Geom.Rectangle.Overlaps(reach, scene.player.bounds())) scene.player.hurt(this.x, HURT_BARKS[this.type.key] ? [HURT_BARKS[this.type.key]] : undefined);
         }
         break;
       case "dive":

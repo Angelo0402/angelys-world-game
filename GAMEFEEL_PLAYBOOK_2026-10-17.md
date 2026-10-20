@@ -85,3 +85,33 @@ Notas:
 - El #1 (checkpoints en la barra) es UI puro, sin tocar lógica de daño.
 
 Prioridad si se retoma feel: #10 primero (extiende hitStop que ya existe), luego #7, luego #1.
+
+## Reel 6 — @vasilev.yegor — "How to make ICE SPIKES juicy!"
+`https://www.instagram.com/reel/DetoueoNkIr/`
+
+Receta de 8 pasos para que un ataque de púas de hielo/cristal que salen del suelo se sienta poderoso. Es una secuencia completa (telegraph → erupción → clímax → residuo), no trucos sueltos:
+
+| Paso | Qué es | Uso en Angely's World |
+|---|---|---|
+| 1. CHARGE UP! | Anticipación: energía/brillo se acumula antes del ataque | Telegraph de cualquier ataque de boss |
+| 2. SPIKES! | No un carámbano solo: púas que SALEN del suelo en cadena | Ataque del boss de Crystal Veil / picos del piso |
+| 3. GROW! | Cada púa más grande según se acerca al objetivo | Escalada visual hacia el jugador |
+| 4. FAN OUT! | Púas pequeñas a los lados, forma de abanico | Cobertura lateral, evita que se vea "línea fina" |
+| 5. CRACK THE FLOOR! | El suelo se agrieta alrededor del impacto | Decal de daño en el piso + peso del golpe |
+| 6. BIG FINISH! | La erupción mayor al final, sobre el objetivo | Clímax del ataque |
+| 7. SHATTER! | Las púas se rompen en pedazos | Debris al terminar el ataque |
+| 8. FROST! | Escarcha/niebla que queda flotando | Residuo ambiental post-ataque |
+
+Notas:
+- Conecta directo con Crystal Veil: el boss ya trabaja con cristales que suben del piso ("The floor is glowing, move before the crystals rise") y beams — esta receta le da el feel completo a ese patrón de ataque.
+- El paso 1 (charge/telegraph) es el más importante para gameplay justo: el jugador necesita leer el ataque antes de que salga, igual que el floor-glow que ya existe.
+- Nada implementado todavía; es referencia para cuando se toque el feel de bosses/cristal. Sin tocar física ni controles.
+
+## Reel 7 — @motionbykrit — "Game Dev Secrets: Why is the Chrome game a DINOSAUR?"
+`https://www.instagram.com/reel/DetMMkyx48K/`
+
+Trivia de diseño del Dino de Chrome; dos puntos transferibles:
+- **Hitboxes que perdonan**: el dino usa hitboxes mucho más pequeños que el sprite — el sprite puede rozar el cactus sin morir. Refuerza el punto ya anotado del reel 2 (hitboxes justos); si hay quejas de "me pegó sin tocarme", achicar hitboxes del jugador/enemigos antes de tocar otra cosa.
+- **Segundo obstáculo a mitad de run**: los pájaros entran a los ~450 puntos, a otra altura, cuando el jugador ya dominó los cactus — romper el piloto automático con un patrón distinto. Nota de diseño para niveles largos/chase: introducir la variante cuando el patrón base ya se siente automático.
+
+Nada implementado; referencia.
