@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { applyOrigin, scaleForHeight } from "../assets/manifest";
 import { PROPS, SPRITES, type SpriteKey } from "../assets/sprites.gen";
 import { Audio } from "../audio/AudioManager";
+import { Barks } from "../audio/barks";
 import {
   CHAPTERS, GAME_H, GAME_W, GROUND_Y, LAST_LEVEL, LEVELS, MAX_HEARTS, WEAPON_NAMES, WEAPON_ORDER, levelLabel, weaponsBefore,
   type ChapterDef, type LevelInfo, type WeaponId,
@@ -208,6 +209,10 @@ export class GameScene extends Phaser.Scene {
       .setAlpha(0)
       .setDepth(9997);
     this.setupWeapons();
+    Barks.reset();
+    this.time.delayedCall(900, () => {
+      if (!this.cutscene && this.player?.alive) Barks.play(this, ["angely_bark_01"], 1, true);
+    });
 
     this.physics.add.collider(this.player.rect, this.groundGroup);
     this.physics.add.collider(this.player.rect, this.platformGroup);
@@ -764,6 +769,7 @@ export class GameScene extends Phaser.Scene {
       if (this.player.heal()) {
         h.taken = true;
         Audio.sfx("heart_pickup");
+        Barks.play(this, ["angely_bark_03"], 0.4);
         this.tweens.killTweensOf(h.sprite);
         this.tweens.add({ targets: h.sprite, scale: h.sprite.scale * 2, alpha: 0, y: h.sprite.y - 30, duration: 350, onComplete: () => h.sprite.destroy() });
         this.fx("fx_spark", "hit", h.sprite.x, h.sprite.y, 0.25, 0xff8fb0);
@@ -777,6 +783,7 @@ export class GameScene extends Phaser.Scene {
       if (!Phaser.Geom.Rectangle.Overlaps(pb, gb)) continue;
       g.taken = true;
       Audio.sfx("gem");
+      Barks.play(this, ["angely_bark_03"], 0.4);
       this.tweens.killTweensOf(g.sprite);
       this.tweens.add({ targets: g.sprite, scale: 1.6, alpha: 0, y: g.sprite.y - 40, duration: 400, onComplete: () => g.sprite.destroy() });
       this.fx("fx_spark", "hit", g.sprite.x, g.sprite.y, 0.35, 0x9ff5ff);
@@ -793,6 +800,7 @@ export class GameScene extends Phaser.Scene {
       s.taken = true;
       Audio.sfx("heart_pickup");
       this.player.grantShield();
+      Barks.play(this, ["angely_bark_07"], 1, true);
       this.tweens.killTweensOf(s.sprite);
       this.tweens.add({ targets: s.sprite, scale: s.sprite.scale * 1.8, alpha: 0, y: s.sprite.y - 36, duration: 380, onComplete: () => s.sprite.destroy() });
       this.fx("fx_spark", "hit", s.sprite.x, s.sprite.y, 0.45, 0xfff27a);
@@ -886,6 +894,7 @@ export class GameScene extends Phaser.Scene {
     if (stomping) {
       p.stompBounce(this.keyboardJumpHeld());
       Audio.sfx("stomp");
+      Barks.play(this, ["angely_bark_03", "angely_bark_10"], 0.65);
       this.fx("fx_dust", "puff", e.x, e.body.top + 10, 0.28);
       e.takeDamage(1, "stomp", p.x);
       return;
@@ -1208,6 +1217,7 @@ export class GameScene extends Phaser.Scene {
     this.projectiles.clear(true, true);
     this.time.delayedCall(animated ? 1400 : 700, () => {
       this.physics.pause();
+      Barks.play(this, ["angely_bark_05"], 1, true);
       Audio.music("music_game_over");
       this.game.events.emit("hud:gameover", { level: this.info.index, goal: { ...this.goal } });
     });
@@ -1239,6 +1249,7 @@ export class GameScene extends Phaser.Scene {
     if (stomping) {
       p.stompBounce(this.keyboardJumpHeld());
       Audio.sfx("stomp");
+      Barks.play(this, ["angely_bark_03", "angely_bark_10"], 0.65);
       this.fx("fx_dust", "puff", p.x, hb.top + 10, 0.3);
       b.takeDamage(2, "stomp", p.x);
     } else if (b.harmful) p.hurt(b.x);

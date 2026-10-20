@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { applyOrigin, scaleForHeight } from "../assets/manifest";
 import type { SpriteKey } from "../assets/sprites.gen";
 import { Audio } from "../audio/AudioManager";
+import { Barks } from "../audio/barks";
 import { MAX_HEARTS, WEAPON_ORDER, type WeaponId } from "../config";
 import type { FrameInput } from "../input/controls";
 import type { GameScene } from "../scenes/GameScene";
@@ -238,6 +239,7 @@ export class Player {
         this.jumpBufferedAt = -1000;
         this.lastGrounded = -1000;
         Audio.sfx("jump");
+        Barks.play(this.scene, ["angely_bark_02"], 0.1);
         this.scene.fx("fx_dust", "puff", this.x, body.bottom, 0.2);
         this.scene.vfx.jumpPoof(this.x, body.bottom);
       }
@@ -378,10 +380,12 @@ export class Player {
       this.stateUntil = time + 450;
       this.setAnim("angely_hammer", "smash", true);
       Audio.sfx("hammer_swing");
+      Barks.play(this.scene, ["angely_bark_09"], 0.22);
     } else {
       this.stateUntil = time + (this.airAttack ? 360 : 320);
       this.setAnim("angely_sword", this.airAttack ? "jump_attack" : "slash", true);
       Audio.sfx("sword_swing");
+      Barks.play(this.scene, ["angely_bark_09"], 0.22);
     }
   }
 
@@ -451,6 +455,7 @@ export class Player {
     this.hearts = Math.max(0, this.hearts - 1);
     this.scene.onHeartsChanged(this.hearts);
     Audio.sfx("player_hurt");
+    Barks.play(this.scene, ["angely_bark_04", "angely_bark_06"], 0.85, true);
     this.scene.cameras.main.shake(160, 0.008);
     this.scene.vfx.hurtFlash();
     this.scene.impactFrame();
@@ -527,6 +532,7 @@ export class Player {
     this.state = "celebrate";
     this.body.setVelocity(0, 0);
     this.setAnim("angely", "celebrate", true);
+    Barks.play(this.scene, ["angely_bark_11", "angely_bark_08"], 1, true);
   }
 
   freeze() {

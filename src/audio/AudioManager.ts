@@ -241,6 +241,15 @@ class AudioManagerImpl {
     this.voiceSound = undefined;
   }
 
+  /** True while a voice clip is audibly playing (dialogue line or bark). */
+  voiceBusy(): boolean {
+    try {
+      return !!this.voiceSound?.isPlaying;
+    } catch {
+      return false;
+    }
+  }
+
   sfx(name: SfxName) {
     if (!this.sfxOn) return;
     const now = performance.now();
