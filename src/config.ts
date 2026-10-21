@@ -266,7 +266,7 @@ export const LEVELS: LevelInfo[] = [
   { chapter: 9, stage: 1, name: "Gumdrop Trail", mode: "run", goal: "kills", need: 10, terrain: "hills", seed: 113, pieces: ["hops", "spring", "steps", "spikes", "crateWall"], weapon: "ray", tip: "Grab the Bubble Ray and zap the squishies!" },
   { chapter: 9, stage: 2, name: "Bubble Falls", mode: "run", goal: "gems", need: 6, terrain: "cliffs", seed: 127, pieces: ["hops", "movingBridge", "crumble", "spring", "spikes", "steps"], tip: "Bounce the springs and find every star gem" },
   { chapter: 10, stage: 1, name: "Shattered Causeway", mode: "run", goal: "kills", need: 12, terrain: "cliffs", seed: 149, pieces: ["hops", "steps", "breakWall", "crumble", "crateWall", "movingBridge", "spring", "target", "lift", "breakWall"], tip: "Smash the cracked crystal walls with your hammer. Clear twelve guardians to reach the crown." },
-  { chapter: 10, stage: 2, name: "The Veil Crown", mode: "run", goal: "boss", need: 0, terrain: "flat", seed: 151, pieces: [], boss: true, tip: "Watch the pink warnings. Strike the core after each attack to free Angelo." },
+  { chapter: 10, stage: 2, name: "The Veil Crown", mode: "run", goal: "boss", need: 0, terrain: "flat", seed: 151, pieces: [], boss: true, tip: "Watch the pink warnings. Three forms, one crown — strike the core after each attack." },
 ].map((l, i) => L(l as Omit<LevelInfo, "index">, i));
 
 export const LAST_LEVEL = LEVELS.length - 1;

@@ -496,7 +496,7 @@ export class GameScene extends Phaser.Scene {
     this.registry.set("weapon", this.player.weapon);
   }
 
-  private addHeart(x: number, y: number) {
+  private addHeart(x: number, y: number, ttlMs = 0) {
     const spr = this.add.sprite(x, y, "heart").setDepth(50);
     spr.setScale(scaleForHeight("heart", 34));
     applyOrigin(spr, "heart");
@@ -504,6 +504,16 @@ export class GameScene extends Phaser.Scene {
     const p: Pickup = { sprite: spr, baseY: y, taken: false };
     this.tweens.add({ targets: spr, y: y - 8, duration: 700, yoyo: true, repeat: -1, ease: "Sine.inOut" });
     this.hearts.push(p);
+    // Combat-dropped hearts expire: an uncollected drop fades out instead
+    // of littering the arena floor for the whole fight.
+    if (ttlMs > 0) {
+      this.time.delayedCall(ttlMs, () => {
+        if (p.taken || !p.sprite.active) return;
+        p.taken = true;
+        this.tweens.killTweensOf(p.sprite);
+        this.tweens.add({ targets: p.sprite, alpha: 0, duration: 400, onComplete: () => p.sprite.destroy() });
+      });
+    }
     return p;
   }
 
@@ -1185,7 +1195,7 @@ export class GameScene extends Phaser.Scene {
     this.fx("fx_explode", "boom", e.x, e.body.center.y, 0.3);
     if (e.type.heartDrop && Math.random() < e.type.heartDrop) {
       const floor = this.surfaceBelow(e.x, e.body.bottom - 4) ?? e.body.bottom;
-      const h = this.addHeart(e.x, (e.type.flying ? floor - 40 : Math.min(e.body.top, floor - 40)) - 30);
+      const h = this.addHeart(e.x, (e.type.flying ? floor - 40 : Math.min(e.body.top, floor - 40)) - 30, 22000);
       this.tweens.add({ targets: h.sprite, scale: { from: 0, to: h.sprite.scale }, duration: 300, ease: "Back.out" });
     }
     if (this.info.boss) return;
@@ -1544,9 +1554,14 @@ export class GameScene extends Phaser.Scene {
     this.bossDamage += dmg;
     if (this.bossDamage >= 7 && hp > 0 && this.info.chapter !== 11) {
       this.bossDamage = 0;
-      const a = this.level.arena!;
-      const h = this.addHeart(Phaser.Math.Between(a.x0 + 200, a.x1 - 200), GROUND_Y - 40);
-      this.tweens.add({ targets: h.sprite, scale: { from: 0, to: h.sprite.scale }, duration: 300, ease: "Back.out" });
+      // Sustain trickle, hard-capped: never more than 2 live hearts in the
+      // arena, and dropped hearts expire — a long boss fight used to flood
+      // the floor with dozens of permanent hearts (Angelo's screenshot).
+      if (this.hearts.filter((h) => !h.taken).length < 2) {
+        const a = this.level.arena!;
+        const h = this.addHeart(Phaser.Math.Between(a.x0 + 200, a.x1 - 200), GROUND_Y - 40, 22000);
+        this.tweens.add({ targets: h.sprite, scale: { from: 0, to: h.sprite.scale }, duration: 300, ease: "Back.out" });
+      }
     }
   }
 
@@ -1770,9 +1785,13 @@ export class GameScene extends Phaser.Scene {
     return e;
   }
 
-  /** Bounded heart drop from the final boss (called at health thresholds). */
+  /** Bounded heart drop from the final boss (called at health thresholds).
+   *  Drops spread sideways instead of stacking on one spot, and expire. */
+  private heartDropCount = 0;
   bossHeartDrop(x: number) {
-    this.addHeart(x, GROUND_Y - 46);
+    const offsets = [-90, 0, 90];
+    const dx = offsets[this.heartDropCount++ % offsets.length];
+    this.addHeart(x + dx, GROUND_Y - 46, 22000);
   }
 
   /** The Veil calls existing enemies to her side — mixed waves, capped at

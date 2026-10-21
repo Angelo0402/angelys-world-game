@@ -8,7 +8,7 @@ import type { DamageKind } from "./Enemy";
 
 const HEIGHT = 228;
 const SHATTERED_HEIGHT = 245;
-const SOV_HEIGHT = 205;
+const SOV_HEIGHT = 248;
 type Phase = 1 | 2 | 3;
 type Form = "veil" | "shattered" | "sovereign";
 type State = "intro" | "walk" | "claw" | "slam" | "shoot" | "burst" | "erupt" | "beam" | "hurt" | "recover" | "enrage" | "dead";
@@ -68,7 +68,7 @@ export class CrystalVeilBoss {
   get vulnerable() { return !["intro","enrage","dead"].includes(this.state); }
 
   /** Sprite sheet + display height of the current form. */
-  private get sheet() { return this.form === "sovereign" ? "sovereign" : this.form === "shattered" ? "veil_form2" : "crystalveil"; }
+  private get sheet() { return this.form === "sovereign" ? "sovereign2" : this.form === "shattered" ? "veil_form2" : "crystalveil"; }
   private get formHeight() { return this.form === "sovereign" ? SOV_HEIGHT : this.form === "shattered" ? SHATTERED_HEIGHT : HEIGHT; }
 
   hitbox() {
@@ -190,7 +190,7 @@ export class CrystalVeilBoss {
     this.strikeUntil = this.strikeFrom + active;
     this.stateUntil = time + ms + active + recovery + 900;
     const meta = (SPRITES as Record<string, { anims: Record<string, { start: number }> }>)[this.sheet];
-    const clip = meta.anims[this.form === "sovereign" ? "attack" : anim];
+    const clip = meta.anims[anim] ?? meta.anims.attack;
     this.glow.setTint(0xb57cff);
     this.sprite.anims.stop();
     this.sprite.setFrame(clip.start);
@@ -362,10 +362,10 @@ export class CrystalVeilBoss {
     this.scene.cameras.main.shake(500, .008);
     this.sprite.clearTint();
     this.sprite.anims.stop();
-    this.sprite.setTexture("sovereign");
-    applyOrigin(this.sprite, "sovereign");
-    this.sprite.setScale(scaleForHeight("sovereign", SOV_HEIGHT, "idle"));
-    this.sprite.play("sovereign:idle");
+    this.sprite.setTexture(this.sheet);
+    applyOrigin(this.sprite, this.sheet);
+    this.sprite.setScale(scaleForHeight(this.sheet, SOV_HEIGHT, "idle"));
+    this.sprite.play(`${this.sheet}:idle`);
     this.glow.setTint(0xff9df3);
     this.scene.onBossHp(this.hp, this.maxHp, 0);
     this.scene.onSovereignRise();
@@ -377,7 +377,7 @@ export class CrystalVeilBoss {
     this.holdState = false;
     this.state = "walk";
     this.readyAt = this.scene.time.now + 700;
-    this.sprite.play("sovereign:walk", true);
+    this.sprite.play(`${this.sheet}:walk`, true);
   }
 
   private die() {

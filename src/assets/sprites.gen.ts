@@ -2160,6 +2160,106 @@ export const SPRITES = {
       }
     }
   },
+  "sovereign2": {
+    "file": "assets/runtime/sovereign2.webp",
+    "frameWidth": 224,
+    "frameHeight": 224,
+    "originX": 0.48,
+    "originY": 0.995,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 3,
+        "frameRate": 6,
+        "repeat": -1,
+        "h": 200
+      },
+      "walk": {
+        "start": 4,
+        "end": 7,
+        "frameRate": 9,
+        "repeat": -1,
+        "h": 200
+      },
+      "claw": {
+        "start": 8,
+        "end": 11,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 200
+      },
+      "slam": {
+        "start": 12,
+        "end": 15,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 200
+      },
+      "shoot": {
+        "start": 16,
+        "end": 19,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 200
+      },
+      "summon": {
+        "start": 20,
+        "end": 23,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 200
+      },
+      "charge": {
+        "start": 24,
+        "end": 27,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 200
+      },
+      "erupt": {
+        "start": 28,
+        "end": 31,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 200
+      },
+      "hurt": {
+        "start": 32,
+        "end": 35,
+        "frameRate": 9,
+        "repeat": 0,
+        "h": 200
+      },
+      "stagger": {
+        "start": 36,
+        "end": 39,
+        "frameRate": 9,
+        "repeat": 0,
+        "h": 200
+      },
+      "enrage": {
+        "start": 40,
+        "end": 43,
+        "frameRate": 7,
+        "repeat": -1,
+        "h": 200
+      },
+      "dead": {
+        "start": 44,
+        "end": 47,
+        "frameRate": 7,
+        "repeat": 0,
+        "h": 200
+      },
+      "attack": {
+        "start": 8,
+        "end": 11,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 200
+      }
+    }
+  },
   "fx_fireball": {
     "file": "assets/runtime/fx_fireball.webp",
     "frameWidth": 175,
