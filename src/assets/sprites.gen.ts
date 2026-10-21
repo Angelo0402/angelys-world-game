@@ -2537,6 +2537,99 @@ export const SPRITES = {
       }
     }
   },
+  "veil_form2": {
+    "file": "assets/runtime/veil_form2.webp",
+    "frameWidth": 352,
+    "frameHeight": 352,
+    "originX": 0.5,
+    "originY": 0.977,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 4,
+        "frameRate": 6,
+        "repeat": -1,
+        "h": 326
+      },
+      "walk": {
+        "start": 5,
+        "end": 9,
+        "frameRate": 9,
+        "repeat": -1,
+        "h": 326
+      },
+      "claw": {
+        "start": 10,
+        "end": 12,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 326
+      },
+      "slam": {
+        "start": 12,
+        "end": 14,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 326
+      },
+      "shoot": {
+        "start": 10,
+        "end": 11,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 326
+      },
+      "summon": {
+        "start": 13,
+        "end": 14,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 326
+      },
+      "charge": {
+        "start": 10,
+        "end": 11,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 326
+      },
+      "erupt": {
+        "start": 11,
+        "end": 13,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 326
+      },
+      "hurt": {
+        "start": 15,
+        "end": 15,
+        "frameRate": 8,
+        "repeat": 0,
+        "h": 326
+      },
+      "stagger": {
+        "start": 15,
+        "end": 15,
+        "frameRate": 8,
+        "repeat": 0,
+        "h": 326
+      },
+      "enrage": {
+        "start": 10,
+        "end": 11,
+        "frameRate": 7,
+        "repeat": -1,
+        "h": 326
+      },
+      "dead": {
+        "start": 16,
+        "end": 19,
+        "frameRate": 7,
+        "repeat": 0,
+        "h": 326
+      }
+    }
+  },
   "crystalveil_beam": {
     "file": "assets/runtime/crystalveil_beam.webp",
     "frameWidth": 256,
@@ -2682,6 +2775,22 @@ export const SPRITES = {
         "fps": 5,
         "repeat": 0,
         "h": 257
+      }
+    }
+  },
+  "crystal_cage_new": {
+    "file": "assets/runtime/crystal_cage_new.webp",
+    "frameWidth": 1164,
+    "frameHeight": 1240,
+    "originX": 0.5,
+    "originY": 0.997,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 0,
+        "frameRate": 1,
+        "repeat": -1,
+        "h": 1240
       }
     }
   },

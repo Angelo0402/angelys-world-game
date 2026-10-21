@@ -7,9 +7,10 @@ import type { GameScene } from "../scenes/GameScene";
 import type { DamageKind } from "./Enemy";
 
 const HEIGHT = 228;
+const SHATTERED_HEIGHT = 245;
 const SOV_HEIGHT = 205;
-const SOV_HP = 40;
 type Phase = 1 | 2 | 3;
+type Form = "veil" | "shattered" | "sovereign";
 type State = "intro" | "walk" | "claw" | "slam" | "shoot" | "burst" | "erupt" | "beam" | "hurt" | "recover" | "enrage" | "dead";
 
 /** Chapter 10: face the target, telegraph, strike, then expose the core. */
@@ -17,8 +18,9 @@ export class CrystalVeilBoss {
   maxHp = 160;
   hp = this.maxHp;
   phase: Phase = 1;
-  /** "veil" until its crown breaks; then the Sovereign rises with its own HP. */
-  form: "veil" | "sovereign" = "veil";
+  /** Three forms, ONE health pool (2026-10-20 regeneration): the crystal
+   *  beast, the shattered brute, and the Sovereign who rises at phase 3. */
+  form: Form = "veil";
   x: number;
   readonly sprite: Phaser.GameObjects.Sprite;
   private readonly shadow: Phaser.GameObjects.Image;
@@ -66,12 +68,12 @@ export class CrystalVeilBoss {
   get vulnerable() { return !["intro","enrage","dead"].includes(this.state); }
 
   /** Sprite sheet + display height of the current form. */
-  private get sheet() { return this.form === "sovereign" ? "sovereign" : "crystalveil"; }
-  private get formHeight() { return this.form === "sovereign" ? SOV_HEIGHT : HEIGHT; }
+  private get sheet() { return this.form === "sovereign" ? "sovereign" : this.form === "shattered" ? "veil_form2" : "crystalveil"; }
+  private get formHeight() { return this.form === "sovereign" ? SOV_HEIGHT : this.form === "shattered" ? SHATTERED_HEIGHT : HEIGHT; }
 
   hitbox() {
     const reach = this.state === "claw" && this.harmful ? 100 : 0;
-    const w = this.form === "sovereign" ? 124 : 96;
+    const w = this.form === "sovereign" ? 124 : this.form === "shattered" ? 112 : 96;
     const h = this.formHeight;
     return new Phaser.Geom.Rectangle(this.x - w / 2 - (this.dir < 0 ? reach : 0), GROUND_Y - h + 32, w + reach, h - 36);
   }
@@ -79,7 +81,7 @@ export class CrystalVeilBoss {
   begin() {
     this.state = "walk";
     this.readyAt = this.scene.time.now + 900;
-    this.sprite.play("crystalveil:walk", true);
+    this.sprite.play(`${this.sheet}:walk`, true);
   }
 
   update(time: number, delta: number) {
@@ -187,8 +189,8 @@ export class CrystalVeilBoss {
     this.strikeFrom = time + ms;
     this.strikeUntil = this.strikeFrom + active;
     this.stateUntil = time + ms + active + recovery + 900;
-    const meta = this.form === "sovereign" ? SPRITES.sovereign : SPRITES.crystalveil;
-    const clip = (meta.anims as Record<string, { start: number }>)[this.form === "sovereign" ? "attack" : anim];
+    const meta = (SPRITES as Record<string, { anims: Record<string, { start: number }> }>)[this.sheet];
+    const clip = meta.anims[this.form === "sovereign" ? "attack" : anim];
     this.glow.setTint(0xb57cff);
     this.sprite.anims.stop();
     this.sprite.setFrame(clip.start);
@@ -198,7 +200,7 @@ export class CrystalVeilBoss {
       this.cancelAction();
       this.state = "recover";
       this.until = this.scene.time.now + recovery;
-      this.sprite.clearTint().play(this.form === "sovereign" ? "sovereign:hurt" : "crystalveil:stagger",true);
+      this.sprite.clearTint().play(`${this.sheet}:${this.form === "sovereign" ? "hurt" : "stagger"}`,true);
       this.sprite.anims.timeScale = 1;
       this.glow.setTint(0x7affed);
     });
@@ -284,19 +286,17 @@ export class CrystalVeilBoss {
     const before = this.hp;
     this.hp = Math.max(0,this.hp-amount);
     if (amount >= 2 && kind !== "stomp") this.scene.hitStop(60); // heavy hits land with a frozen beat
-    // Bounded heart drops: one at each quarter of the Veil's health, so a
+    // Bounded heart drops: one at each quarter of the fight's health, so a
     // long final fight stays survivable without flooding the arena.
-    if (this.form === "veil") {
-      for (const threshold of [120, 80, 40]) {
-        if (before > threshold && this.hp <= threshold) this.scene.bossHeartDrop(this.x);
-      }
+    for (const threshold of [120, 80, 40]) {
+      if (before > threshold && this.hp <= threshold) this.scene.bossHeartDrop(this.x);
     }
     Audio.sfx("boss_hit");
     this.scene.onBossHp(this.hp,this.maxHp,amount);
     if (!this.hp) {
-      // The Veil does not die at zero: its crown breaks and the Sovereign
-      // rises with her own HP. Only the Sovereign form truly dies.
-      if (this.form === "veil") { this.transform(); return true; }
+      // Only the Sovereign form truly dies; an earlier form at zero is a
+      // failsafe that forces the rise instead (thresholds normally catch it).
+      if (this.form !== "sovereign") { this.phase = 3; this.transform(); return true; }
       this.die(); return true;
     }
     const phase: Phase = this.form === "sovereign" ? 3 : this.hp <= this.maxHp*.3 ? 3 : this.hp <= this.maxHp*.6 ? 2 : 1;
@@ -306,9 +306,13 @@ export class CrystalVeilBoss {
       this.sprite.anims.timeScale = 1;
       this.phase = phase;
       this.attackIndex = 0;
+      // Phase 3 IS the Sovereign's rise — she takes over from here.
+      if (phase === 3) { this.transform(); return true; }
+      // Phase 2: the beast stands and shatters into the brute.
+      if (phase === 2) this.swapForm("shattered");
       this.state = "enrage";
       this.stateUntil = time + 2000;
-      this.sprite.play("crystalveil:enrage",true);
+      this.sprite.play(`${this.sheet}:enrage`,true);
       Audio.sfx("boss_roar");
       this.scene.onBossPhase2();
       this.scene.cameras.main.flash(220,110,70,170);
@@ -331,15 +335,26 @@ export class CrystalVeilBoss {
     return true;
   }
 
-  /** Crown broken: swap to the Sovereign sheet and hand the scene the intro. */
+  /** Swap the sprite to another form's sheet (its own scale and origin). */
+  private swapForm(form: Form) {
+    this.form = form;
+    this.sprite.clearTint();
+    this.sprite.anims.stop();
+    this.sprite.setTexture(this.sheet);
+    applyOrigin(this.sprite, this.sheet);
+    this.sprite.setScale(scaleForHeight(this.sheet, this.formHeight, "idle"));
+    this.glow.setTint(this.auraTint());
+  }
+
+  /** Phase 3: the Sovereign rises — same health pool, her own sheet and
+   *  moves; invulnerable while her rise line plays over live combat. */
   private transform() {
     this.cancelAction();
     this.form = "sovereign";
     this.state = "enrage"; // invulnerable while the Sovereign speaks
-    this.holdState = true; // the dialogue, not a timer, ends this state
+    this.holdState = true; // the subtitle beat, not a timer, ends this state
     this.stateUntil = 0;
-    this.maxHp = SOV_HP;
-    this.hp = this.maxHp;
+    if (this.hp <= 0) this.hp = 24; // failsafe last stand
     this.phase = 3;
     this.attackIndex = 0;
     Audio.sfx("boss_roar");

@@ -17,10 +17,9 @@ import { KeyboardInput, NO_INPUT, resetTouch, touchState, type FrameInput } from
 import { Gamepad } from "../input/gamepad";
 import { addWeapon, loadSave, unlockLevel, updateSave } from "../save";
 import { angeloCutscene, angeloPraise, Rift } from "../story/angeloScene";
-import { CageAngelo } from "../entities/CageAngelo";
 import { CrystalVeilBoss } from "../entities/CrystalVeilBoss";
 import { Sandworm } from "../entities/Sandworm";
-import { SOVEREIGN_FALL, SOVEREIGN_NAME, SOVEREIGN_RISE, VEIL_DECLARE, VEIL_DEFEAT, VEIL_FAREWELL, VEIL_INTRO, VEIL_NAME, VEIL_PHASE2, VEIL_PHASE3, VEIL_RESCUE, VEIL_TAUNT } from "../story/crystalveil";
+import { SOVEREIGN_FALL, SOVEREIGN_NAME, SOVEREIGN_RISE, VEIL_DECLARE, VEIL_NAME, VEIL_PHASE2, VEIL_PHASE3, VEIL_TAUNT } from "../story/crystalveil";
 import { VisualFX } from "../effects/VisualFX";
 import { WORM_INTRO, WORM_NAME } from "../story/worm";
 import { UMBRA_DEFEAT, UMBRA_INTRO, UMBRA_PHASE2, type DialogueLine } from "../story/umbra";
@@ -65,7 +64,6 @@ export class GameScene extends Phaser.Scene {
   enemies: Enemy[] = [];
   kills = 0;
   boss?: Boss | Sandworm | CrystalVeilBoss | RuinSentinel;
-  veilCage?: CageAngelo;
   /** Veil fight summons: Astra's design — capped mixed waves while she fights. */
   nextVeilWave = Infinity;
   veilSummons = new Set<Enemy>();
@@ -145,8 +143,6 @@ export class GameScene extends Phaser.Scene {
     this.swordStone = undefined;
     this.weaponPickup = undefined;
     this.boss = undefined;
-    this.veilCage?.destroy();
-    this.veilCage = undefined;
     this.veilState = "idle";
     this.aiFrozen = false;
     this.ending = false;
@@ -433,9 +429,6 @@ export class GameScene extends Phaser.Scene {
     for (const s of L.stars) this.stars.push(this.addBobber("starshield", s.x, s.y, 52));
 
     this.portal = new Portal(this, L.portal.x, !this.info.boss, L.portal.y);
-    if (this.info.chapter === 10 && this.info.boss && L.arena) {
-      this.veilCage = new CageAngelo(this, (L.arena.x0 + L.arena.x1) / 2);
-    }
     if (this.info.goal === "reach") this.portal.open(true);
     else this.portal.setRemaining(this.info.goal === "gems" ? L.gems.length : this.info.need, this.info.goal === "gems" ? "gems" : "left");
     this.buildPortalArrow();
@@ -660,8 +653,6 @@ export class GameScene extends Phaser.Scene {
 
     this.player.pushing = this.mech.pushCheck(this.player, input.axis);
     this.player.update(time, delta, input);
-    this.veilCage?.lookAt(this.player.x);
-    if (this.boss && this.veilCage) this.veilCage.update(time, this.boss.hp, this.boss.maxHp, "attacking" in this.boss && !!this.boss.attacking);
     const shield = this.player.shieldLeft() > 0 ? Math.ceil(this.player.shieldLeft() / 1000) : 0;
     if (shield !== this.shieldShown) {
       this.shieldShown = shield;
@@ -1385,11 +1376,8 @@ export class GameScene extends Phaser.Scene {
     this.mech.addBarrier(arena.x1 + 20);
     this.scriptX = arena.x0 + 220;
     cam.setBounds(0, 0, this.level.width, GAME_H);
-    const cage = this.veilCage ?? (this.veilCage = new CageAngelo(this, mid));
-    cam.pan(cage.x, GAME_H / 2 - 40, 900, "Sine.easeInOut");
+    cam.pan(mid + 180, GAME_H / 2 - 40, 900, "Sine.easeInOut");
     await this.wait(1100);
-    cage.react("grip", 1600);
-    await this.wait(700);
     Audio.sfx("boss_roar");
     cam.shake(500, 0.007);
     cam.pan(mid + 180, GAME_H / 2, 800, "Sine.easeInOut");
@@ -1401,9 +1389,9 @@ export class GameScene extends Phaser.Scene {
     await this.wait(1500);
     this.player.facing = 1;
     try {
-      // The boss speaks FIRST — she owns this veil and says so, out loud.
+      // The Sovereign speaks — she owns this veil and says so, out loud.
+      // No cage, no Angelo (2026-10-20 regeneration): Angely faces her alone.
       await this.say(VEIL_TAUNT);
-      await this.say(VEIL_INTRO);
       await this.say(VEIL_DECLARE);
     } finally {
       this.game.events.emit("hud:cinema", false);
@@ -1439,92 +1427,35 @@ export class GameScene extends Phaser.Scene {
     await this.wait(2000);
     await this.say(SOVEREIGN_FALL);
     this.boss?.vanish();
-    const cage = this.veilCage;
-    if (cage) cam.pan(cage.x, GAME_H / 2 - 40, 700, "Sine.easeInOut");
     await this.wait(800);
-    this.scriptX = cage ? cage.x - 90 : this.player.x;
-    await this.say(VEIL_DEFEAT);
-    await this.wait(400);
-    this.veilState = "rescue";
-    const angelo = cage ? await cage.release() : undefined;
-    if (angelo) {
-      this.scriptX = angelo.x - 70;
-      await this.wait(500);
-      this.scriptX = null;
-      await this.say(VEIL_RESCUE);
-      // The reunion plays on its own painted sheet — approach, hug, pat —
-      // while the two actors hide (finale design, art/source/finale).
-      const meet0 = (angelo.x + this.player.x) / 2;
-      angelo.setVisible(false);
-      this.player.sprite.setVisible(false);
-      const reunion = this.add.sprite(meet0, GROUND_Y + 4, "final_pair_reunion").setDepth(58);
-      reunion.setScale(scaleForHeight("final_pair_reunion", 168, "hug"));
-      applyOrigin(reunion, "final_pair_reunion");
-      reunion.play("final_pair_reunion:approach");
-      await this.wait(1000);
-      reunion.play("final_pair_reunion:hug");
-      Audio.sfx("heart_pickup");
-      await this.wait(1500);
-      reunion.play("final_pair_reunion:pat");
-      await this.wait(900);
-      reunion.destroy();
-      angelo.setVisible(true);
-      this.player.sprite.setVisible(true);
-    } else await this.say(VEIL_RESCUE);
-    this.veilState = "together";
+    // Solo ending (2026-10-20 regeneration): no cage, no Angelo, no reunion.
+    // The gate opens and Angely walks in alone.
+    this.veilState = "portal_exit";
     const riftX = (this.level.arena!.x0 + this.level.arena!.x1) / 2 - 220;
     const rift = new Rift(this, riftX);
     cam.flash(240, 80, 140, 255);
     await rift.open();
-    await this.say(VEIL_FAREWELL);
-    // The 1.5 ending, restored: Angelo and Angely leave TOGETHER through the
-    // blue gate, painted pair sheets and all — no separate exits.
-    const meetX = angelo ? (angelo.x + this.player.x) / 2 : this.player.x;
-    if (angelo) angelo.setVisible(false);
     const p = this.player;
+    const startX = p.x;
     p.freeze();
     p.body.setAllowGravity(false).setVelocity(0, 0);
     p.sprite.setVisible(false);
-    // The painted pair sheet's "walk" is 8 near-identical poses — it glides
-    // without ever stepping — so the walk uses the finale sheets, whose
-    // cycles actually move their legs.
-    const gateX = rift.x;
-    const faceLeft = gateX < meetX;
-    const dadWalk = this.add.sprite(meetX + 44, GROUND_Y + 4, "angelo_finale").setDepth(56);
-    dadWalk.setScale(scaleForHeight("angelo_finale", 150, "walk"));
-    applyOrigin(dadWalk, "angelo_finale");
-    const girlWalk = this.add.sprite(meetX - 44, GROUND_Y + 4, "angely_finale").setDepth(56);
+    const girlWalk = this.add.sprite(startX, GROUND_Y + 4, "angely_finale").setDepth(56);
     girlWalk.setScale(scaleForHeight("angely_finale", 118, "walk"));
     applyOrigin(girlWalk, "angely_finale");
-    // The offered hand (finale design): he reaches for her, she takes it —
-    // they face each other for this beat before turning toward the gate.
-    dadWalk.setFlipX(true);
-    dadWalk.play("angelo_finale:reach");
-    girlWalk.play("angely_finale:reach");
-    await this.wait(850);
-    if (faceLeft) { dadWalk.setFlipX(true); girlWalk.setFlipX(true); }
-    else { dadWalk.setFlipX(false); girlWalk.setFlipX(false); }
-    dadWalk.play("angelo_finale:walk");
+    const gateX = rift.x;
+    const faceLeft = gateX < startX;
+    girlWalk.setFlipX(faceLeft);
     girlWalk.play("angely_finale:walk");
-    const walkMs = Math.max(1600, Math.abs(meetX - gateX) * 4.4);
-    await Promise.all([
-      new Promise<void>((res) => this.tweens.add({ targets: dadWalk, x: gateX + 40, duration: walkMs, ease: "Sine.easeInOut", onComplete: () => res() })),
-      new Promise<void>((res) => this.tweens.add({ targets: girlWalk, x: gateX - 40, duration: walkMs, ease: "Sine.easeInOut", onComplete: () => res() })),
-    ]);
-    // At the gate they turn away — rear view — and step in together.
-    this.veilState = "portal_exit";
-    dadWalk.play("angelo_finale_back:walk");
+    const walkMs = Math.max(1200, Math.abs(startX - gateX) * 4.4);
+    await new Promise<void>((res) => this.tweens.add({ targets: girlWalk, x: gateX, duration: walkMs, ease: "Sine.easeInOut", onComplete: () => res() }));
+    // At the gate she turns away — rear view — and steps in.
     girlWalk.play("angely_finale_back:walk");
-    if (faceLeft) { dadWalk.setFlipX(true); girlWalk.setFlipX(true); }
+    girlWalk.setFlipX(faceLeft);
     rift.surge();
     Audio.sfx("portal_enter");
-    // They recede INTO the gate: scale shrinks, fully visible, until the
-    // gate takes them — no fade-out (finale design).
-    await Promise.all([
-      new Promise<void>((res) => this.tweens.add({ targets: dadWalk, y: GROUND_Y - 70, scaleX: dadWalk.scaleX * 0.45, scaleY: dadWalk.scaleY * 0.45, duration: 1400, ease: "Sine.easeIn", onComplete: () => res() })),
-      new Promise<void>((res) => this.tweens.add({ targets: girlWalk, y: GROUND_Y - 70, scaleX: girlWalk.scaleX * 0.45, scaleY: girlWalk.scaleY * 0.45, duration: 1400, ease: "Sine.easeIn", onComplete: () => res() })),
-    ]);
-    dadWalk.destroy();
+    // She recedes INTO the gate: scale shrinks, fully visible — no fade.
+    await new Promise<void>((res) => this.tweens.add({ targets: girlWalk, y: GROUND_Y - 70, scaleX: girlWalk.scaleX * 0.45, scaleY: girlWalk.scaleY * 0.45, duration: 1400, ease: "Sine.easeIn", onComplete: () => res() }));
     girlWalk.destroy();
     await rift.close();
     this.veilState = "done";
