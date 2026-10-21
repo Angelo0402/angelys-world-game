@@ -1622,6 +1622,16 @@ export class GameScene extends Phaser.Scene {
   onBossPhase2() {
     if (this.info.chapter === 10) {
       this.cameras.main.flash(300, 160, 120, 255);
+      // Phase-change juice (game-feel reels): a beat of hit-stop, a crystal
+      // shockwave both ways and a burst of shards off the boss.
+      this.hitStop(110);
+      if (this.boss) {
+        this.spawnShockwave(this.boss.x, 1, 0xc59bff);
+        this.spawnShockwave(this.boss.x, -1, 0xc59bff);
+        this.fx("crystal_shot", "impact", this.boss.x, GROUND_Y - 110, 0.6);
+        this.fx("crystal_shot", "impact", this.boss.x - 60, GROUND_Y - 60, 0.45);
+        this.fx("crystal_shot", "impact", this.boss.x + 60, GROUND_Y - 60, 0.45);
+      }
       const phase = this.boss && "phase" in this.boss ? this.boss.phase : 2;
       this.game.events.emit("hud:subtitle", phase === 3 ? VEIL_PHASE3 : VEIL_PHASE2);
       return;
@@ -1638,6 +1648,13 @@ export class GameScene extends Phaser.Scene {
     this.projectiles.clear(true, true);
     this.hazards.getChildren().forEach((h) => h.destroy());
     Audio.stopVoice();
+    // Transformation juice: frozen beat, shockwaves, shard burst.
+    this.hitStop(150);
+    if (this.boss) {
+      this.spawnShockwave(this.boss.x, 1, 0xff9df3);
+      this.spawnShockwave(this.boss.x, -1, 0xff9df3);
+      this.fx("crystal_shot", "impact", this.boss.x, GROUND_Y - 120, 0.7);
+    }
     this.game.events.emit("hud:subtitle", SOVEREIGN_RISE[0]);
     this.time.delayedCall(3400, () => {
       if (this.boss instanceof CrystalVeilBoss) this.boss.beginSovereign();

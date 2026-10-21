@@ -283,6 +283,7 @@ export class CrystalVeilBoss {
     if (kind === "stomp") amount = .25;
     const before = this.hp;
     this.hp = Math.max(0,this.hp-amount);
+    if (amount >= 2 && kind !== "stomp") this.scene.hitStop(60); // heavy hits land with a frozen beat
     // Bounded heart drops: one at each quarter of the Veil's health, so a
     // long final fight stays survivable without flooding the arena.
     if (this.form === "veil") {
