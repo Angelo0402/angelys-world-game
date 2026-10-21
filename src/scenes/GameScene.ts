@@ -1460,22 +1460,38 @@ export class GameScene extends Phaser.Scene {
     p.freeze();
     p.body.setAllowGravity(false).setVelocity(0, 0);
     p.sprite.setVisible(false);
-    const pair = this.add.sprite(meetX, GROUND_Y + 4, "final_pair_side").setDepth(56);
-    applyOrigin(pair, "final_pair_side");
-    pair.setScale(scaleForHeight("final_pair_side", 150, "walk"));
-    pair.setFlipX(rift.x > meetX); // the painted pair walks left; mirror when the gate is right
-    pair.play("final_pair_side:walk");
-    await new Promise<void>((res) => this.tweens.add({ targets: pair, x: rift.x, duration: Math.max(1600, Math.abs(meetX - rift.x) * 5), ease: "Sine.easeInOut", onComplete: () => res() }));
+    // The painted pair sheet's "walk" is 8 near-identical poses — it glides
+    // without ever stepping — so the walk uses the finale sheets, whose
+    // cycles actually move their legs.
+    const gateX = rift.x;
+    const faceLeft = gateX < meetX;
+    const dadWalk = this.add.sprite(meetX + 44, GROUND_Y + 4, "angelo_finale").setDepth(56);
+    dadWalk.setScale(scaleForHeight("angelo_finale", 150, "walk"));
+    applyOrigin(dadWalk, "angelo_finale");
+    const girlWalk = this.add.sprite(meetX - 44, GROUND_Y + 4, "angely_finale").setDepth(56);
+    girlWalk.setScale(scaleForHeight("angely_finale", 118, "walk"));
+    applyOrigin(girlWalk, "angely_finale");
+    if (faceLeft) { dadWalk.setFlipX(true); girlWalk.setFlipX(true); }
+    dadWalk.play("angelo_finale:walk");
+    girlWalk.play("angely_finale:walk");
+    const walkMs = Math.max(1600, Math.abs(meetX - gateX) * 4.4);
+    await Promise.all([
+      new Promise<void>((res) => this.tweens.add({ targets: dadWalk, x: gateX + 40, duration: walkMs, ease: "Sine.easeInOut", onComplete: () => res() })),
+      new Promise<void>((res) => this.tweens.add({ targets: girlWalk, x: gateX - 40, duration: walkMs, ease: "Sine.easeInOut", onComplete: () => res() })),
+    ]);
     // At the gate they turn away — rear view — and step in together.
     this.veilState = "portal_exit";
-    pair.setTexture("final_pair_back");
-    applyOrigin(pair, "final_pair_back");
-    pair.setScale(scaleForHeight("final_pair_back", 150, "walk"));
-    pair.play("final_pair_back:walk");
+    dadWalk.play("angelo_finale_back:walk");
+    girlWalk.play("angely_finale_back:walk");
+    if (faceLeft) { dadWalk.setFlipX(true); girlWalk.setFlipX(true); }
     rift.surge();
     Audio.sfx("portal_enter");
-    await new Promise<void>((res) => this.tweens.add({ targets: pair, y: GROUND_Y - 62, scaleX: pair.scaleX * 0.5, scaleY: pair.scaleY * 0.5, alpha: 0, duration: 1150, ease: "Sine.easeIn", onComplete: () => res() }));
-    pair.destroy();
+    await Promise.all([
+      new Promise<void>((res) => this.tweens.add({ targets: dadWalk, y: GROUND_Y - 62, scaleX: dadWalk.scaleX * 0.5, scaleY: dadWalk.scaleY * 0.5, alpha: 0, duration: 1150, ease: "Sine.easeIn", onComplete: () => res() })),
+      new Promise<void>((res) => this.tweens.add({ targets: girlWalk, y: GROUND_Y - 62, scaleX: girlWalk.scaleX * 0.5, scaleY: girlWalk.scaleY * 0.5, alpha: 0, duration: 1150, ease: "Sine.easeIn", onComplete: () => res() })),
+    ]);
+    dadWalk.destroy();
+    girlWalk.destroy();
     await rift.close();
     this.veilState = "done";
     this.ending = true;

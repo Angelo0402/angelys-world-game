@@ -58,7 +58,9 @@ export const VEIL_RESCUE: DialogueLine[] = [
 ];
 
 export const VEIL_FAREWELL: DialogueLine[] = [
-  { who: "angelo", text: "I have to take my gate. You take yours.", voice: "veil_angelo_05" },
+  // "I have to take my gate. You take yours." (veil_angelo_05) was cut
+  // 2026-10-20: they leave through the SAME gate now, so the line
+  // contradicted the ending Angelo restored.
   { who: "angelo", text: "Keep going, okay?", voice: "veil_angelo_06" },
   { who: "angely", face: "determined", text: "I will. Love you, Dad!", voice: "veil_angely_07" },
   { who: "angelo", text: "Love you too, kiddo. I'll be watching.", voice: "veil_angelo_07" },
