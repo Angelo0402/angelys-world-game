@@ -14,7 +14,7 @@ type State = "intro" | "walk" | "claw" | "slam" | "shoot" | "burst" | "erupt" | 
 
 /** Chapter 10: face the target, telegraph, strike, then expose the core. */
 export class CrystalVeilBoss {
-  maxHp = 50;
+  maxHp = 160;
   hp = this.maxHp;
   phase: Phase = 1;
   /** "veil" until its crown breaks; then the Sovereign rises with its own HP. */
@@ -281,7 +281,15 @@ export class CrystalVeilBoss {
     this.hitUntil = time+260;
     // A stomp still bounces Angely, but cannot stun-lock the final boss.
     if (kind === "stomp") amount = .25;
+    const before = this.hp;
     this.hp = Math.max(0,this.hp-amount);
+    // Bounded heart drops: one at each quarter of the Veil's health, so a
+    // long final fight stays survivable without flooding the arena.
+    if (this.form === "veil") {
+      for (const threshold of [120, 80, 40]) {
+        if (before > threshold && this.hp <= threshold) this.scene.bossHeartDrop(this.x);
+      }
+    }
     Audio.sfx("boss_hit");
     this.scene.onBossHp(this.hp,this.maxHp,amount);
     if (!this.hp) {

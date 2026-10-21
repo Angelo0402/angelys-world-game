@@ -16,7 +16,7 @@ import { Player } from "../entities/Player";
 import { KeyboardInput, NO_INPUT, resetTouch, touchState, type FrameInput } from "../input/controls";
 import { Gamepad } from "../input/gamepad";
 import { addWeapon, loadSave, unlockLevel, updateSave } from "../save";
-import { angeloCutscene, angeloPraise, reunionHug, Rift } from "../story/angeloScene";
+import { angeloCutscene, angeloPraise, Rift } from "../story/angeloScene";
 import { CageAngelo } from "../entities/CageAngelo";
 import { CrystalVeilBoss } from "../entities/CrystalVeilBoss";
 import { Sandworm } from "../entities/Sandworm";
@@ -66,6 +66,9 @@ export class GameScene extends Phaser.Scene {
   kills = 0;
   boss?: Boss | Sandworm | CrystalVeilBoss | RuinSentinel;
   veilCage?: CageAngelo;
+  /** Veil fight summons: Astra's design — capped mixed waves while she fights. */
+  nextVeilWave = Infinity;
+  veilSummons = new Set<Enemy>();
   veilState: "idle" | "intro" | "fight" | "defeat" | "rescue" | "angelo_exit" | "angely_exit" | "done" | "together" | "portal_exit" = "idle";
   mech!: Mechanics;
   portal!: Portal;
@@ -682,6 +685,7 @@ export class GameScene extends Phaser.Scene {
     this.enemies = this.enemies.filter((e) => e.alive);
     if (this.boss && !this.cutscene) this.boss.update(time, delta);
     else this.boss?.update(time, 0);
+    if (this.veilState === "fight" && this.boss instanceof CrystalVeilBoss && this.boss.alive && time >= this.nextVeilWave) this.spawnVeilWave();
     this.mech.update(time, delta);
     this.updateFlood(time, delta);
 
@@ -1411,6 +1415,7 @@ export class GameScene extends Phaser.Scene {
       Audio.music("music_boss");
       boss.begin();
       this.veilState = "fight";
+      this.nextVeilWave = this.time.now + 6000; // first summons arrive early
       this.cutscene = false;
       this.scriptX = null;
     }
@@ -1422,6 +1427,9 @@ export class GameScene extends Phaser.Scene {
     this.cutscene = true;
     this.registry.set("boss", null);
     for (const e of this.enemies) e.remove();
+    this.nextVeilWave = Infinity;
+    this.veilSummons.clear();
+    for (const pk of [...this.hearts, ...this.gems, ...this.stars]) pk.sprite.setActive(false).setVisible(false);
     this.projectiles.clear(true, true);
     this.hazards.getChildren().forEach((h) => h.destroy());
     Audio.stopMusic();
@@ -1444,7 +1452,24 @@ export class GameScene extends Phaser.Scene {
       await this.wait(500);
       this.scriptX = null;
       await this.say(VEIL_RESCUE);
-      await reunionHug(this, angelo);
+      // The reunion plays on its own painted sheet — approach, hug, pat —
+      // while the two actors hide (finale design, art/source/finale).
+      const meet0 = (angelo.x + this.player.x) / 2;
+      angelo.setVisible(false);
+      this.player.sprite.setVisible(false);
+      const reunion = this.add.sprite(meet0, GROUND_Y + 4, "final_pair_reunion").setDepth(58);
+      reunion.setScale(scaleForHeight("final_pair_reunion", 168, "hug"));
+      applyOrigin(reunion, "final_pair_reunion");
+      reunion.play("final_pair_reunion:approach");
+      await this.wait(1000);
+      reunion.play("final_pair_reunion:hug");
+      Audio.sfx("heart_pickup");
+      await this.wait(1500);
+      reunion.play("final_pair_reunion:pat");
+      await this.wait(900);
+      reunion.destroy();
+      angelo.setVisible(true);
+      this.player.sprite.setVisible(true);
     } else await this.say(VEIL_RESCUE);
     this.veilState = "together";
     const riftX = (this.level.arena!.x0 + this.level.arena!.x1) / 2 - 220;
@@ -1471,7 +1496,14 @@ export class GameScene extends Phaser.Scene {
     const girlWalk = this.add.sprite(meetX - 44, GROUND_Y + 4, "angely_finale").setDepth(56);
     girlWalk.setScale(scaleForHeight("angely_finale", 118, "walk"));
     applyOrigin(girlWalk, "angely_finale");
+    // The offered hand (finale design): he reaches for her, she takes it —
+    // they face each other for this beat before turning toward the gate.
+    dadWalk.setFlipX(true);
+    dadWalk.play("angelo_finale:reach");
+    girlWalk.play("angely_finale:reach");
+    await this.wait(850);
     if (faceLeft) { dadWalk.setFlipX(true); girlWalk.setFlipX(true); }
+    else { dadWalk.setFlipX(false); girlWalk.setFlipX(false); }
     dadWalk.play("angelo_finale:walk");
     girlWalk.play("angely_finale:walk");
     const walkMs = Math.max(1600, Math.abs(meetX - gateX) * 4.4);
@@ -1486,17 +1518,20 @@ export class GameScene extends Phaser.Scene {
     if (faceLeft) { dadWalk.setFlipX(true); girlWalk.setFlipX(true); }
     rift.surge();
     Audio.sfx("portal_enter");
+    // They recede INTO the gate: scale shrinks, fully visible, until the
+    // gate takes them — no fade-out (finale design).
     await Promise.all([
-      new Promise<void>((res) => this.tweens.add({ targets: dadWalk, y: GROUND_Y - 62, scaleX: dadWalk.scaleX * 0.5, scaleY: dadWalk.scaleY * 0.5, alpha: 0, duration: 1150, ease: "Sine.easeIn", onComplete: () => res() })),
-      new Promise<void>((res) => this.tweens.add({ targets: girlWalk, y: GROUND_Y - 62, scaleX: girlWalk.scaleX * 0.5, scaleY: girlWalk.scaleY * 0.5, alpha: 0, duration: 1150, ease: "Sine.easeIn", onComplete: () => res() })),
+      new Promise<void>((res) => this.tweens.add({ targets: dadWalk, y: GROUND_Y - 70, scaleX: dadWalk.scaleX * 0.45, scaleY: dadWalk.scaleY * 0.45, duration: 1400, ease: "Sine.easeIn", onComplete: () => res() })),
+      new Promise<void>((res) => this.tweens.add({ targets: girlWalk, y: GROUND_Y - 70, scaleX: girlWalk.scaleX * 0.45, scaleY: girlWalk.scaleY * 0.45, duration: 1400, ease: "Sine.easeIn", onComplete: () => res() })),
     ]);
     dadWalk.destroy();
     girlWalk.destroy();
     await rift.close();
     this.veilState = "done";
     this.ending = true;
-    updateSave({ cleared: true });
-    this.game.events.emit("hud:cinema", false);
+    updateSave({ cleared: true, finaleSeen: true });
+    // No hud:cinema false here: the TO BE CONTINUED screen owns the HUD
+    // now, and the touch controls stay hidden behind it.
     this.cameras.main.flash(600, 255, 255, 255);
     Audio.music("music_victory");
     this.game.events.emit("hud:victory");
@@ -1785,6 +1820,35 @@ export class GameScene extends Phaser.Scene {
     const e = new Enemy(this, ENEMY_TYPES[key], x, y, this.enemyGroup);
     this.enemies.push(e);
     return e;
+  }
+
+  /** Bounded heart drop from the final boss (called at health thresholds). */
+  bossHeartDrop(x: number) {
+    this.addHeart(x, GROUND_Y - 46);
+  }
+
+  /** The Veil calls existing enemies to her side — mixed waves, capped at
+   *  three alive, on a slow schedule so the duel stays the main event. */
+  private spawnVeilWave() {
+    if (!(this.boss instanceof CrystalVeilBoss)) return;
+    for (const e of [...this.veilSummons]) if (!e.alive) this.veilSummons.delete(e);
+    if (this.veilSummons.size >= 3) {
+      this.nextVeilWave = this.time.now + 5000;
+      return;
+    }
+    const phase = this.boss.phase;
+    const comp = phase === 1 ? ["skeleton", "firebat"] : phase === 2 ? ["firebat", "lavablob"] : ["skeleton", "lavablob", "firebat"];
+    const arena = this.level.arena!;
+    comp.forEach((key, i) => {
+      if (this.veilSummons.size >= 3) return;
+      const type = ENEMY_TYPES[key];
+      const side = i % 2 === 0 ? -1 : 1;
+      const x = Phaser.Math.Clamp(this.boss!.x + side * (300 + i * 90), arena.x0 + 60, arena.x1 - 60);
+      const e = this.spawnEnemy(key, x, type.flying ? GROUND_Y - 210 : GROUND_Y - 60);
+      this.veilSummons.add(e);
+    });
+    Audio.sfx("portal_unlock");
+    this.nextVeilWave = this.time.now + 17000;
   }
 
   /** Top Y of the nearest surface at or below `fromY` (null over a pit). */
