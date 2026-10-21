@@ -102,7 +102,7 @@ export class Player {
       // 250px) / each sheet's measured body height, so Angely renders the SAME size
       // with every weapon: sword 310px, bow 198px, boomerang 209px, wand 220px,
       // hammer 241px, ray 235px.
-      angely_sword: scaleForHeight("angely", HEIGHT, "idle") * 0.806,
+      angely_sword: scaleForHeight("angely", HEIGHT, "idle"), // ChatGPT take 2026-10-21: body canonical 250
       angely_bow: scaleForHeight("angely", HEIGHT, "idle") * 1.263,
       angely_hammer: scaleForHeight("angely", HEIGHT, "idle") * 1.037,
       angely_boomerang: scaleForHeight("angely", HEIGHT, "idle") * 1.196,
