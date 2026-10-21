@@ -97,13 +97,17 @@ export class Player {
     this.body.setMaxVelocity(800, MAX_FALL);
     this.scales = {
       angely: scaleForHeight("angely", HEIGHT, "idle"),
-      // Every player sheet is exported at the same character scale (hair-normalised).
-      angely_sword: scaleForHeight("angely", HEIGHT, "idle"),
-      angely_bow: scaleForHeight("angely", HEIGHT, "idle"),
-      angely_hammer: scaleForHeight("angely", HEIGHT, "idle"),
-      angely_boomerang: scaleForHeight("angely", HEIGHT, "idle"),
-      angely_wand: scaleForHeight("angely", HEIGHT, "idle"),
-      angely_ray: scaleForHeight("angely", HEIGHT, "idle"),
+      // Per-sheet factors measured 2026-10-21 (full sprite audit): the rebuilt weapon
+      // sheets do NOT share one character scale. Factors = base body height (bow->feet,
+      // 250px) / each sheet's measured body height, so Angely renders the SAME size
+      // with every weapon: sword 310px, bow 198px, boomerang 209px, wand 220px,
+      // hammer 241px, ray 235px.
+      angely_sword: scaleForHeight("angely", HEIGHT, "idle") * 0.806,
+      angely_bow: scaleForHeight("angely", HEIGHT, "idle") * 1.263,
+      angely_hammer: scaleForHeight("angely", HEIGHT, "idle") * 1.037,
+      angely_boomerang: scaleForHeight("angely", HEIGHT, "idle") * 1.196,
+      angely_wand: scaleForHeight("angely", HEIGHT, "idle") * 1.136,
+      angely_ray: scaleForHeight("angely", HEIGHT, "idle") * 1.064,
       angely_swim: scaleForHeight("angely", HEIGHT, "idle"),
     };
     this.bubbles = scene.add
