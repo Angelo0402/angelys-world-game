@@ -20,7 +20,7 @@ import { angeloCutscene, angeloPraise, reunionHug, Rift } from "../story/angeloS
 import { CageAngelo } from "../entities/CageAngelo";
 import { CrystalVeilBoss } from "../entities/CrystalVeilBoss";
 import { Sandworm } from "../entities/Sandworm";
-import { SOVEREIGN_FALL, SOVEREIGN_NAME, SOVEREIGN_RISE, VEIL_DEFEAT, VEIL_FAREWELL, VEIL_INTRO, VEIL_NAME, VEIL_PHASE2, VEIL_PHASE3, VEIL_RESCUE } from "../story/crystalveil";
+import { SOVEREIGN_FALL, SOVEREIGN_NAME, SOVEREIGN_RISE, VEIL_DECLARE, VEIL_DEFEAT, VEIL_FAREWELL, VEIL_INTRO, VEIL_NAME, VEIL_PHASE2, VEIL_PHASE3, VEIL_RESCUE, VEIL_TAUNT } from "../story/crystalveil";
 import { VisualFX } from "../effects/VisualFX";
 import { WORM_INTRO, WORM_NAME } from "../story/worm";
 import { UMBRA_DEFEAT, UMBRA_INTRO, UMBRA_PHASE2, type DialogueLine } from "../story/umbra";
@@ -1397,7 +1397,10 @@ export class GameScene extends Phaser.Scene {
     await this.wait(1500);
     this.player.facing = 1;
     try {
+      // The boss speaks FIRST — she owns this veil and says so, out loud.
+      await this.say(VEIL_TAUNT);
       await this.say(VEIL_INTRO);
+      await this.say(VEIL_DECLARE);
     } finally {
       this.game.events.emit("hud:cinema", false);
       cam.pan(this.player.x, GAME_H / 2, 500, "Sine.easeInOut", true, (_c, p) => {
@@ -1577,20 +1580,17 @@ export class GameScene extends Phaser.Scene {
     if (this.bossShade) this.tweens.add({ targets: this.bossShade, fillAlpha: 0.55, duration: 800 });
   }
 
-  /** The Veil's crown broke and the Sovereign rose: she speaks, then the fight resumes. */
+  /** The Veil's crown broke and the Sovereign rose: she speaks OVER the fight
+   *  (subtitle + voice, no dialogue box for combat taps to skip past), and
+   *  the fight resumes while her threat still hangs in the air. */
   onSovereignRise() {
-    this.cutscene = true;
     this.projectiles.clear(true, true);
     this.hazards.getChildren().forEach((h) => h.destroy());
-    // Clear any bark/sfx voice from the killing blow and give the moment a
-    // beat, so her first line starts clean instead of being cut off.
     Audio.stopVoice();
-    void (async () => {
-      await this.wait(450);
-      await this.say(SOVEREIGN_RISE);
-      this.cutscene = false;
+    this.game.events.emit("hud:subtitle", SOVEREIGN_RISE[0]);
+    this.time.delayedCall(3400, () => {
       if (this.boss instanceof CrystalVeilBoss) this.boss.beginSovereign();
-    })();
+    });
   }
 
   onBossDefeated() {

@@ -4,11 +4,18 @@ export const VEIL_NAME = "CRYSTAL VEIL";
 export const SOVEREIGN_NAME = "THE VEIL SOVEREIGN";
 
 // The Veil's true form rises when its crown breaks. sovereign_01-04 are the
-// original recordings (transcription-verified 2026-10-20): 01-03 are the
-// rise, 04 is her surrender when the Sovereign form falls.
-export const SOVEREIGN_RISE: DialogueLine[] = [
+// original recordings (transcription-verified 2026-10-20): 01 taunts at the
+// intro, 02 declares herself before the fight, 03 is the rise when her
+// crown cracks, 04 is her surrender when the Sovereign form falls.
+export const VEIL_TAUNT: DialogueLine[] = [
   { who: "sovereign", text: "So, the little light crawls all the way to my veil. How persistent.", voice: "sovereign_01" },
+];
+
+export const VEIL_DECLARE: DialogueLine[] = [
   { who: "sovereign", text: "I am the Veil Sovereign. Every crystal here bows to me. Kneel, child.", voice: "sovereign_02" },
+];
+
+export const SOVEREIGN_RISE: DialogueLine[] = [
   { who: "sovereign", text: "You cracked my crown? Then feel the full shatter of the Veil!", voice: "sovereign_03" },
 ];
 
