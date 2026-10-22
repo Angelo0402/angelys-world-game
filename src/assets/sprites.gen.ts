@@ -138,16 +138,16 @@ export const SPRITES = {
   },
   "angely_hammer": {
     "file": "assets/runtime/angely_hammer.webp",
-    "frameWidth": 241,
-    "frameHeight": 285,
-    "originX": 0.6999,
-    "originY": 0.986,
+    "frameWidth": 320,
+    "frameHeight": 300,
+    "originX": 0.5281,
+    "originY": 0.9867,
     "bodyHeight": 277,
     "anims": {
       "smash": {
         "start": 0,
-        "end": 4,
-        "fps": 12,
+        "end": 11,
+        "fps": 27,
         "repeat": 0,
         "h": 267
       }
@@ -248,7 +248,7 @@ export const SPRITES = {
     "frameWidth": 341,
     "frameHeight": 295,
     "originX": 0.588,
-    "originY": 0.9864,
+    "originY": 0.98674,
     "bodyHeight": 287,
     "anims": {
       "rise": {
