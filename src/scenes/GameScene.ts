@@ -1432,7 +1432,7 @@ export class GameScene extends Phaser.Scene {
     try {
       // The Sovereign's challenge is a story VIDEO now (2026-10-21 ruling):
       // no in-game dialogue, no Angelo — Angely faces her alone.
-      await this.playCutscene(["veil_intro"]);
+      await this.playCutscene(["veil_epic_intro"]);
     } finally {
       this.game.events.emit("hud:cinema", false);
       cam.pan(this.player.x, GAME_H / 2, 500, "Sine.easeInOut", true, (_c, p) => {
@@ -1470,7 +1470,7 @@ export class GameScene extends Phaser.Scene {
     // Directed ending (2026-10-21): the finale trilogy in VIDEO — the Veil
     // tears, the worlds relight, Angelo's rift opens, the hug, and father and
     // daughter leave together through the golden portal. No in-engine staging.
-    await this.playCutscene(["finale1", "finale2", "finale3"]);
+    await this.playCutscene(["veil_epic_finale"]);
     this.veilState = "done";
     this.ending = true;
     updateSave({ cleared: true, finaleSeen: true });
@@ -1796,8 +1796,11 @@ export class GameScene extends Phaser.Scene {
     this.addHeart(x + dx, GROUND_Y - 46, 22000);
   }
 
-  /** The Veil calls existing enemies to her side — mixed waves, capped at
-   *  three alive, on a slow schedule so the duel stays the main event. */
+  /** The Veil's own crystal court answers per phase (Angelo 2026-10-22:
+   *  different enemies per phase) — capped at three alive, on a slow
+   *  schedule so the duel stays the main event. P1 the Beast calls crystal
+   *  imps, P2 the Brute calls crystal golems, P3 the Sovereign calls both
+   *  on a faster cadence. */
   private spawnVeilWave() {
     if (!(this.boss instanceof CrystalVeilBoss)) return;
     for (const e of [...this.veilSummons]) if (!e.alive) this.veilSummons.delete(e);
@@ -1806,7 +1809,7 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     const phase = this.boss.phase;
-    const comp = phase === 1 ? ["skeleton", "firebat"] : phase === 2 ? ["firebat", "lavablob"] : ["skeleton", "lavablob", "firebat"];
+    const comp = phase === 1 ? ["crystal_imp", "crystal_imp"] : phase === 2 ? ["crystal_golem", "crystal_imp"] : ["crystal_imp", "crystal_golem", "crystal_imp"];
     const arena = this.level.arena!;
     comp.forEach((key, i) => {
       if (this.veilSummons.size >= 3) return;
@@ -1817,7 +1820,7 @@ export class GameScene extends Phaser.Scene {
       this.veilSummons.add(e);
     });
     Audio.sfx("portal_unlock");
-    this.nextVeilWave = this.time.now + 17000;
+    this.nextVeilWave = this.time.now + (phase === 3 ? 14000 : 17000);
   }
 
   /** Top Y of the nearest surface at or below `fromY` (null over a pit). */

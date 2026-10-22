@@ -3246,6 +3246,96 @@ export const SPRITES = {
         "h": 202
       }
     }
+  },
+  "crystal_imp": {
+    "file": "assets/runtime/crystal_imp.webp",
+    "frameWidth": 236,
+    "frameHeight": 193,
+    "originX": 0.5,
+    "originY": 0.9482,
+    "bodyHeight": 160,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 3,
+        "frameRate": 6,
+        "repeat": -1,
+        "h": 160
+      },
+      "walk": {
+        "start": 4,
+        "end": 7,
+        "frameRate": 10,
+        "repeat": -1,
+        "h": 144
+      },
+      "attack": {
+        "start": 8,
+        "end": 11,
+        "frameRate": 12,
+        "repeat": 0,
+        "h": 163
+      },
+      "hurt": {
+        "start": 12,
+        "end": 12,
+        "frameRate": 8,
+        "repeat": 0,
+        "h": 156
+      },
+      "dead": {
+        "start": 13,
+        "end": 15,
+        "frameRate": 7,
+        "repeat": 0,
+        "h": 134
+      }
+    }
+  },
+  "crystal_golem": {
+    "file": "assets/runtime/crystal_golem.webp",
+    "frameWidth": 435,
+    "frameHeight": 275,
+    "originX": 0.5,
+    "originY": 0.9636,
+    "bodyHeight": 248,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 3,
+        "frameRate": 5,
+        "repeat": -1,
+        "h": 248
+      },
+      "walk": {
+        "start": 4,
+        "end": 6,
+        "frameRate": 6,
+        "repeat": -1,
+        "h": 254
+      },
+      "attack": {
+        "start": 7,
+        "end": 9,
+        "frameRate": 8,
+        "repeat": 0,
+        "h": 248
+      },
+      "hurt": {
+        "start": 10,
+        "end": 10,
+        "frameRate": 8,
+        "repeat": 0,
+        "h": 238
+      },
+      "dead": {
+        "start": 11,
+        "end": 13,
+        "frameRate": 6,
+        "repeat": 0,
+        "h": 212
+      }
+    }
   }
 } as const;
 

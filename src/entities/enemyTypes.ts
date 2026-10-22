@@ -148,6 +148,15 @@ export const ENEMY_TYPES: Record<string, EnemyType> = {
     attackSfx: "ghost_orb", body: [0.55, 0.55], keepDistance: 240, heartDrop: 0.2,
   },
   // Chapter 10: The Crystal Veil
+  // Veil boss summons (Angelo 2026-10-22): the boss's own crystal court.
+  crystal_imp: {
+    key: "crystal_imp", height: 64, hp: 1, speed: 118, attack: "lunge", range: 120, cooldown: 1500, windup: 380,
+    attackSfx: "skeleton_swing", body: [0.44, 0.8],
+  },
+  crystal_golem: {
+    key: "crystal_golem", height: 112, hp: 4, speed: 40, attack: "slam", range: 150, cooldown: 2600, windup: 750,
+    attackSfx: "ground_slam", body: [0.5, 0.85], heartDrop: 0.3,
+  },
   shardknight: {
     key: "shardknight", height: 96, hp: 3, speed: 72, attack: "lunge", range: 130, cooldown: 1800, windup: 460,
     attackSfx: "skeleton_swing", body: [0.42, 0.82],
