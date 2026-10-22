@@ -2651,188 +2651,201 @@ export const SPRITES = {
   },
   "crystalveil": {
     "file": "assets/runtime/crystalveil.webp",
-    "frameWidth": 384,
-    "frameHeight": 384,
+    "frameWidth": 456,
+    "frameHeight": 354,
     "originX": 0.5,
     "originY": 0.7994791666666666,
-    "bodyHeight": 307,
     "anims": {
       "idle": {
         "start": 0,
         "end": 3,
-        "fps": 6,
+        "frameRate": 9,
         "repeat": -1,
-        "h": 168
+        "h": 263
       },
       "walk": {
         "start": 4,
         "end": 7,
-        "fps": 8,
+        "frameRate": 9,
         "repeat": -1,
-        "h": 171
+        "h": 248
       },
       "claw": {
         "start": 8,
         "end": 11,
-        "fps": 8,
+        "frameRate": 9,
         "repeat": 0,
-        "h": 159
+        "h": 261
       },
       "slam": {
         "start": 12,
         "end": 15,
-        "fps": 8,
+        "frameRate": 9,
         "repeat": 0,
-        "h": 155
+        "h": 276
       },
       "shoot": {
         "start": 16,
         "end": 19,
-        "fps": 8,
+        "frameRate": 9,
         "repeat": 0,
-        "h": 165
+        "h": 232
       },
       "summon": {
         "start": 20,
         "end": 23,
-        "fps": 8,
+        "frameRate": 9,
         "repeat": 0,
-        "h": 164
+        "h": 255
       },
       "charge": {
         "start": 24,
         "end": 27,
-        "fps": 8,
+        "frameRate": 9,
         "repeat": 0,
-        "h": 154
+        "h": 204
       },
       "erupt": {
         "start": 28,
         "end": 31,
-        "fps": 8,
+        "frameRate": 9,
         "repeat": 0,
-        "h": 173
+        "h": 280
       },
       "hurt": {
         "start": 32,
         "end": 35,
-        "fps": 12,
+        "frameRate": 9,
         "repeat": 0,
-        "h": 171
+        "h": 261
       },
       "stagger": {
         "start": 36,
         "end": 39,
-        "fps": 6,
+        "frameRate": 9,
         "repeat": 0,
-        "h": 165
+        "h": 239
       },
       "enrage": {
         "start": 40,
         "end": 43,
-        "fps": 8,
-        "repeat": -1,
-        "h": 173
+        "frameRate": 9,
+        "repeat": 0,
+        "h": 276
       },
       "dead": {
         "start": 44,
         "end": 47,
-        "fps": 5,
+        "frameRate": 9,
         "repeat": 0,
-        "h": 152
+        "h": 236
+      },
+      "attack": {
+        "start": 8,
+        "end": 11,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 261
       }
     }
   },
   "veil_form2": {
     "file": "assets/runtime/veil_form2.webp",
-    "frameWidth": 352,
-    "frameHeight": 352,
+    "frameWidth": 349,
+    "frameHeight": 319,
     "originX": 0.5,
     "originY": 0.977,
     "anims": {
       "idle": {
         "start": 0,
-        "end": 4,
+        "end": 3,
         "frameRate": 6,
         "repeat": -1,
-        "h": 326
+        "h": 252
       },
       "walk": {
-        "start": 5,
-        "end": 9,
+        "start": 4,
+        "end": 7,
         "frameRate": 9,
         "repeat": -1,
-        "h": 326
+        "h": 248
       },
       "claw": {
-        "start": 10,
-        "end": 12,
+        "start": 8,
+        "end": 11,
         "frameRate": 10,
         "repeat": 0,
-        "h": 326
+        "h": 228
       },
       "slam": {
         "start": 12,
-        "end": 14,
+        "end": 15,
         "frameRate": 10,
         "repeat": 0,
-        "h": 326
-      },
-      "shoot": {
-        "start": 10,
-        "end": 11,
-        "frameRate": 10,
-        "repeat": 0,
-        "h": 326
-      },
-      "summon": {
-        "start": 13,
-        "end": 14,
-        "frameRate": 10,
-        "repeat": 0,
-        "h": 326
-      },
-      "charge": {
-        "start": 10,
-        "end": 11,
-        "frameRate": 10,
-        "repeat": 0,
-        "h": 326
-      },
-      "erupt": {
-        "start": 11,
-        "end": 13,
-        "frameRate": 10,
-        "repeat": 0,
-        "h": 326
+        "h": 244
       },
       "hurt": {
-        "start": 15,
-        "end": 15,
-        "frameRate": 8,
-        "repeat": 0,
-        "h": 326
-      },
-      "stagger": {
-        "start": 15,
-        "end": 15,
-        "frameRate": 8,
-        "repeat": 0,
-        "h": 326
-      },
-      "enrage": {
-        "start": 10,
-        "end": 11,
-        "frameRate": 7,
-        "repeat": -1,
-        "h": 326
-      },
-      "dead": {
         "start": 16,
         "end": 19,
+        "frameRate": 8,
+        "repeat": 0,
+        "h": 215
+      },
+      "stagger": {
+        "start": 20,
+        "end": 23,
+        "frameRate": 8,
+        "repeat": 0,
+        "h": 222
+      },
+      "enrage": {
+        "start": 24,
+        "end": 27,
         "frameRate": 7,
         "repeat": 0,
-        "h": 326
+        "h": 250
+      },
+      "dead": {
+        "start": 28,
+        "end": 31,
+        "frameRate": 7,
+        "repeat": 0,
+        "h": 201
+      },
+      "shoot": {
+        "start": 8,
+        "end": 9,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 228
+      },
+      "summon": {
+        "start": 14,
+        "end": 15,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 228
+      },
+      "charge": {
+        "start": 8,
+        "end": 9,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 228
+      },
+      "erupt": {
+        "start": 13,
+        "end": 15,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 228
+      },
+      "attack": {
+        "start": 8,
+        "end": 11,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 228
       }
     }
   },
