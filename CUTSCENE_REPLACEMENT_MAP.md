@@ -2,6 +2,24 @@
 ## Every in-game subtitle-dialogue / portrait / Angelo scene, and the video that replaces it
 ### Prepared 2026-10-21 for Angelo's approval — NO code has been changed
 
+**IMPLEMENTED 2026-10-21 (commits `1ca3637`, `365dd1a`, local only):** the
+replacement is built. New `CutsceneScene` video player (cover-fit, tap-skip
+after 1.2 s, real-time watchdog). Wired: intro_30s → level 1-1 first start
+(save flag `introSeen`); 5-2 outro → `umbra_falls` + `dad_kiddo` videos;
+8-2 intro → `worm_intro`; 8-2 outro → `angelo_praise` (toast fixed, no more
+"Angelo took the blue gate"); 10-2 intro → `veil_intro`; 10-2 outro → finale
+trilogy F1→F2→F3 → victory screen now reads **THE END**. All `say()` dialogue
+removed from boss scenes; `angeloCutscene`/`angeloPraise` calls and the solo
+walk-in staging retired. Minor beats (§4) decided: **voice-only barks** —
+`hud:voice` event, no text, no pause. Videos in `public/assets/video/`,
+CRF 28, 24 MB total. Browser-QA verified: play, skip, natural completion,
+hand-back, save flag.
+**GAPS:** the video tool refused two generations (no retry per policy) —
+(1) 5-2 Umbra INTRO video: her entrance is silent in-engine staging for now;
+(2) the Colossus fight clip ("Dad Arrives" middle of the script's 3-clip
+arc): the outro plays Falls → Kiddo directly, Colossus beat skipped.
+Angelo decides: accept, supply the clips himself, or revisit later.
+
 **The ruling (Angelo, 2026-10-21):** Angelo the character must NOT appear in
 gameplay at all. He exists ONLY in video cutscenes. ALL in-game subtitle
 dialogue scenes are to be replaced by video cutscenes. Angely (new design)
