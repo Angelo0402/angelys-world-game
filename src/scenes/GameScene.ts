@@ -1166,6 +1166,7 @@ export class GameScene extends Phaser.Scene {
           body.setVelocity(Phaser.Math.Linear(body.velocity.x, Math.cos(ang) * sp, 0.18), Phaser.Math.Linear(body.velocity.y, Math.sin(ang) * sp, 0.18));
           if (Phaser.Math.Distance.Between(a.x, a.y, p.x, p.body.center.y) < 40) {
             this.boomerangOut = false;
+            p.playCatch();
             a.destroy();
             return;
           }

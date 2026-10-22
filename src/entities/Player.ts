@@ -398,7 +398,7 @@ export class Player {
 
   private pickAnim(time: number, axis: number) {
     this.sprite.anims.timeScale = 1;
-    if (this.state === "attack") return;
+    if (this.state === "attack" || this.state === "catch") return;
     const sword = this.hasSword;
     if (this.swim) {
       const vx = Math.abs(this.body.velocity.x);
@@ -535,6 +535,17 @@ export class Player {
     this.scene.time.delayedCall(sword ? 1400 : 1100, () => {
       if (this.state === "pickup") this.state = "normal";
       onDone();
+    });
+  }
+
+  /** Boomerang returned: a quick catch flourish when she is standing free. */
+  playCatch() {
+    if (this.state !== "normal" || !this.grounded || this.swim) return;
+    if (Math.abs(this.body.velocity.x) > 60) return;
+    this.state = "catch";
+    this.setAnim("angely_boomerang", "catch", true);
+    this.scene.time.delayedCall(280, () => {
+      if (this.state === "catch") this.state = "normal";
     });
   }
 

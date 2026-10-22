@@ -343,8 +343,15 @@ export const SPRITES = {
     "anims": {
       "throw": {
         "start": 0,
-        "end": 4,
-        "fps": 18,
+        "end": 5,
+        "fps": 30,
+        "repeat": 0,
+        "h": 212
+      },
+      "catch": {
+        "start": 6,
+        "end": 9,
+        "fps": 24,
         "repeat": 0,
         "h": 212
       }
