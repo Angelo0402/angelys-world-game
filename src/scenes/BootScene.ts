@@ -28,7 +28,7 @@ export class BootScene extends Phaser.Scene {
     void barBg;
     queueAssets(this.load);
     // Story cutscene videos (silent files; the game supplies the music).
-    for (const key of ["intro", "umbra_falls", "dad_kiddo", "worm_intro", "angelo_praise", "veil_intro", "veil_epic_intro", "veil_epic_finale", "finale1", "finale2", "finale3"]) {
+    for (const key of ["intro", "umbra_falls", "dad_kiddo", "worm_intro", "angelo_praise", "veil_intro", "veil_epic_intro", "veil_epic_finale", "veil_transform_1", "finale1", "finale2", "finale3"]) {
       this.load.video(key, `assets/video/${key}.mp4`, true);
     }
   }

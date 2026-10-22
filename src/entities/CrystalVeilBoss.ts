@@ -319,19 +319,17 @@ export class CrystalVeilBoss {
       this.attackIndex = 0;
       // Phase 3 IS the Sovereign's rise — she takes over from here.
       if (phase === 3) { this.transform(); return true; }
-      // Phase 2: the beast stands and shatters into the brute.
+      // Phase 2: the beast stands and shatters into the brute. The form
+      // swap stays hidden behind the transformation cutscene (Angelo,
+      // 2026-10-22); the boss is held until GameScene calls beginPhase2().
       if (phase === 2) this.swapForm("shattered");
       this.state = "enrage";
-      this.stateUntil = time + 2000;
+      this.holdState = true;
+      this.stateUntil = 0;
       this.sprite.play(`${this.sheet}:enrage`,true);
       Audio.sfx("boss_roar");
       this.scene.onBossPhase2();
       this.scene.cameras.main.flash(220,110,70,170);
-      this.later(1100,() => {
-        this.state = "walk";
-        this.readyAt = this.scene.time.now+300;
-        this.glow.setTint(this.auraTint());
-      });
     } else {
       this.sprite.setTintFill(0xffffff);
       this.flashUntil = time+90;
@@ -380,6 +378,17 @@ export class CrystalVeilBoss {
     this.glow.setTint(0xff9df3);
     this.scene.onBossHp(this.hp, this.maxHp, 0);
     this.scene.onSovereignRise();
+  }
+
+  /** Called by the scene when the phase-2 transformation cutscene ends:
+   *  the Brute starts fighting. */
+  beginPhase2() {
+    if (this.state === "dead" || this.form !== "shattered") return;
+    this.holdState = false;
+    this.state = "walk";
+    this.readyAt = this.scene.time.now+300;
+    this.glow.setTint(this.auraTint());
+    this.sprite.play(`${this.sheet}:walk`,true);
   }
 
   /** Called by the scene when the Sovereign's intro dialogue ends. */

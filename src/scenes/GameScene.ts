@@ -18,7 +18,7 @@ import { Gamepad } from "../input/gamepad";
 import { addWeapon, loadSave, unlockLevel, updateSave } from "../save";
 import { CrystalVeilBoss } from "../entities/CrystalVeilBoss";
 import { Sandworm } from "../entities/Sandworm";
-import { SOVEREIGN_NAME, SOVEREIGN_RISE, VEIL_NAME, VEIL_PHASE2, VEIL_PHASE3 } from "../story/crystalveil";
+import { SOVEREIGN_NAME, SOVEREIGN_RISE, VEIL_NAME, VEIL_PHASE2 } from "../story/crystalveil";
 import { VisualFX } from "../effects/VisualFX";
 import { WORM_NAME } from "../story/worm";
 import { UMBRA_PHASE2, type DialogueLine } from "../story/umbra";
@@ -1573,24 +1573,36 @@ export class GameScene extends Phaser.Scene {
 
   onBossPhase2() {
     if (this.info.chapter === 10) {
-      this.cameras.main.flash(300, 160, 120, 255);
-      // Phase-change juice (game-feel reels): a beat of hit-stop, a crystal
-      // shockwave both ways and a burst of shards off the boss.
-      this.hitStop(110);
-      if (this.boss) {
-        this.spawnShockwave(this.boss.x, 1, 0xc59bff);
-        this.spawnShockwave(this.boss.x, -1, 0xc59bff);
-        this.fx("crystal_shot", "impact", this.boss.x, GROUND_Y - 110, 0.6);
-        this.fx("crystal_shot", "impact", this.boss.x - 60, GROUND_Y - 60, 0.45);
-        this.fx("crystal_shot", "impact", this.boss.x + 60, GROUND_Y - 60, 0.45);
-      }
-      const phase = this.boss && "phase" in this.boss ? this.boss.phase : 2;
-      this.game.events.emit("hud:voice", phase === 3 ? VEIL_PHASE3 : VEIL_PHASE2);
+      // Angelo (2026-10-22): every transformation gets a cutscene. The
+      // Beast->Brute video plays first; the juice and the phase line land
+      // when the fight resumes.
+      void this.veilPhase2Cutscene();
       return;
     }
     this.cameras.main.flash(300, 200, 120, 255);
     this.game.events.emit("hud:voice", UMBRA_PHASE2);
     if (this.bossShade) this.tweens.add({ targets: this.bossShade, fillAlpha: 0.55, duration: 800 });
+  }
+
+  /** Phase 2 transformation cutscene (Beast -> Brute, 10s video). The boss
+   *  is already swapped and held by takeDamage; when the video ends, the
+   *  phase-change juice fires and the Brute starts fighting. */
+  private async veilPhase2Cutscene() {
+    this.cutscene = true;
+    await this.playCutscene(["veil_transform_1"]);
+    this.cutscene = false;
+    if (!this.boss) return;
+    this.cameras.main.flash(300, 160, 120, 255);
+    // Phase-change juice (game-feel reels): a beat of hit-stop, a crystal
+    // shockwave both ways and a burst of shards off the boss.
+    this.hitStop(110);
+    this.spawnShockwave(this.boss.x, 1, 0xc59bff);
+    this.spawnShockwave(this.boss.x, -1, 0xc59bff);
+    this.fx("crystal_shot", "impact", this.boss.x, GROUND_Y - 110, 0.6);
+    this.fx("crystal_shot", "impact", this.boss.x - 60, GROUND_Y - 60, 0.45);
+    this.fx("crystal_shot", "impact", this.boss.x + 60, GROUND_Y - 60, 0.45);
+    this.game.events.emit("hud:voice", VEIL_PHASE2);
+    if (this.boss instanceof CrystalVeilBoss) this.boss.beginPhase2();
   }
 
   /** The Veil's crown broke and the Sovereign rose: her threat plays as a
