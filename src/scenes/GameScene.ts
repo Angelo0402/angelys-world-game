@@ -1438,7 +1438,7 @@ export class GameScene extends Phaser.Scene {
       cam.pan(this.player.x, GAME_H / 2, 500, "Sine.easeInOut", true, (_c, p) => {
         if (p === 1) cam.startFollow(this.player.rect, true, 0.12, 0.1, 0, 60);
       });
-      this.registry.set("boss", { name: VEIL_NAME, hp: boss.hp, max: boss.maxHp });
+      this.registry.set("boss", { name: VEIL_NAME, hp: boss.hp, max: boss.maxHp, veilPhase: boss.phase });
       this.game.events.emit("hud:banner", VEIL_NAME);
       Audio.music("music_boss");
       boss.begin();
@@ -1550,7 +1550,8 @@ export class GameScene extends Phaser.Scene {
   onBossHp(hp: number, max: number, dmg: number) {
     const sovereign = this.boss instanceof CrystalVeilBoss && this.boss.form === "sovereign";
     const name = this.info.chapter === 2 ? SENTINEL_NAME : this.info.chapter === 8 ? WORM_NAME : this.info.chapter === 10 ? (sovereign ? SOVEREIGN_NAME : VEIL_NAME) : BOSS_NAME;
-    this.registry.set("boss", { name, hp, max });
+    const veilPhase = this.boss instanceof CrystalVeilBoss ? this.boss.phase : undefined;
+    this.registry.set("boss", { name, hp, max, veilPhase });
     this.cameras.main.shake(90, 0.005);
     this.bossDamage += dmg;
     if (this.bossDamage >= 7 && hp > 0 && this.info.chapter !== 11) {

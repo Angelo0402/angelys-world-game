@@ -39,7 +39,13 @@ export class HudScene extends Phaser.Scene {
   private bossPanel!: Phaser.GameObjects.Container;
   private bossFill!: Phaser.GameObjects.Rectangle;
   private bossChip!: Phaser.GameObjects.Rectangle;
+  private bossBack!: Phaser.GameObjects.Rectangle;
   private bossName!: Phaser.GameObjects.Text;
+  /** Veil fight (Angelo 2026-10-22): THREE phase bars, one per form —
+   *  magenta Beast / violet Brute / red Sovereign, widths ∝ phase HP. */
+  private bossSegs: { back: Phaser.GameObjects.Rectangle; chip: Phaser.GameObjects.Rectangle; fill: Phaser.GameObjects.Rectangle; w: number }[] = [];
+  private veilPhase = 0;
+  private veilPulse?: Phaser.Tweens.Tween;
   private weaponSlot!: Phaser.GameObjects.Container;
   private weaponIcon!: Phaser.GameObjects.Image;
   private weaponKey!: Phaser.GameObjects.Text;
@@ -99,7 +105,7 @@ export class HudScene extends Phaser.Scene {
       if (key === "hearts") this.setHearts(value as number);
       if (key === "goal") this.setGoal(value as GoalState);
       if (key === "weapon" || key === "weapons") this.refreshWeapon();
-      if (key === "boss") this.setBoss(value as { name: string; hp: number; max: number } | null);
+      if (key === "boss") this.setBoss(value as { name: string; hp: number; max: number; veilPhase?: number } | null);
       if (key === "shield") this.setShield(value as number);
     };
     reg.on("changedata", onData);
@@ -199,17 +205,33 @@ export class HudScene extends Phaser.Scene {
     const name = (this.bossName = this.add
       .text(GAME_W / 2, 16, "", { fontFamily: FONT, fontSize: "18px", fontStyle: "bold", color: "#e0b8ff", stroke: "#12081f", strokeThickness: 5 })
       .setOrigin(0.5, 0));
-    const back = this.add.rectangle(GAME_W / 2 - 230, 50, 460, 16, 0x2a1640).setOrigin(0, 0.5);
+    const back = (this.bossBack = this.add.rectangle(GAME_W / 2 - 230, 50, 460, 16, 0x2a1640).setOrigin(0, 0.5));
     this.bossChip = this.add.rectangle(GAME_W / 2 - 230, 50, 460, 16, 0xffffff).setOrigin(0, 0.5);
     this.bossFill = this.add.rectangle(GAME_W / 2 - 230, 50, 460, 16, 0xb57cff).setOrigin(0, 0.5);
     const frame = this.add.rectangle(GAME_W / 2, 50, 462, 18).setStrokeStyle(2, 0xffffff, 0.6);
-    this.bossPanel = this.add.container(0, 0, [g, name, back, this.bossChip, this.bossFill, frame]).setVisible(false);
+    // Veil phase segments: 460 total = 181 + 4 + 136 + 4 + 135 (HP 64/48/48 of 160)
+    const segCols = [0xff5ad1, 0xb57cff, 0xff4040];
+    const segDark = [0x3d1030, 0x241239, 0x3d0f14];
+    const segW = [181, 136, 135];
+    let sx = GAME_W / 2 - 230;
+    this.bossSegs = segW.map((w, i) => {
+      const sb = this.add.rectangle(sx, 50, w, 16, segDark[i]).setOrigin(0, 0.5).setVisible(false);
+      const sc = this.add.rectangle(sx, 50, w, 16, 0xffffff).setOrigin(0, 0.5).setVisible(false);
+      const sf = this.add.rectangle(sx, 50, w, 16, segCols[i]).setOrigin(0, 0.5).setVisible(false);
+      sx += w + 4;
+      return { back: sb, chip: sc, fill: sf, w };
+    });
+    const segObjs = this.bossSegs.flatMap((s) => [s.back, s.chip, s.fill]);
+    this.bossPanel = this.add.container(0, 0, [g, name, back, this.bossChip, this.bossFill, ...segObjs, frame]).setVisible(false);
   }
 
-  private setBoss(b: { name: string; hp: number; max: number } | null) {
+  private setBoss(b: { name: string; hp: number; max: number; veilPhase?: number } | null) {
     const on = !!b;
     this.killPanel.setVisible(!on && !LEVELS[this.levelIndex].boss);
     if (!on) {
+      this.veilPhase = 0;
+      this.veilPulse?.remove();
+      this.veilPulse = undefined;
       if (this.bossPanel.visible) this.tweens.add({ targets: this.bossPanel, alpha: 0, duration: 400, onComplete: () => this.bossPanel.setVisible(false).setAlpha(1) });
       return;
     }
@@ -218,11 +240,59 @@ export class HudScene extends Phaser.Scene {
       this.tweens.add({ targets: this.bossPanel, alpha: 1, duration: 400 });
     }
     this.bossName.setText(b.name);
-    const k = Phaser.Math.Clamp(b.hp / b.max, 0, 1);
-    this.bossFill.width = 460 * k;
-    this.bossFill.setFillStyle(k > 0.5 ? 0xb57cff : 0xff5ad1);
-    this.tweens.killTweensOf(this.bossChip);
-    this.tweens.add({ targets: this.bossChip, width: 460 * k, delay: 250, duration: 400 });
+    const veil = b.veilPhase !== undefined;
+    this.bossBack.setVisible(!veil);
+    this.bossChip.setVisible(!veil);
+    this.bossFill.setVisible(!veil);
+    this.bossSegs.forEach((s) => {
+      s.back.setVisible(veil);
+      s.chip.setVisible(veil);
+      s.fill.setVisible(veil);
+    });
+    if (!veil) {
+      const k = Phaser.Math.Clamp(b.hp / b.max, 0, 1);
+      this.bossFill.width = 460 * k;
+      this.bossFill.setFillStyle(k > 0.5 ? 0xb57cff : 0xff5ad1);
+      this.tweens.killTweensOf(this.bossChip);
+      this.tweens.add({ targets: this.bossChip, width: 460 * k, delay: 250, duration: 400 });
+      return;
+    }
+    // Veil: three phase bars. Thresholds mirror CrystalVeilBoss (60% / 30%).
+    const phase = b.veilPhase!;
+    const t2 = b.max * 0.6, t3 = b.max * 0.3;
+    const ks = [
+      Phaser.Math.Clamp((b.hp - t2) / (b.max - t2), 0, 1),
+      Phaser.Math.Clamp((b.hp - t3) / (t2 - t3), 0, 1),
+      Phaser.Math.Clamp(b.hp / t3, 0, 1),
+    ];
+    const cols = [0xff5ad1, 0xb57cff, 0xff4040];
+    const dark = [0x57163f, 0x342058, 0x571318];
+    this.bossSegs.forEach((s, i) => {
+      const done = phase > i + 1 || (i + 1 < phase);
+      const dead = ks[i] <= 0;
+      s.fill.width = s.w * ks[i];
+      s.fill.setFillStyle(dead ? dark[i] : cols[i]);
+      s.fill.setAlpha(dead ? 0.55 : 1);
+      this.tweens.killTweensOf(s.chip);
+      this.tweens.add({ targets: s.chip, width: s.w * ks[i], delay: 250, duration: 400 });
+      void done;
+    });
+    if (phase !== this.veilPhase) {
+      // Phase change: shatter flash over the bar that just died + panel pop.
+      if (this.veilPhase > 0 && phase > this.veilPhase) {
+        const dead = this.bossSegs[phase - 2];
+        if (dead) {
+          const flash = this.add.rectangle(dead.fill.x, 50, dead.w, 16, 0xffffff).setOrigin(0, 0.5).setAlpha(0.95);
+          this.bossPanel.add(flash);
+          this.tweens.add({ targets: flash, alpha: 0, duration: 320, onComplete: () => flash.destroy() });
+        }
+        this.tweens.add({ targets: this.bossPanel, scaleX: 1.045, scaleY: 1.045, duration: 110, yoyo: true, ease: "Quad.out" });
+      }
+      this.veilPhase = phase;
+      this.veilPulse?.remove();
+      const active = this.bossSegs[phase - 1];
+      if (active) this.veilPulse = this.tweens.add({ targets: active.fill, alpha: { from: 0.78, to: 1 }, duration: 540, yoyo: true, repeat: -1 });
+    }
   }
 
   private buildWeaponSlot() {

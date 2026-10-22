@@ -2184,8 +2184,8 @@ export const SPRITES = {
   },
   "sovereign2": {
     "file": "assets/runtime/sovereign2.webp",
-    "frameWidth": 224,
-    "frameHeight": 224,
+    "frameWidth": 394,
+    "frameHeight": 300,
     "originX": 0.48,
     "originY": 0.995,
     "anims": {
@@ -2194,91 +2194,175 @@ export const SPRITES = {
         "end": 3,
         "frameRate": 6,
         "repeat": -1,
-        "h": 200
+        "h": 254
       },
       "walk": {
         "start": 4,
         "end": 7,
         "frameRate": 9,
         "repeat": -1,
-        "h": 200
+        "h": 246
       },
       "claw": {
         "start": 8,
         "end": 11,
         "frameRate": 10,
         "repeat": 0,
-        "h": 200
+        "h": 220
       },
       "slam": {
         "start": 12,
         "end": 15,
         "frameRate": 10,
         "repeat": 0,
-        "h": 200
+        "h": 239
       },
       "shoot": {
         "start": 16,
         "end": 19,
         "frameRate": 10,
         "repeat": 0,
-        "h": 200
+        "h": 214
       },
       "summon": {
         "start": 20,
         "end": 23,
         "frameRate": 10,
         "repeat": 0,
-        "h": 200
+        "h": 221
       },
       "charge": {
         "start": 24,
         "end": 27,
         "frameRate": 10,
         "repeat": 0,
-        "h": 200
+        "h": 188
       },
       "erupt": {
         "start": 28,
         "end": 31,
         "frameRate": 10,
         "repeat": 0,
-        "h": 200
+        "h": 223
       },
       "hurt": {
         "start": 32,
         "end": 35,
         "frameRate": 9,
         "repeat": 0,
-        "h": 200
+        "h": 234
       },
       "stagger": {
         "start": 36,
         "end": 39,
         "frameRate": 9,
         "repeat": 0,
-        "h": 200
+        "h": 192
       },
       "enrage": {
         "start": 40,
         "end": 43,
-        "frameRate": 7,
-        "repeat": -1,
-        "h": 200
+        "frameRate": 9,
+        "repeat": 0,
+        "h": 246
       },
       "dead": {
         "start": 44,
         "end": 47,
         "frameRate": 7,
         "repeat": 0,
+        "h": 164
+      },
+      "rise": {
+        "start": 48,
+        "end": 51,
+        "frameRate": 8,
+        "repeat": 0,
         "h": 200
+      },
+      "roar": {
+        "start": 52,
+        "end": 55,
+        "frameRate": 8,
+        "repeat": 0,
+        "h": 252
+      },
+      "beam": {
+        "start": 56,
+        "end": 59,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 230
+      },
+      "taunt": {
+        "start": 60,
+        "end": 63,
+        "frameRate": 6,
+        "repeat": 0,
+        "h": 252
+      },
+      "vanish": {
+        "start": 64,
+        "end": 67,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 254
+      },
+      "appear": {
+        "start": 68,
+        "end": 71,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 221
+      },
+      "fan": {
+        "start": 72,
+        "end": 75,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 240
+      },
+      "shield": {
+        "start": 76,
+        "end": 79,
+        "frameRate": 8,
+        "repeat": 0,
+        "h": 224
+      },
+      "leap": {
+        "start": 80,
+        "end": 83,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 222
+      },
+      "weak": {
+        "start": 84,
+        "end": 87,
+        "frameRate": 6,
+        "repeat": -1,
+        "h": 187
+      },
+      "laugh": {
+        "start": 88,
+        "end": 91,
+        "frameRate": 8,
+        "repeat": 0,
+        "h": 230
+      },
+      "meteor": {
+        "start": 92,
+        "end": 95,
+        "frameRate": 10,
+        "repeat": 0,
+        "h": 268
       },
       "attack": {
         "start": 8,
         "end": 11,
         "frameRate": 10,
         "repeat": 0,
-        "h": 200
+        "h": 220
       }
     }
   },
