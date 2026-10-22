@@ -186,6 +186,34 @@ def rebuild(key, genpath, mapping, anchor='feet'):
     chk.save(f'{WORK}/{key}_rebuilt_check.png')
     print(f'{key}: rebuilt {sheet.size} -> {out}')
 
+def rebuild_bands(key, genpath, bands, anchor='feet'):
+    """bands: dict slot(int) -> (x0, x1) vertical band of the source image."""
+    spec = load_spec(key)
+    src = Image.open(genpath).convert('RGB')
+    sheet = Image.new('RGBA', (spec['W'], spec['H']), (0, 0, 0, 0))
+    maxw, maxh = spec['fw'] - 13, spec['fh'] - 11
+    for slot, (x0, x1) in bands.items():
+        crop = src.crop((x0, 0, x1, src.height))
+        rgba = key_contour(crop)
+        s = min(maxw / rgba.width, maxh / rgba.height)
+        nw, nh = max(1, int(rgba.width * s)), max(1, int(rgba.height * s))
+        rgba = rgba.resize((nw, nh), Image.LANCZOS)
+        cx, cy = (slot % spec['cols']) * spec['fw'], (slot // spec['cols']) * spec['fh']
+        if anchor == 'center':
+            px = cx + spec['fw'] // 2 - nw // 2
+            py = cy + spec['fh'] // 2 - nh // 2
+        else:
+            px = cx + int(spec['ox'] * spec['fw']) - nw // 2
+            py = cy + int(spec['oy'] * spec['fh']) - nh
+        sheet.alpha_composite(rgba, (px, py))
+    out = f'{REPO}/public/assets/runtime/{key}.webp'
+    sheet.save(out, lossless=True)
+    chk = Image.new('RGB', sheet.size, (95, 95, 115))
+    chk.paste(sheet, (0, 0), sheet)
+    chk.thumbnail((1600, 1600))
+    chk.save(f'{WORK}/{key}_rebuilt_check.png')
+    print(f'{key}: rebuilt (bands) {sheet.size} -> {out}')
+
 if __name__ == '__main__':
     cmd = sys.argv[1]
     if cmd == 'spec':
@@ -197,3 +225,8 @@ if __name__ == '__main__':
         mapping = {int(k): v for k, v in json.load(open(sys.argv[4])).items()}
         anchor = sys.argv[5] if len(sys.argv) > 5 else 'feet'
         rebuild(key, sys.argv[3], mapping, anchor)
+    elif cmd == 'rebuild_bands':
+        key = sys.argv[2]
+        bands = {int(k): tuple(v) for k, v in json.load(open(sys.argv[4])).items()}
+        anchor = sys.argv[5] if len(sys.argv) > 5 else 'feet'
+        rebuild_bands(key, sys.argv[3], bands, anchor)
