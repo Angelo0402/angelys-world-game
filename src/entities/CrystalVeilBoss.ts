@@ -263,10 +263,20 @@ export class CrystalVeilBoss {
     const origin = this.x+this.dir*76;
     const width = this.dir > 0 ? this.arena.x1-origin : origin-this.arena.x0;
     const mid = origin+this.dir*width/2;
+    // The charge itself rumbles the ground — a big hit is coming.
+    this.scene.cameras.main.shake(850,.0035);
     this.windup("beam","charge",time,850,650,this.recovery()+100,() => {
       Audio.sfx("ghost_orb");
-      const ray = this.track(this.scene.add.sprite(mid,GROUND_Y-92,"crystalveil_beam")
-        .setDepth(47).setDisplaySize(width*1.14,106).setFlipX(this.dir<0).setAlpha(.95));
+      // A beam this size has to hit the CAMERA too: a frozen beat, then a
+      // hard shake that lasts the whole blast so it reads as a huge attack.
+      this.scene.hitStop(70);
+      this.scene.cameras.main.shake(620,.015);
+      // The blast runs off BOTH edges of the camera — an attack this big
+      // has no visible end anywhere on screen, so it never reads as cut.
+      // (The hazard zone below still spans only the arena, as telegraphed.)
+      const spanL = -240, spanR = this.arena.x1+460;
+      const ray = this.track(this.scene.add.sprite((spanL+spanR)/2,GROUND_Y-92,"crystalveil_beam")
+        .setDepth(47).setDisplaySize(spanR-spanL,106).setFlipX(this.dir<0).setAlpha(.95));
       ray.play(`crystalveil_beam:beam_${"abc"[this.beamVariant++ % 3]}`);
       const zone = this.track(this.scene.add.rectangle(mid,GROUND_Y-92,Math.max(12,width-24),40).setVisible(false));
       this.scene.hazards.add(zone);
