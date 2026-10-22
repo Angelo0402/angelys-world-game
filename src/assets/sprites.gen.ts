@@ -129,8 +129,8 @@ export const SPRITES = {
     "anims": {
       "shoot": {
         "start": 0,
-        "end": 4,
-        "fps": 18,
+        "end": 11,
+        "fps": 40,
         "repeat": 0,
         "h": 210
       }

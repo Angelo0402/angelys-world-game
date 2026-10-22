@@ -330,7 +330,7 @@ export class Player {
       return;
     }
     if (this.attackWeapon === "bow") {
-      if (!this.shotFired && t > 110) {
+      if (!this.shotFired && t > 145) {
         this.shotFired = true;
         this.scene.shootArrow(this.x + this.facing * 46, body.top + body.height * 0.36, this.facing);
       }
