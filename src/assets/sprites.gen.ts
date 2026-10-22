@@ -20,84 +20,84 @@ export const SPRITES = {
       },
       "walk": {
         "start": 8,
-        "end": 19,
-        "fps": 18,
+        "end": 23,
+        "fps": 24,
         "repeat": -1,
         "h": 239
       },
       "run": {
-        "start": 20,
-        "end": 35,
+        "start": 24,
+        "end": 39,
         "fps": 26,
         "repeat": -1,
         "h": 228
       },
       "start": {
-        "start": 36,
-        "end": 38,
+        "start": 40,
+        "end": 42,
         "fps": 18,
         "repeat": 0,
         "h": 248
       },
       "stop": {
-        "start": 39,
-        "end": 41,
+        "start": 43,
+        "end": 45,
         "fps": 14,
         "repeat": 0,
         "h": 243
       },
       "jump": {
-        "start": 42,
-        "end": 45,
+        "start": 46,
+        "end": 49,
         "fps": 20,
         "repeat": 0,
         "h": 232
       },
       "air": {
-        "start": 46,
-        "end": 46,
+        "start": 50,
+        "end": 50,
         "fps": 1,
         "repeat": -1,
         "h": 220
       },
       "fall": {
-        "start": 47,
-        "end": 48,
+        "start": 51,
+        "end": 52,
         "fps": 6,
         "repeat": -1,
         "h": 246
       },
       "land": {
-        "start": 49,
-        "end": 49,
+        "start": 53,
+        "end": 53,
         "fps": 1,
         "repeat": 0,
         "h": 208
       },
       "hurt": {
-        "start": 50,
-        "end": 51,
+        "start": 54,
+        "end": 55,
         "fps": 10,
         "repeat": 0,
         "h": 204
       },
       "celebrate": {
-        "start": 52,
-        "end": 55,
+        "start": 56,
+        "end": 59,
         "fps": 7,
         "repeat": -1,
         "h": 222
       },
       "defeat": {
-        "start": 56,
-        "end": 58,
+        "start": 60,
+        "end": 62,
         "fps": 5,
         "repeat": 0,
         "h": 180
       },
       "push": {
-        "start": 59,
-        "end": 64,
+        "start": 63,
+        "end": 68,
         "fps": 9,
         "repeat": -1,
         "h": 220
