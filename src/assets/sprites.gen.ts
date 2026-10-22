@@ -367,8 +367,8 @@ export const SPRITES = {
     "anims": {
       "cast": {
         "start": 0,
-        "end": 4,
-        "fps": 16,
+        "end": 8,
+        "fps": 29,
         "repeat": 0,
         "h": 218
       }
