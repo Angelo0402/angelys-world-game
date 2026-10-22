@@ -27,77 +27,77 @@ export const SPRITES = {
       },
       "run": {
         "start": 23,
-        "end": 38,
-        "fps": 26,
+        "end": 30,
+        "fps": 15,
         "repeat": -1,
         "h": 248
       },
       "start": {
-        "start": 39,
-        "end": 41,
+        "start": 31,
+        "end": 33,
         "fps": 18,
         "repeat": 0,
         "h": 248
       },
       "stop": {
-        "start": 42,
-        "end": 44,
+        "start": 34,
+        "end": 36,
         "fps": 14,
         "repeat": 0,
         "h": 243
       },
       "jump": {
-        "start": 45,
-        "end": 48,
+        "start": 37,
+        "end": 40,
         "fps": 20,
         "repeat": 0,
         "h": 248
       },
       "air": {
-        "start": 49,
-        "end": 51,
+        "start": 41,
+        "end": 43,
         "fps": 8,
         "repeat": -1,
         "h": 248
       },
       "fall": {
-        "start": 52,
-        "end": 54,
+        "start": 44,
+        "end": 46,
         "fps": 8,
         "repeat": -1,
         "h": 248
       },
       "land": {
-        "start": 55,
-        "end": 56,
+        "start": 47,
+        "end": 48,
         "fps": 12,
         "repeat": 0,
         "h": 248
       },
       "hurt": {
-        "start": 57,
-        "end": 58,
+        "start": 49,
+        "end": 50,
         "fps": 10,
         "repeat": 0,
         "h": 204
       },
       "celebrate": {
-        "start": 59,
-        "end": 62,
+        "start": 51,
+        "end": 54,
         "fps": 7,
         "repeat": -1,
         "h": 222
       },
       "defeat": {
-        "start": 63,
-        "end": 65,
+        "start": 55,
+        "end": 57,
         "fps": 5,
         "repeat": 0,
         "h": 180
       },
       "push": {
-        "start": 66,
-        "end": 71,
+        "start": 58,
+        "end": 63,
         "fps": 9,
         "repeat": -1,
         "h": 220
