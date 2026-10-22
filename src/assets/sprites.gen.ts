@@ -2187,7 +2187,7 @@ export const SPRITES = {
     "frameWidth": 394,
     "frameHeight": 300,
     "originX": 0.48,
-    "originY": 0.995,
+    "originY": 0.96,
     "anims": {
       "idle": {
         "start": 0,
@@ -2654,7 +2654,7 @@ export const SPRITES = {
     "frameWidth": 456,
     "frameHeight": 354,
     "originX": 0.5,
-    "originY": 0.7994791666666666,
+    "originY": 0.9661,
     "anims": {
       "idle": {
         "start": 0,
@@ -2754,7 +2754,7 @@ export const SPRITES = {
     "frameWidth": 349,
     "frameHeight": 319,
     "originX": 0.5,
-    "originY": 0.977,
+    "originY": 0.9624,
     "anims": {
       "idle": {
         "start": 0,
