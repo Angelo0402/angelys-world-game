@@ -321,7 +321,10 @@ export class Mechanics {
    * velocity always lands exactly on the path; riders are carried by Arcade's friction.
    */
   private stepMovers(stepDelta: number) {
-    this.moverClock += stepDelta;
+    // WORLD_STEP delivers delta in SECONDS; mover periods are in ms.
+    // (Found 2026-10-22: without the conversion every lift/bridge in the
+    // game crept at 1/1000 speed — effectively frozen.)
+    this.moverClock += stepDelta * 1000;
     const dt = stepDelta;
     const pb = this.scene.player?.body;
     for (const m of this.movers) {

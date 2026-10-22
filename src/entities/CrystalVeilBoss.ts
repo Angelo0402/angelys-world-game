@@ -32,6 +32,7 @@ export class CrystalVeilBoss {
   private strikeFrom = 0;
   private strikeUntil = 0;
   private hitUntil = 0;
+  private beamVariant = 0;
   private flashUntil = 0;
   private attackIndex = 0;
   private action = 0;
@@ -266,7 +267,7 @@ export class CrystalVeilBoss {
       Audio.sfx("ghost_orb");
       const ray = this.track(this.scene.add.sprite(mid,GROUND_Y-92,"crystalveil_beam")
         .setDepth(47).setDisplaySize(width*1.14,106).setFlipX(this.dir<0).setAlpha(.95));
-      ray.play("crystalveil_beam:beam");
+      ray.play(`crystalveil_beam:beam_${"abc"[this.beamVariant++ % 3]}`);
       const zone = this.track(this.scene.add.rectangle(mid,GROUND_Y-92,Math.max(12,width-24),40).setVisible(false));
       this.scene.hazards.add(zone);
     });
