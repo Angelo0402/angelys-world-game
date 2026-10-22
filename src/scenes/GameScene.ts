@@ -908,7 +908,7 @@ export class GameScene extends Phaser.Scene {
       this.player.giveWeapon(wp.kind);
       this.publishWeapons();
       this.weaponToast(wp.kind);
-    }, false);
+    }, false, wp.kind);
   }
 
   // ----------------------------------------------------------------- combat

@@ -109,6 +109,7 @@ export class Player {
       angely_wand: scaleForHeight("angely", HEIGHT, "idle"),
       angely_ray: scaleForHeight("angely", HEIGHT, "idle"),
       angely_swim: scaleForHeight("angely", HEIGHT, "idle"),
+      angely_got: scaleForHeight("angely", HEIGHT, "idle"),
     };
     this.bubbles = scene.add
       .particles(0, 0, "bubble", {
@@ -525,10 +526,11 @@ export class Player {
   }
 
   /** Pulling the sword from its stone, or a short cheer for floating pickups. */
-  playPickup(onDone: () => void, sword = true) {
+  playPickup(onDone: () => void, sword = true, kind?: WeaponId) {
     this.state = "pickup";
     this.body.setVelocity(0, this.body.velocity.y);
     if (sword) this.setAnim("angely_sword", "pickup", true);
+    else if (kind && kind !== "cog") this.setAnim("angely_got", `got_${kind}`, true);
     else this.setAnim("angely", "celebrate", true);
     this.scene.time.delayedCall(sword ? 1400 : 1100, () => {
       if (this.state === "pickup") this.state = "normal";

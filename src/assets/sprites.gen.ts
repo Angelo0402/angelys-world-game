@@ -104,6 +104,21 @@ export const SPRITES = {
       }
     }
   },
+  "angely_got": {
+    "file": "assets/runtime/angely_got.webp",
+    "frameWidth": 313,
+    "frameHeight": 263,
+    "originX": 0.5781,
+    "originY": 0.9848,
+    "bodyHeight": 243,
+    "anims": {
+      "got_bow": { "start": 0, "end": 0, "fps": 6, "repeat": 0, "h": 243 },
+      "got_boomerang": { "start": 1, "end": 1, "fps": 6, "repeat": 0, "h": 243 },
+      "got_wand": { "start": 2, "end": 2, "fps": 6, "repeat": 0, "h": 243 },
+      "got_hammer": { "start": 3, "end": 3, "fps": 6, "repeat": 0, "h": 243 },
+      "got_ray": { "start": 4, "end": 4, "fps": 6, "repeat": 0, "h": 243 }
+    }
+  },
   "angely_bow": {
     "file": "assets/runtime/angely_bow.webp",
     "frameWidth": 224,
