@@ -106,7 +106,7 @@ export class CrystalVeilBoss {
       this.dir = dx < 0 ? -1 : 1;
       this.sprite.setFlipX(this.dir < 0);
       if (Math.abs(dx) > 170) {
-        const speed = this.form === "sovereign" ? 178 : [0,96,125,150][this.phase];
+        const speed = this.form === "sovereign" ? 195 : [0,115,145,170][this.phase];
         this.x = Phaser.Math.Clamp(this.x + this.dir * speed * Math.min(delta,50)/1000, this.arena.x0+120, this.arena.x1-120);
         this.sprite.play(`${this.sheet}:walk`,true);
       } else this.sprite.play(`${this.sheet}:idle`,true);

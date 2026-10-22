@@ -36,3 +36,34 @@ Wiring: CutsceneScene already plays mp4s — swap file lists for 10-2 intro
 
 ## NOT in scope (per earlier refusal rule): Umbra intro video, Colossus
 fight clip — untouched.
+
+## NEW LINES + REMIX (Angelo 2026-10-22 06:52)
+Angelo: music too loud, voice too low in both epics; write BETTER lines.
+Remix targets: bed ~-9 dB vs current mix, voices +4 dB (limiter -3 dB kept).
+New Sovereign lines (same voice as sovereign_01-04, beats unchanged):
+  - sovereign_01 (taunt): "So... the little light crawls all the way to my
+    veil. I have crushed a thousand lights brighter than yours."
+  - sovereign_02 (declare): "I am the Veil Sovereign! Every crystal in the
+    dark sings my name. Kneel, child — and I will make your end quick."
+  - sovereign_03 (rise): "You cracked my crown?! Then drown in the shattering
+    of the Veil itself!"
+  - sovereign_04 (fall): "The veil... breaks... Take back your stars, little
+    light. They were never mine to keep."
+veil_angelo_04 UNCHANGED: "That's my girl. I knew you'd find me."
+After recording: transcribe-verify, swap audio files, remix both epics with
+the new levels, re-deliver for Angelo's verdict.
+
+## DONE 2026-10-22 07:1x — new lines recorded + remixed
+Voice identified from ElevenLabs history: "Edward - British, Dark,
+Seductive, Low", Eleven v4, stability 50 (the Sovereign's original voice).
+Credits: 2,014 -> 1,637 (377 spent: 107+112+71+87 chars). All 4 new lines
+transcription-verified (faster-whisper tiny; content exact). Installed as
+public/assets/audio/sovereign_01..04.mp3 (old takes backed up in
+epic/old_lines/); crystalveil.ts texts updated to match.
+REMIX v2 (Angelo: music too loud, voice too low): beds at 0.32 (was 0.85),
+voices loudnorm I=-14. Measured intro: bed-only window RMS -26.5 dB vs
+voice window -17.5 dB -> voice ~9 dB over the music. Intro retimed for the
+longer lines: 01 @8.5s, 02 @16.8s; video extended 22.5 -> 27.5s (freeze
+tail of the face-off clip 2.5 -> 7.5s). Finale: 04 @1.5s, angelo_04 @21.5s,
+30s unchanged. Files: veil_epic_intro_v2.mp4 / veil_epic_finale_v2.mp4 in
+epic/, installed over public/assets/video/.

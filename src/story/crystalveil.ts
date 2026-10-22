@@ -8,19 +8,19 @@ export const SOVEREIGN_NAME = "THE VEIL SOVEREIGN";
 // intro, 02 declares herself before the fight, 03 is the rise when her
 // crown cracks, 04 is her surrender when the Sovereign form falls.
 export const VEIL_TAUNT: DialogueLine[] = [
-  { who: "sovereign", text: "So, the little light crawls all the way to my veil. How persistent.", voice: "sovereign_01" },
+  { who: "sovereign", text: "So... the little light crawls all the way to my veil. I have crushed a thousand lights brighter than yours.", voice: "sovereign_01" },
 ];
 
 export const VEIL_DECLARE: DialogueLine[] = [
-  { who: "sovereign", text: "I am the Veil Sovereign. Every crystal here bows to me. Kneel, child.", voice: "sovereign_02" },
+  { who: "sovereign", text: "I am the Veil Sovereign! Every crystal in the dark sings my name. Kneel, child - and I will make your end quick.", voice: "sovereign_02" },
 ];
 
 export const SOVEREIGN_RISE: DialogueLine[] = [
-  { who: "sovereign", text: "You cracked my crown? Then feel the full shatter of the Veil!", voice: "sovereign_03" },
+  { who: "sovereign", text: "You cracked my crown?! Then drown in the shattering of the Veil itself!", voice: "sovereign_03" },
 ];
 
 export const SOVEREIGN_FALL: DialogueLine[] = [
-  { who: "sovereign", text: "The veil breaks, little light... The crystals were never mine to keep.", voice: "sovereign_04" },
+  { who: "sovereign", text: "The veil... breaks... Take back your stars, little light. They were never mine to keep.", voice: "sovereign_04" },
 ];
 
 // Voice keys: veil_* files are THIS scene's recordings (ElevenLabs,
