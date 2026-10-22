@@ -215,28 +215,28 @@ export const SPRITES = {
       },
       "walk": {
         "start": 25,
-        "end": 49,
+        "end": 32,
         "fps": 10,
         "repeat": -1,
         "h": 200
       },
       "attack": {
-        "start": 50,
-        "end": 74,
+        "start": 33,
+        "end": 57,
         "fps": 12,
         "repeat": 0,
         "h": 200
       },
       "hurt": {
-        "start": 75,
-        "end": 82,
+        "start": 58,
+        "end": 65,
         "fps": 10,
         "repeat": 0,
         "h": 200
       },
       "dead": {
-        "start": 83,
-        "end": 99,
+        "start": 66,
+        "end": 82,
         "fps": 8,
         "repeat": 0,
         "h": 200
@@ -260,28 +260,28 @@ export const SPRITES = {
       },
       "idle": {
         "start": 4,
-        "end": 4,
-        "fps": 1,
+        "end": 11,
+        "fps": 8,
         "repeat": -1,
         "h": 284
       },
       "spit": {
-        "start": 5,
-        "end": 6,
+        "start": 12,
+        "end": 13,
         "fps": 10,
         "repeat": 0,
         "h": 192
       },
       "hurt": {
-        "start": 7,
-        "end": 7,
+        "start": 14,
+        "end": 14,
         "fps": 8,
         "repeat": 0,
         "h": 221
       },
       "dive": {
-        "start": 8,
-        "end": 9,
+        "start": 15,
+        "end": 16,
         "fps": 8,
         "repeat": 0,
         "h": 208
@@ -2194,168 +2194,168 @@ export const SPRITES = {
       },
       "walk": {
         "start": 4,
-        "end": 15,
+        "end": 11,
         "frameRate": 15,
         "repeat": -1,
         "h": 242
       },
       "claw": {
-        "start": 16,
-        "end": 19,
+        "start": 12,
+        "end": 15,
         "frameRate": 10,
         "repeat": 0,
         "h": 220
       },
       "slam": {
-        "start": 20,
-        "end": 23,
+        "start": 16,
+        "end": 19,
         "frameRate": 10,
         "repeat": 0,
         "h": 239
       },
       "shoot": {
-        "start": 24,
-        "end": 27,
+        "start": 20,
+        "end": 23,
         "frameRate": 10,
         "repeat": 0,
         "h": 214
       },
       "summon": {
-        "start": 28,
-        "end": 31,
+        "start": 24,
+        "end": 27,
         "frameRate": 10,
         "repeat": 0,
         "h": 221
       },
       "charge": {
-        "start": 32,
-        "end": 35,
+        "start": 28,
+        "end": 31,
         "frameRate": 10,
         "repeat": 0,
         "h": 188
       },
       "erupt": {
-        "start": 36,
-        "end": 39,
+        "start": 32,
+        "end": 35,
         "frameRate": 10,
         "repeat": 0,
         "h": 223
       },
       "hurt": {
-        "start": 40,
-        "end": 43,
+        "start": 36,
+        "end": 39,
         "frameRate": 9,
         "repeat": 0,
         "h": 234
       },
       "stagger": {
-        "start": 44,
-        "end": 47,
+        "start": 40,
+        "end": 43,
         "frameRate": 9,
         "repeat": 0,
         "h": 192
       },
       "enrage": {
-        "start": 48,
-        "end": 51,
+        "start": 44,
+        "end": 47,
         "frameRate": 9,
         "repeat": 0,
         "h": 246
       },
       "dead": {
-        "start": 52,
-        "end": 55,
+        "start": 48,
+        "end": 51,
         "frameRate": 7,
         "repeat": 0,
         "h": 164
       },
       "rise": {
-        "start": 56,
-        "end": 59,
+        "start": 52,
+        "end": 55,
         "frameRate": 8,
         "repeat": 0,
         "h": 200
       },
       "roar": {
-        "start": 60,
-        "end": 63,
+        "start": 56,
+        "end": 59,
         "frameRate": 8,
         "repeat": 0,
         "h": 252
       },
       "beam": {
-        "start": 64,
-        "end": 67,
+        "start": 60,
+        "end": 63,
         "frameRate": 10,
         "repeat": 0,
         "h": 230
       },
       "taunt": {
-        "start": 68,
-        "end": 71,
+        "start": 64,
+        "end": 67,
         "frameRate": 6,
         "repeat": 0,
         "h": 252
       },
       "vanish": {
-        "start": 72,
-        "end": 75,
+        "start": 68,
+        "end": 71,
         "frameRate": 10,
         "repeat": 0,
         "h": 254
       },
       "appear": {
-        "start": 76,
-        "end": 79,
+        "start": 72,
+        "end": 75,
         "frameRate": 10,
         "repeat": 0,
         "h": 221
       },
       "fan": {
-        "start": 80,
-        "end": 83,
+        "start": 76,
+        "end": 79,
         "frameRate": 10,
         "repeat": 0,
         "h": 240
       },
       "shield": {
-        "start": 84,
-        "end": 87,
+        "start": 80,
+        "end": 83,
         "frameRate": 8,
         "repeat": 0,
         "h": 224
       },
       "leap": {
-        "start": 88,
-        "end": 91,
+        "start": 84,
+        "end": 87,
         "frameRate": 10,
         "repeat": 0,
         "h": 222
       },
       "weak": {
-        "start": 92,
-        "end": 95,
+        "start": 88,
+        "end": 91,
         "frameRate": 6,
         "repeat": -1,
         "h": 187
       },
       "laugh": {
-        "start": 96,
-        "end": 99,
+        "start": 92,
+        "end": 95,
         "frameRate": 8,
         "repeat": 0,
         "h": 230
       },
       "meteor": {
-        "start": 100,
-        "end": 103,
+        "start": 96,
+        "end": 99,
         "frameRate": 10,
         "repeat": 0,
         "h": 268
       },
       "attack": {
-        "start": 16,
-        "end": 19,
+        "start": 12,
+        "end": 15,
         "frameRate": 10,
         "repeat": 0,
         "h": 220
@@ -2661,84 +2661,84 @@ export const SPRITES = {
       },
       "walk": {
         "start": 4,
-        "end": 15,
+        "end": 11,
         "frameRate": 11,
         "repeat": -1,
         "h": 244
       },
       "claw": {
-        "start": 16,
-        "end": 19,
+        "start": 12,
+        "end": 15,
         "frameRate": 9,
         "repeat": 0,
         "h": 261
       },
       "slam": {
-        "start": 20,
-        "end": 23,
+        "start": 16,
+        "end": 19,
         "frameRate": 9,
         "repeat": 0,
         "h": 276
       },
       "shoot": {
-        "start": 24,
-        "end": 27,
+        "start": 20,
+        "end": 23,
         "frameRate": 9,
         "repeat": 0,
         "h": 232
       },
       "summon": {
-        "start": 28,
-        "end": 31,
+        "start": 24,
+        "end": 27,
         "frameRate": 9,
         "repeat": 0,
         "h": 255
       },
       "charge": {
-        "start": 32,
-        "end": 35,
+        "start": 28,
+        "end": 31,
         "frameRate": 9,
         "repeat": 0,
         "h": 204
       },
       "erupt": {
-        "start": 36,
-        "end": 39,
+        "start": 32,
+        "end": 35,
         "frameRate": 9,
         "repeat": 0,
         "h": 280
       },
       "hurt": {
-        "start": 40,
-        "end": 43,
+        "start": 36,
+        "end": 39,
         "frameRate": 9,
         "repeat": 0,
         "h": 261
       },
       "stagger": {
-        "start": 44,
-        "end": 47,
+        "start": 40,
+        "end": 43,
         "frameRate": 9,
         "repeat": 0,
         "h": 239
       },
       "enrage": {
-        "start": 48,
-        "end": 51,
+        "start": 44,
+        "end": 47,
         "frameRate": 9,
         "repeat": 0,
         "h": 276
       },
       "dead": {
-        "start": 52,
-        "end": 55,
+        "start": 48,
+        "end": 51,
         "frameRate": 9,
         "repeat": 0,
         "h": 236
       },
       "attack": {
-        "start": 16,
-        "end": 19,
+        "start": 12,
+        "end": 15,
         "frameRate": 10,
         "repeat": 0,
         "h": 261
@@ -2761,84 +2761,84 @@ export const SPRITES = {
       },
       "walk": {
         "start": 4,
-        "end": 15,
+        "end": 11,
         "frameRate": 12,
         "repeat": -1,
         "h": 248
       },
       "claw": {
-        "start": 16,
-        "end": 19,
+        "start": 12,
+        "end": 15,
         "frameRate": 10,
         "repeat": 0,
         "h": 228
       },
       "slam": {
-        "start": 20,
-        "end": 23,
+        "start": 16,
+        "end": 19,
         "frameRate": 10,
         "repeat": 0,
         "h": 244
       },
       "hurt": {
-        "start": 24,
-        "end": 27,
+        "start": 20,
+        "end": 23,
         "frameRate": 8,
         "repeat": 0,
         "h": 215
       },
       "stagger": {
-        "start": 28,
-        "end": 31,
+        "start": 24,
+        "end": 27,
         "frameRate": 8,
         "repeat": 0,
         "h": 222
       },
       "enrage": {
-        "start": 32,
-        "end": 35,
+        "start": 28,
+        "end": 31,
         "frameRate": 7,
         "repeat": 0,
         "h": 250
       },
       "dead": {
-        "start": 36,
-        "end": 39,
+        "start": 32,
+        "end": 35,
         "frameRate": 7,
         "repeat": 0,
         "h": 201
       },
       "shoot": {
-        "start": 16,
-        "end": 17,
+        "start": 12,
+        "end": 13,
         "frameRate": 10,
         "repeat": 0,
         "h": 228
       },
       "summon": {
-        "start": 22,
-        "end": 23,
+        "start": 18,
+        "end": 19,
         "frameRate": 10,
         "repeat": 0,
         "h": 228
       },
       "charge": {
-        "start": 16,
-        "end": 17,
+        "start": 12,
+        "end": 13,
         "frameRate": 10,
         "repeat": 0,
         "h": 228
       },
       "erupt": {
-        "start": 21,
-        "end": 23,
+        "start": 17,
+        "end": 19,
         "frameRate": 10,
         "repeat": 0,
         "h": 228
       },
       "attack": {
-        "start": 16,
-        "end": 19,
+        "start": 12,
+        "end": 15,
         "frameRate": 10,
         "repeat": 0,
         "h": 228
