@@ -2661,84 +2661,84 @@ export const SPRITES = {
       },
       "walk": {
         "start": 4,
-        "end": 7,
-        "frameRate": 9,
+        "end": 15,
+        "frameRate": 11,
         "repeat": -1,
-        "h": 248
+        "h": 244
       },
       "claw": {
-        "start": 8,
-        "end": 11,
+        "start": 16,
+        "end": 19,
         "frameRate": 9,
         "repeat": 0,
         "h": 261
       },
       "slam": {
-        "start": 12,
-        "end": 15,
+        "start": 20,
+        "end": 23,
         "frameRate": 9,
         "repeat": 0,
         "h": 276
       },
       "shoot": {
-        "start": 16,
-        "end": 19,
+        "start": 24,
+        "end": 27,
         "frameRate": 9,
         "repeat": 0,
         "h": 232
       },
       "summon": {
-        "start": 20,
-        "end": 23,
+        "start": 28,
+        "end": 31,
         "frameRate": 9,
         "repeat": 0,
         "h": 255
       },
       "charge": {
-        "start": 24,
-        "end": 27,
+        "start": 32,
+        "end": 35,
         "frameRate": 9,
         "repeat": 0,
         "h": 204
       },
       "erupt": {
-        "start": 28,
-        "end": 31,
+        "start": 36,
+        "end": 39,
         "frameRate": 9,
         "repeat": 0,
         "h": 280
       },
       "hurt": {
-        "start": 32,
-        "end": 35,
+        "start": 40,
+        "end": 43,
         "frameRate": 9,
         "repeat": 0,
         "h": 261
       },
       "stagger": {
-        "start": 36,
-        "end": 39,
+        "start": 44,
+        "end": 47,
         "frameRate": 9,
         "repeat": 0,
         "h": 239
       },
       "enrage": {
-        "start": 40,
-        "end": 43,
+        "start": 48,
+        "end": 51,
         "frameRate": 9,
         "repeat": 0,
         "h": 276
       },
       "dead": {
-        "start": 44,
-        "end": 47,
+        "start": 52,
+        "end": 55,
         "frameRate": 9,
         "repeat": 0,
         "h": 236
       },
       "attack": {
-        "start": 8,
-        "end": 11,
+        "start": 16,
+        "end": 19,
         "frameRate": 10,
         "repeat": 0,
         "h": 261
