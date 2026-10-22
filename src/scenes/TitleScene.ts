@@ -101,8 +101,25 @@ export class TitleScene extends Phaser.Scene {
     const play = new Button(this, GAME_W / 2, GAME_H - 78, "PLAY", () => {
       requestFullscreenLandscape(this);
       menu.destroy();
-      this.cameras.main.fadeOut(260, 18, 13, 31);
-      this.cameras.main.once("camerafadeoutcomplete", () => this.scene.restart({ select: true }));
+      const toSelect = () => {
+        this.cameras.main.fadeOut(260, 18, 13, 31);
+        this.cameras.main.once("camerafadeoutcomplete", () => this.scene.restart({ select: true }));
+      };
+      // Opening cutscene (Angelo, 2026-10-22): pressing PLAY runs the intro
+      // video FIRST, then the chapter select appears — the intro never waits
+      // until a level has been picked, and never replays once seen.
+      if (!loadSave().introSeen) {
+        Audio.duck(false);
+        this.scene.launch("Cutscene", { clips: ["intro"] });
+        this.scene.pause();
+        this.game.events.once("cutscene:done", () => {
+          updateSave({ introSeen: true });
+          this.scene.resume();
+          toSelect();
+        });
+        return;
+      }
+      toSelect();
     }, { width: 260, height: 62, fontSize: 32 });
     play.setAlpha(0).setScale(0.6);
     this.tweens.add({ targets: play, alpha: 1, scale: 1, duration: 520, delay: 900, ease: "Back.out" });

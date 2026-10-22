@@ -291,11 +291,13 @@ export class GameScene extends Phaser.Scene {
   /**
    * Fade to a full-screen story video (CutsceneScene) and wait for it.
    * Game pauses itself while the video runs; the promise resolves when the
-   * CutsceneScene emits "cutscene:done". Game music ducks under the video.
+   * CutsceneScene emits "cutscene:done". Music stays at FULL level under
+   * the video (Angelo, 2026-10-22: the cutscenes could not be heard —
+   * the clips are silent files and ducking buried the music).
    */
   private playCutscene(clips: string[]): Promise<void> {
     if (!clips.length) return Promise.resolve();
-    Audio.duck(true);
+    Audio.duck(false);
     return new Promise<void>((resolve) => {
       this.game.events.once("cutscene:done", () => {
         Audio.duck(false);

@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { GAME_H, GAME_W } from "../config";
 import { fitCamera } from "../render";
+import { Audio } from "../audio/AudioManager";
 
 /**
  * Full-screen video cutscene player (Angelo's ruling 2026-10-21: story beats
@@ -23,6 +24,10 @@ export class CutsceneScene extends Phaser.Scene {
 
   create() {
     fitCamera(this);
+    // The clips are silent video files: the game's music IS the cutscene
+    // soundtrack, so it must run at full level, never ducked (Angelo,
+    // 2026-10-22: "los cut scenes no se escuchan").
+    Audio.duck(false);
     this.cameras.main.setBackgroundColor(0x000000);
     this.cameras.main.fadeIn(250, 0, 0, 0);
     void this.playNext();
