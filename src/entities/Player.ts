@@ -31,7 +31,7 @@ const SHIELD_MS = 15000;
 const SHIELD_TINTS = [0xfff27a, 0xff6ad5, 0x7af0ff, 0xffffff, 0xb6ff6a, 0xff9a3d];
 const HEIGHT = 112;
 
-type PState = "normal" | "attack" | "hurt" | "pickup" | "dead" | "celebrate" | "frozen";
+type PState = "normal" | "attack" | "hurt" | "pickup" | "dead" | "celebrate" | "frozen" | "catch";
 
 /** Ground speeds (px/s) at which walk/run play at their authored frame rate, so feet don't slide. */
 const WALK_ANIM_SPEED = 170;
