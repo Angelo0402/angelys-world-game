@@ -321,10 +321,15 @@ export class Mechanics {
    * velocity always lands exactly on the path; riders are carried by Arcade's friction.
    */
   private stepMovers(stepDelta: number) {
-    // WORLD_STEP delivers delta in SECONDS; mover periods are in ms.
-    // (Found 2026-10-22: without the conversion every lift/bridge in the
-    // game crept at 1/1000 speed — effectively frozen.)
-    this.moverClock += stepDelta * 1000;
+    // WORLD_STEP delivers delta in SECONDS, and MoverDef.period is authored
+    // in SECONDS too (3.4, 4.2, 4.6, 5 in level.ts) — so the clock stays in
+    // seconds. (Corrected 2026-10-22 evening: an earlier change multiplied
+    // the clock by 1000 under the wrong belief that periods were in ms;
+    // that made the phase race ~1000x, platforms teleported with velocities
+    // in the thousands of px/s, and riders could not stand — Angelo caught
+    // it on device in 3-1. The "creeping" seen before was the QA harness's
+    // physics-step starvation at ~1 FPS, not a unit bug.)
+    this.moverClock += stepDelta;
     const dt = stepDelta;
     const pb = this.scene.player?.body;
     for (const m of this.movers) {
