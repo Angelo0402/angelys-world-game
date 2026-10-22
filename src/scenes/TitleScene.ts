@@ -67,10 +67,14 @@ export class TitleScene extends Phaser.Scene {
     const base = GAME_H / art.height;
     const edge = this.add.graphics();
     const seam = (art.width * base) / 2;
-    edge.fillGradientStyle(0x120d1f, 0x120d1f, 0x120d1f, 0x120d1f, 0, 0.85, 0, 0.85).fillRect(GAME_W / 2 - seam - 60, 0, 80, GAME_H);
-    edge.fillGradientStyle(0x120d1f, 0x120d1f, 0x120d1f, 0x120d1f, 0.85, 0, 0.85, 0).fillRect(GAME_W / 2 + seam - 20, 0, 80, GAME_H);
-    edge.fillStyle(0x120d1f, 0.85).fillRect(0, 0, GAME_W / 2 - seam - 60 + 1, GAME_H).fillRect(GAME_W / 2 + seam + 60 - 1, 0, GAME_W, GAME_H);
-    edge.setAlpha(0.55);
+    // Seam fills only when the art does NOT cover the full canvas width
+    // (wide title art leaves no gap, and the fills read as black side boxes).
+    if (seam < GAME_W / 2 - 2) {
+      edge.fillGradientStyle(0x120d1f, 0x120d1f, 0x120d1f, 0x120d1f, 0, 0.85, 0, 0.85).fillRect(GAME_W / 2 - seam - 60, 0, 80, GAME_H);
+      edge.fillGradientStyle(0x120d1f, 0x120d1f, 0x120d1f, 0x120d1f, 0.85, 0, 0.85, 0).fillRect(GAME_W / 2 + seam - 20, 0, 80, GAME_H);
+      edge.fillStyle(0x120d1f, 0.85).fillRect(0, 0, GAME_W / 2 - seam - 60 + 1, GAME_H).fillRect(GAME_W / 2 + seam + 60 - 1, 0, GAME_W, GAME_H);
+      edge.setAlpha(0.55);
+    }
     art.setScale(base * 1.05);
     this.tweens.add({ targets: art, scale: base, duration: 2600, ease: "Cubic.out" });
     this.tweens.add({ targets: art, scale: base * 1.02, duration: 7000, delay: 2600, yoyo: true, repeat: -1, ease: "Sine.inOut" });
