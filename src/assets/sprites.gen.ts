@@ -581,28 +581,28 @@ export const SPRITES = {
     "anims": {
       "swim": {
         "start": 0,
-        "end": 7,
-        "fps": 12,
+        "end": 11,
+        "fps": 18,
         "repeat": -1,
         "h": 180
       },
       "float": {
-        "start": 8,
-        "end": 13,
+        "start": 12,
+        "end": 17,
         "fps": 7,
         "repeat": -1,
         "h": 236
       },
       "up": {
-        "start": 14,
-        "end": 17,
+        "start": 18,
+        "end": 21,
         "fps": 14,
         "repeat": 0,
         "h": 245
       },
       "hurt": {
-        "start": 18,
-        "end": 19,
+        "start": 22,
+        "end": 23,
         "fps": 10,
         "repeat": 0,
         "h": 238
