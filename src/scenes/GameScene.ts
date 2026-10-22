@@ -65,6 +65,7 @@ export class GameScene extends Phaser.Scene {
   boss?: Boss | Sandworm | CrystalVeilBoss | RuinSentinel;
   /** Veil fight summons: Astra's design — capped mixed waves while she fights. */
   nextVeilWave = Infinity;
+  private rayVariant = 0;
   veilSummons = new Set<Enemy>();
   veilState: "idle" | "intro" | "fight" | "defeat" | "rescue" | "angelo_exit" | "angely_exit" | "done" | "together" | "portal_exit" = "idle";
   mech!: Mechanics;
@@ -1095,9 +1096,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** Spawns a player projectile that the per-frame arrow logic moves and resolves. */
-  private launch(key: SpriteKey, x: number, y: number, ang: number, speed: number, h: number, kind: string, life: number) {
+  private launch(key: SpriteKey, x: number, y: number, ang: number, speed: number, h: number, kind: string, life: number, anim?: string, stretchX = 1) {
     const a = this.physics.add.sprite(x, y, key).setDepth(85);
-    a.setScale(scaleForHeight(key, h));
+    const s = scaleForHeight(key, h);
+    a.setScale(s * stretchX, s);
+    if (anim) a.play(anim);
     applyOrigin(a, key);
     this.arrows.add(a);
     const body = a.body as Phaser.Physics.Arcade.Body;
@@ -1116,7 +1119,8 @@ export class GameScene extends Phaser.Scene {
   /** A fast pink bolt. It pops on the first thing it hits. */
   shootRay(x: number, y: number, dir: 1 | -1) {
     Audio.sfx("ray");
-    this.launch("fx_ray", x, y, dir > 0 ? 0 : Math.PI, 1180, 26, "ray", 650);
+    const variant = "abc"[this.rayVariant++ % 3];
+    this.launch("fx_ray", x, y, dir > 0 ? 0 : Math.PI, 1180, 34, "ray", 650, `fx_ray:fly_${variant}`, 1.5);
   }
 
   /** The cog saw flies straight and keeps going through armored enemies. */

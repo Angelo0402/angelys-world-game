@@ -843,19 +843,15 @@ export const SPRITES = {
   },
   "fx_ray": {
     "file": "assets/runtime/fx_ray.webp",
-    "frameWidth": 255,
-    "frameHeight": 119,
+    "frameWidth": 355,
+    "frameHeight": 204,
     "originX": 0.5,
     "originY": 0.5,
-    "bodyHeight": 111,
+    "bodyHeight": 102,
     "anims": {
-      "fly": {
-        "start": 0,
-        "end": 3,
-        "fps": 16,
-        "repeat": -1,
-        "h": 111
-      }
+      "fly_a": { "start": 0, "end": 3, "fps": 16, "repeat": -1, "h": 178 },
+      "fly_b": { "start": 4, "end": 7, "fps": 16, "repeat": -1, "h": 188 },
+      "fly_c": { "start": 8, "end": 11, "fps": 16, "repeat": -1, "h": 187 }
     }
   },
   "weapon_boomerang": {
@@ -2851,19 +2847,15 @@ export const SPRITES = {
   },
   "crystalveil_beam": {
     "file": "assets/runtime/crystalveil_beam.webp",
-    "frameWidth": 256,
-    "frameHeight": 256,
+    "frameWidth": 362,
+    "frameHeight": 248,
     "originX": 0.5,
     "originY": 0.5,
-    "bodyHeight": 128,
+    "bodyHeight": 124,
     "anims": {
-      "beam": {
-        "start": 0,
-        "end": 3,
-        "fps": 12,
-        "repeat": -1,
-        "h": 68
-      }
+      "beam_a": { "start": 0, "end": 3, "fps": 12, "repeat": -1, "h": 201 },
+      "beam_b": { "start": 4, "end": 7, "fps": 12, "repeat": -1, "h": 205 },
+      "beam_c": { "start": 8, "end": 11, "fps": 12, "repeat": -1, "h": 228 }
     }
   },
   "crystalveil_fx": {
