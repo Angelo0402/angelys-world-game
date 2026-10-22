@@ -214,7 +214,7 @@ export class Sandworm {
     if (this.phase === 1 && this.hp <= this.maxHp / 2) {
       this.phase = 2;
       Audio.sfx("boss_roar");
-      this.scene.game.events.emit("hud:subtitle", WORM_PHASE[0]);
+      this.scene.game.events.emit("hud:voice", WORM_PHASE[0]);
     }
     return true;
   }

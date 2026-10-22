@@ -3,6 +3,7 @@ import { Audio } from "./audio/AudioManager";
 import { bootNative } from "./native";
 import { Gamepad } from "./input/gamepad";
 import { BootScene } from "./scenes/BootScene";
+import { CutsceneScene } from "./scenes/CutsceneScene";
 import { GameScene } from "./scenes/GameScene";
 import { HudScene } from "./scenes/HudScene";
 import { SplashScene } from "./scenes/SplashScene";
@@ -32,7 +33,7 @@ const game = new Phaser.Game({
   },
   render: { antialias: true, roundPixels: false, powerPreference: "high-performance", batchSize: 2048 },
   audio: { disableWebAudio: false },
-  scene: [BootScene, TitleScene, SplashScene, GameScene, HudScene],
+  scene: [BootScene, TitleScene, SplashScene, GameScene, HudScene, CutsceneScene],
 });
 
 Audio.init(game);

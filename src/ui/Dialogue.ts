@@ -103,6 +103,11 @@ export class Dialogue {
     this.subUntil = this.scene.time.now + ms;
   }
 
+  /** Voice bark only — no box, no text, no pause (boss phase beats). */
+  voiceOnly(line: DialogueLine) {
+    if (line.voice) Audio.playVoice(line.voice as SfxName);
+  }
+
   private show(line: DialogueLine, r: typeof BOX) {
     const sp = SPEAKERS[line.who];
     const left = sp.side === "left";

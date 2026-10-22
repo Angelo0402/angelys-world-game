@@ -16,13 +16,12 @@ import { Player } from "../entities/Player";
 import { KeyboardInput, NO_INPUT, resetTouch, touchState, type FrameInput } from "../input/controls";
 import { Gamepad } from "../input/gamepad";
 import { addWeapon, loadSave, unlockLevel, updateSave } from "../save";
-import { angeloCutscene, angeloPraise, Rift } from "../story/angeloScene";
 import { CrystalVeilBoss } from "../entities/CrystalVeilBoss";
 import { Sandworm } from "../entities/Sandworm";
-import { SOVEREIGN_FALL, SOVEREIGN_NAME, SOVEREIGN_RISE, VEIL_DECLARE, VEIL_NAME, VEIL_PHASE2, VEIL_PHASE3, VEIL_TAUNT } from "../story/crystalveil";
+import { SOVEREIGN_NAME, SOVEREIGN_RISE, VEIL_NAME, VEIL_PHASE2, VEIL_PHASE3 } from "../story/crystalveil";
 import { VisualFX } from "../effects/VisualFX";
-import { WORM_INTRO, WORM_NAME } from "../story/worm";
-import { UMBRA_DEFEAT, UMBRA_INTRO, UMBRA_PHASE2, type DialogueLine } from "../story/umbra";
+import { WORM_NAME } from "../story/worm";
+import { UMBRA_PHASE2, type DialogueLine } from "../story/umbra";
 import { useTouchUi } from "../ui/screen";
 import { buildLevel, groundAt, groundY, type LevelDef, type PlatformDef, type Spot } from "../world/level";
 import { Mechanics } from "../world/Mechanics";
@@ -281,7 +280,37 @@ export class GameScene extends Phaser.Scene {
     this.chaseStartAt = this.time.now + 2600;
     this.floodStartAt = this.time.now + 4000;
 
+    // Opening story video: plays once, the first time level 1-1 starts.
+    // (Angelo's ruling 2026-10-21: story lives in videos, not in-game talk.)
+    if (info.chapter === 1 && info.stage === 1 && !loadSave().introSeen) {
+      this.cutscene = true;
+      void (async () => {
+        await this.wait(400);
+        await this.playCutscene(["intro"]);
+        updateSave({ introSeen: true });
+        this.cutscene = false;
+      })();
+    }
+
     if (new URLSearchParams(location.search).has("debug")) this.physics.world.createDebugGraphic();
+  }
+
+  /**
+   * Fade to a full-screen story video (CutsceneScene) and wait for it.
+   * Game pauses itself while the video runs; the promise resolves when the
+   * CutsceneScene emits "cutscene:done". Game music ducks under the video.
+   */
+  private playCutscene(clips: string[]): Promise<void> {
+    if (!clips.length) return Promise.resolve();
+    Audio.duck(true);
+    return new Promise<void>((resolve) => {
+      this.game.events.once("cutscene:done", () => {
+        Audio.duck(false);
+        resolve();
+      });
+      this.scene.launch("Cutscene", { clips });
+      this.scene.pause();
+    });
   }
 
   // ------------------------------------------------------------------ build
@@ -1342,7 +1371,7 @@ export class GameScene extends Phaser.Scene {
     this.boss = worm;
     await this.wait(1400);
     this.player.facing = 1;
-    await this.say(WORM_INTRO);
+    await this.playCutscene(["worm_intro"]);
     this.cinema(false, 500);
     this.registry.set("boss", { name: WORM_NAME, hp: worm.hp, max: worm.maxHp });
     this.game.events.emit("hud:banner", WORM_NAME);
@@ -1361,7 +1390,7 @@ export class GameScene extends Phaser.Scene {
     this.cinema(true, 600);
     this.boss?.vanish();
     await this.wait(500);
-    await angeloPraise(this, this.level.arena!);
+    await this.playCutscene(["angelo_praise"]);
     this.portal.appear();
     this.portal.open();
     Audio.sfx("portal_unlock");
@@ -1369,7 +1398,7 @@ export class GameScene extends Phaser.Scene {
     this.cinema(false, 500);
     this.game.events.emit("hud:banner", "TO THE SQUISHY VALLEY!");
     this.cutscene = false;
-    this.time.delayedCall(1400, () => this.toast("The stone arch leads to the squishies. Angelo took the blue gate."));
+    this.time.delayedCall(1400, () => this.toast("The stone arch leads to the squishies."));
   }
 
   private async veilIntro() {
@@ -1399,10 +1428,9 @@ export class GameScene extends Phaser.Scene {
     await this.wait(1500);
     this.player.facing = 1;
     try {
-      // The Sovereign speaks — she owns this veil and says so, out loud.
-      // No cage, no Angelo (2026-10-20 regeneration): Angely faces her alone.
-      await this.say(VEIL_TAUNT);
-      await this.say(VEIL_DECLARE);
+      // The Sovereign's challenge is a story VIDEO now (2026-10-21 ruling):
+      // no in-game dialogue, no Angelo — Angely faces her alone.
+      await this.playCutscene(["veil_intro"]);
     } finally {
       this.game.events.emit("hud:cinema", false);
       cam.pan(this.player.x, GAME_H / 2, 500, "Sine.easeInOut", true, (_c, p) => {
@@ -1435,43 +1463,16 @@ export class GameScene extends Phaser.Scene {
     const cam = this.cameras.main;
     cam.stopFollow();
     await this.wait(2000);
-    await this.say(SOVEREIGN_FALL);
     this.boss?.vanish();
     await this.wait(800);
-    // Solo ending (2026-10-20 regeneration): no cage, no Angelo, no reunion.
-    // The gate opens and Angely walks in alone.
-    this.veilState = "portal_exit";
-    const riftX = (this.level.arena!.x0 + this.level.arena!.x1) / 2 - 220;
-    const rift = new Rift(this, riftX);
-    cam.flash(240, 80, 140, 255);
-    await rift.open();
-    const p = this.player;
-    const startX = p.x;
-    p.freeze();
-    p.body.setAllowGravity(false).setVelocity(0, 0);
-    p.sprite.setVisible(false);
-    const girlWalk = this.add.sprite(startX, GROUND_Y + 4, "angely_finale").setDepth(56);
-    girlWalk.setScale(scaleForHeight("angely_finale", 118, "walk"));
-    applyOrigin(girlWalk, "angely_finale");
-    const gateX = rift.x;
-    const faceLeft = gateX < startX;
-    girlWalk.setFlipX(faceLeft);
-    girlWalk.play("angely_finale:walk");
-    const walkMs = Math.max(1200, Math.abs(startX - gateX) * 4.4);
-    await new Promise<void>((res) => this.tweens.add({ targets: girlWalk, x: gateX, duration: walkMs, ease: "Sine.easeInOut", onComplete: () => res() }));
-    // At the gate she turns away — rear view — and steps in.
-    girlWalk.play("angely_finale_back:walk");
-    girlWalk.setFlipX(faceLeft);
-    rift.surge();
-    Audio.sfx("portal_enter");
-    // She recedes INTO the gate: scale shrinks, fully visible — no fade.
-    await new Promise<void>((res) => this.tweens.add({ targets: girlWalk, y: GROUND_Y - 70, scaleX: girlWalk.scaleX * 0.45, scaleY: girlWalk.scaleY * 0.45, duration: 1400, ease: "Sine.easeIn", onComplete: () => res() }));
-    girlWalk.destroy();
-    await rift.close();
+    // Directed ending (2026-10-21): the finale trilogy in VIDEO — the Veil
+    // tears, the worlds relight, Angelo's rift opens, the hug, and father and
+    // daughter leave together through the golden portal. No in-engine staging.
+    await this.playCutscene(["finale1", "finale2", "finale3"]);
     this.veilState = "done";
     this.ending = true;
     updateSave({ cleared: true, finaleSeen: true });
-    // No hud:cinema false here: the TO BE CONTINUED screen owns the HUD
+    // No hud:cinema false here: the THE END screen owns the HUD
     // now, and the touch controls stay hidden behind it.
     this.cameras.main.flash(600, 255, 255, 255);
     Audio.music("music_victory");
@@ -1520,10 +1521,8 @@ export class GameScene extends Phaser.Scene {
     this.player.facing = 1;
     await this.wait(1500);
 
-    // She keeps drifting closer while she talks.
-    this.tweens.add({ targets: boss, x: arena.x1 - 420, duration: 9000, ease: "Sine.inOut" });
-    await this.say(UMBRA_INTRO);
-
+    // No in-game dialogue (2026-10-21 ruling): her entrance staging plays
+    // silent, then the fight begins. Her story beats live in the outro videos.
     this.cinema(false, 600);
     this.registry.set("boss", { name: BOSS_NAME, hp: boss.hp, max: boss.maxHp });
     this.game.events.emit("hud:banner", BOSS_NAME);
@@ -1579,17 +1578,17 @@ export class GameScene extends Phaser.Scene {
         this.fx("crystal_shot", "impact", this.boss.x + 60, GROUND_Y - 60, 0.45);
       }
       const phase = this.boss && "phase" in this.boss ? this.boss.phase : 2;
-      this.game.events.emit("hud:subtitle", phase === 3 ? VEIL_PHASE3 : VEIL_PHASE2);
+      this.game.events.emit("hud:voice", phase === 3 ? VEIL_PHASE3 : VEIL_PHASE2);
       return;
     }
     this.cameras.main.flash(300, 200, 120, 255);
-    this.game.events.emit("hud:subtitle", UMBRA_PHASE2);
+    this.game.events.emit("hud:voice", UMBRA_PHASE2);
     if (this.bossShade) this.tweens.add({ targets: this.bossShade, fillAlpha: 0.55, duration: 800 });
   }
 
-  /** The Veil's crown broke and the Sovereign rose: she speaks OVER the fight
-   *  (subtitle + voice, no dialogue box for combat taps to skip past), and
-   *  the fight resumes while her threat still hangs in the air. */
+  /** The Veil's crown broke and the Sovereign rose: her threat plays as a
+   *  VOICE bark over the fight — no subtitle text, no pause (2026-10-21) —
+   *  and the fight resumes while it still hangs in the air. */
   onSovereignRise() {
     this.projectiles.clear(true, true);
     this.hazards.getChildren().forEach((h) => h.destroy());
@@ -1601,7 +1600,7 @@ export class GameScene extends Phaser.Scene {
       this.spawnShockwave(this.boss.x, -1, 0xff9df3);
       this.fx("crystal_shot", "impact", this.boss.x, GROUND_Y - 120, 0.7);
     }
-    this.game.events.emit("hud:subtitle", SOVEREIGN_RISE[0]);
+    this.game.events.emit("hud:voice", SOVEREIGN_RISE[0]);
     this.time.delayedCall(3400, () => {
       if (this.boss instanceof CrystalVeilBoss) this.boss.beginSovereign();
     });
@@ -1653,19 +1652,19 @@ export class GameScene extends Phaser.Scene {
     this.cinema(true, 700);
     this.player.facing = this.boss!.x > this.player.x ? 1 : -1;
     await this.wait(500);
-    await this.say(UMBRA_DEFEAT);
     this.boss!.vanish();
     if (this.bossShade) this.tweens.add({ targets: this.bossShade, fillColor: 0xffe7a3, fillAlpha: 0, duration: 1800 });
     this.cameras.main.flash(700, 255, 240, 200);
     await this.wait(1400);
 
-    await angeloCutscene(this, this.level.arena!);
+    // Her fall — and Angelo's arrival — play as story VIDEOS (2026-10-21).
+    this.cinema(false, 400);
+    await this.playCutscene(["umbra_falls", "dad_kiddo"]);
 
     this.portal.appear();
     this.portal.open();
     Audio.sfx("portal_unlock");
     Audio.music("music_title");
-    this.cinema(false, 600);
     this.game.events.emit("hud:banner", "TO THE SKY TOWER!");
     this.cutscene = false;
     this.time.delayedCall(1600, () => this.toast("Step into the portal: your adventure continues!"));

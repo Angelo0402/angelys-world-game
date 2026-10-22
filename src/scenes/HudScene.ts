@@ -113,6 +113,7 @@ export class HudScene extends Phaser.Scene {
       "hud:cinema": (on: boolean) => this.setCinema(on),
       "hud:dialogue": (d: { lines: DialogueLine[]; done: () => void; onLine?: (l: DialogueLine) => void }) => this.dialogue.play(d.lines, d.done, d.onLine),
       "hud:subtitle": (l: DialogueLine) => this.dialogue.subtitle(l),
+      "hud:voice": (l: DialogueLine) => this.dialogue.voiceOnly(l),
     };
     for (const [k, fn] of Object.entries(handlers)) ge.on(k, fn);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -590,7 +591,7 @@ export class HudScene extends Phaser.Scene {
     c.add(this.add.text(GAME_W/2,152,"ANGELO & ANGELY",{
       fontFamily:FONT,fontSize:"24px",fontStyle:"bold",color:"#9deeff",letterSpacing:4
     }).setOrigin(.5));
-    c.add(titleText(this,GAME_W/2,244,"TO BE CONTINUED...",54,"#fff4d6"));
+    c.add(titleText(this,GAME_W/2,244,"THE END",54,"#fff4d6"));
     c.add(this.add.text(GAME_W/2,316,"Together, wherever the next adventure takes us.",{
       fontFamily:FONT,fontSize:"21px",color:"#b8cde5",align:"center"
     }).setOrigin(.5));

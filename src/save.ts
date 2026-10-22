@@ -13,11 +13,13 @@ interface SaveData {
   cleared: boolean;
   /** Both Angelo and Angely have crossed the final blue portal. */
   finaleSeen: boolean;
+  /** The opening story video has played once (it opens level 1-1). */
+  introSeen: boolean;
   music: boolean;
   sfx: boolean;
 }
 
-const DEFAULTS: SaveData = { level: LAST_LEVEL, chapterLayoutVersion: CHAPTER_LAYOUT_VERSION, weapons: ["sword", "bow", "hammer", "boomerang", "wand", "cog", "ray"], cleared: false, finaleSeen: false, music: true, sfx: true };
+const DEFAULTS: SaveData = { level: LAST_LEVEL, chapterLayoutVersion: CHAPTER_LAYOUT_VERSION, weapons: ["sword", "bow", "hammer", "boomerang", "wand", "cog", "ray"], cleared: false, finaleSeen: false, introSeen: false, music: true, sfx: true };
 
 let cache: SaveData | null = null;
 
@@ -27,6 +29,7 @@ function normalize(out: SaveData): SaveData {
     level: Number.isFinite(out.level) ? Math.max(0, Math.min(LAST_LEVEL, Math.floor(out.level))) : 0,
     weapons: WEAPON_ORDER.filter(w => out.weapons.includes(w)),
     finaleSeen: out.finaleSeen === true,
+    introSeen: out.introSeen === true,
   };
 }
 
