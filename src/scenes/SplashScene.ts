@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { Audio } from "../audio/AudioManager";
 import { CHAPTERS, FONT, GAME_H, GAME_W, LEVELS, WEAPON_NAMES, levelLabel } from "../config";
+import { loadSave, updateSave } from "../save";
 import { titleText } from "../ui/Button";
 import { coverImage } from "../ui/screen";
 import { fitCamera } from "../render";
@@ -48,8 +49,26 @@ export class SplashScene extends Phaser.Scene {
       if (started) return;
       started = true;
       Audio.sfx("button");
-      this.cameras.main.fadeOut(350, 0, 0, 0);
-      this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("Game", { level: info.index }));
+      const begin = () => {
+        this.cameras.main.fadeOut(350, 0, 0, 0);
+        this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("Game", { level: info.index }));
+      };
+      // Opening cutscene (Angelo, 2026-10-22): the intro plays BEFORE the
+      // gameplay the first time level 1-1 is chosen — never after the level
+      // has already started.
+      if (info.chapter === 1 && info.stage === 1 && !loadSave().introSeen) {
+        Audio.duck(true);
+        this.scene.launch("Cutscene", { clips: ["intro"] });
+        this.scene.pause();
+        this.game.events.once("cutscene:done", () => {
+          updateSave({ introSeen: true });
+          Audio.duck(false);
+          this.scene.resume();
+          begin();
+        });
+        return;
+      }
+      begin();
     };
     this.time.delayedCall(350, () => {
       this.input.once("pointerup", go);

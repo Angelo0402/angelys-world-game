@@ -281,17 +281,9 @@ export class GameScene extends Phaser.Scene {
     this.chaseStartAt = this.time.now + 2600;
     this.floodStartAt = this.time.now + 4000;
 
-    // Opening story video: plays once, the first time level 1-1 starts.
-    // (Angelo's ruling 2026-10-21: story lives in videos, not in-game talk.)
-    if (info.chapter === 1 && info.stage === 1 && !loadSave().introSeen) {
-      this.cutscene = true;
-      void (async () => {
-        await this.wait(400);
-        await this.playCutscene(["intro"]);
-        updateSave({ introSeen: true });
-        this.cutscene = false;
-      })();
-    }
+    // The opening story video plays from SplashScene BEFORE this scene
+    // starts (Angelo, 2026-10-22: the intro is an opening cutscene, never
+    // an interruption after gameplay has begun).
 
     if (new URLSearchParams(location.search).has("debug")) this.physics.world.createDebugGraphic();
   }
@@ -1605,13 +1597,21 @@ export class GameScene extends Phaser.Scene {
     if (this.boss instanceof CrystalVeilBoss) this.boss.beginPhase2();
   }
 
-  /** The Veil's crown broke and the Sovereign rose: her threat plays as a
-   *  VOICE bark over the fight — no subtitle text, no pause (2026-10-21) —
-   *  and the fight resumes while it still hangs in the air. */
+  /** The Veil's crown broke and the Sovereign rose. Angelo (2026-10-22):
+   *  the transformation gets its own cutscene video; when it ends, her
+   *  threat plays as a VOICE bark over the fight — no subtitle text — and
+   *  the fight resumes while it still hangs in the air. */
   onSovereignRise() {
+    void this.veilTransform2Cutscene();
+  }
+
+  private async veilTransform2Cutscene() {
     this.projectiles.clear(true, true);
     this.hazards.getChildren().forEach((h) => h.destroy());
     Audio.stopVoice();
+    this.cutscene = true;
+    await this.playCutscene(["veil_transform_2"]);
+    this.cutscene = false;
     // Transformation juice: frozen beat, shockwaves, shard burst.
     this.hitStop(150);
     if (this.boss) {

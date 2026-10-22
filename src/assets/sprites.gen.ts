@@ -51,53 +51,53 @@ export const SPRITES = {
         "end": 49,
         "fps": 20,
         "repeat": 0,
-        "h": 232
+        "h": 248
       },
       "air": {
         "start": 50,
-        "end": 50,
-        "fps": 1,
+        "end": 52,
+        "fps": 8,
         "repeat": -1,
-        "h": 220
+        "h": 248
       },
       "fall": {
-        "start": 51,
-        "end": 52,
-        "fps": 6,
+        "start": 53,
+        "end": 55,
+        "fps": 8,
         "repeat": -1,
-        "h": 246
+        "h": 248
       },
       "land": {
-        "start": 53,
-        "end": 53,
-        "fps": 1,
+        "start": 56,
+        "end": 57,
+        "fps": 12,
         "repeat": 0,
-        "h": 208
+        "h": 248
       },
       "hurt": {
-        "start": 54,
-        "end": 55,
+        "start": 58,
+        "end": 59,
         "fps": 10,
         "repeat": 0,
         "h": 204
       },
       "celebrate": {
-        "start": 56,
-        "end": 59,
+        "start": 60,
+        "end": 63,
         "fps": 7,
         "repeat": -1,
         "h": 222
       },
       "defeat": {
-        "start": 60,
-        "end": 62,
+        "start": 64,
+        "end": 66,
         "fps": 5,
         "repeat": 0,
         "h": 180
       },
       "push": {
-        "start": 63,
-        "end": 68,
+        "start": 67,
+        "end": 72,
         "fps": 9,
         "repeat": -1,
         "h": 220
