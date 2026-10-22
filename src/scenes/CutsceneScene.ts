@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { GAME_H, GAME_W } from "../config";
+import { fitCamera } from "../render";
 
 /**
  * Full-screen video cutscene player (Angelo's ruling 2026-10-21: story beats
@@ -21,6 +22,7 @@ export class CutsceneScene extends Phaser.Scene {
   }
 
   create() {
+    fitCamera(this);
     this.cameras.main.setBackgroundColor(0x000000);
     this.cameras.main.fadeIn(250, 0, 0, 0);
     void this.playNext();
@@ -57,21 +59,22 @@ export class CutsceneScene extends Phaser.Scene {
         settle();
         return;
       }
-      const startedAt = this.time.now;
-      let watchdog: Phaser.Time.TimerEvent | undefined;
+      const startedAt = performance.now();
+      let watchdog: ReturnType<typeof setTimeout> | undefined;
       const cleanup = () => {
-        watchdog?.remove(false);
+        if (watchdog) clearTimeout(watchdog);
         this.input.off("pointerdown", skip);
         video.destroy();
       };
       const skip = () => {
-        if (this.time.now - startedAt < 1200) return;
+        if (performance.now() - startedAt < 1200) return;
         cleanup();
         settle();
       };
       const fit = () => {
-        const vw = video.width || 1280;
-        const vh = video.height || 720;
+        const el = video.video as HTMLVideoElement | undefined;
+        const vw = el?.videoWidth || video.width || 1280;
+        const vh = el?.videoHeight || video.height || 720;
         const s = Math.max(GAME_W / vw, GAME_H / vh);
         video.setDisplaySize(vw * s, vh * s);
       };
@@ -79,12 +82,15 @@ export class CutsceneScene extends Phaser.Scene {
         fit();
         const dur = video.getDuration();
         const ms = Number.isFinite(dur) && dur > 0 ? dur * 1000 + 5000 : 45000;
-        watchdog = this.time.delayedCall(ms, () => {
+        // Real-time watchdog (not scene time): even if rendering crawls,
+        // a stalled clip can never hold the game hostage.
+        watchdog = setTimeout(() => {
           console.warn(`[cutscene] watchdog fired for ${key}`);
           cleanup();
           settle();
-        });
+        }, ms);
       });
+      video.on("playing", () => fit());
       video.on("complete", () => {
         cleanup();
         settle();
@@ -102,10 +108,12 @@ export class CutsceneScene extends Phaser.Scene {
 
   private finish() {
     this.cameras.main.fadeOut(250, 0, 0, 0);
-    this.time.delayedCall(280, () => {
+    // Real timer, not scene time: the hand-back to Game must not depend on
+    // the renderer's frame rate.
+    setTimeout(() => {
       this.game.events.emit("cutscene:done");
       this.scene.resume("Game");
       this.scene.stop();
-    });
+    }, 300);
   }
 }

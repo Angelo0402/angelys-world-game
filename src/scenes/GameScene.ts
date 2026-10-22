@@ -309,6 +309,7 @@ export class GameScene extends Phaser.Scene {
         resolve();
       });
       this.scene.launch("Cutscene", { clips });
+      this.scene.bringToTop("Cutscene");
       this.scene.pause();
     });
   }
