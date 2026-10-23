@@ -203,8 +203,13 @@ function buildSide(info: LevelInfo, r: () => number): LevelDef {
       L.walls.push({ x: wx, y: Y + dy, blocks: 5 });
       const lx = wx - BLOCK_W / 2 - 74;
       L.movers.push({ x0: lx, y0: Y - 24, x1: lx, y1: Y - 5 * BLOCK_H - 4, period: 4.6 });
-      L.hearts.push({ x: wx, y: Y - 5 * BLOCK_H - 50 });
-      gemSpots.push({ x: lx, y: Y - 5 * BLOCK_H - 90 });
+      L.hearts.push({ x: wx, y: Y + dy - 5 * BLOCK_H - 50 });
+      // Normally the gem rewards the lift ride at the mover's x. For the
+      // dropped 3-2 stack (dy > 0) it sits over the stack top instead: at
+      // the mover it floated at y = -80 — off-screen and unreachable, and
+      // the level needs all 6 gems (Angelo, 2026-10-23).
+      if (dy > 0) gemSpots.push({ x: wx, y: Y + dy - 5 * BLOCK_H - 55 });
+      else gemSpots.push({ x: lx, y: Y - 5 * BLOCK_H - 90 });
       return run(x, 1000);
     },
     crumble: (x) => {
@@ -269,10 +274,12 @@ function buildSide(info: LevelInfo, r: () => number): LevelDef {
       x = run(x, 260, Y + step);
       x = run(x, 260, Y + step / 2);
     }
-    // Angelo (2026-10-23): the magma block stack of 3-2's first lift sits
-    // 20 px too high — drop ONLY that stack (blocks + their collision,
-    // which derives from the same def). Mover, heart and gem stay put.
-    const dy = info.index === 5 && pi === 0 ? 20 : 0;
+    // Angelo (2026-10-23): the magma block stack of 3-2's first lift sat
+    // too high and its gem floated off-screen (y=-80) where the lift
+    // cannot reach — drop ONLY that stack by 60 (blocks + their collision,
+    // which derives from the same def); its heart and gem ride down with
+    // it (see the lift builder). The mover platform stays put.
+    const dy = info.index === 5 && pi === 0 ? 60 : 0;
     x = pieces[kind](x, dy);
   }
   Y = GROUND_Y;
