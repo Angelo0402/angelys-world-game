@@ -153,7 +153,7 @@ function buildSide(info: LevelInfo, r: () => number): LevelDef {
   let x = run(-200, chase ? 1300 : 1500);
   if (info.weapon) L.weapon = { x: 640, y: GROUND_Y - 80, kind: info.weapon };
 
-  const pieces: Record<PieceKind, (x: number) => number> = {
+  const pieces: Record<PieceKind, (x: number, dy?: number) => number> = {
     hops: (x) => {
       const len = 760 + Math.floor(r() * 160);
       L.platforms.push({ x: x + len * 0.35, y: Y - 125, prop: "plat_log" }, { x: x + len * 0.65, y: Y - 240, prop: "plat_float" });
@@ -198,9 +198,9 @@ function buildSide(info: LevelInfo, r: () => number): LevelDef {
       gemSpots.push({ x: a + pit / 2, y: Y - 150 });
       return run(a + pit, 700);
     },
-    lift: (x) => {
+    lift: (x, dy = 0) => {
       const wx = x + 640;
-      L.walls.push({ x: wx, y: Y, blocks: 5 });
+      L.walls.push({ x: wx, y: Y + dy, blocks: 5 });
       const lx = wx - BLOCK_W / 2 - 74;
       L.movers.push({ x0: lx, y0: Y - 24, x1: lx, y1: Y - 5 * BLOCK_H - 4, period: 4.6 });
       L.hearts.push({ x: wx, y: Y - 5 * BLOCK_H - 50 });
@@ -253,7 +253,8 @@ function buildSide(info: LevelInfo, r: () => number): LevelDef {
   };
 
   const lift = info.terrain === "hills" ? [0, -60, -120] : info.terrain === "cliffs" ? [0, -90, -150] : [0];
-  for (const kind of info.pieces) {
+  for (let pi = 0; pi < info.pieces.length; pi++) {
+    const kind = info.pieces[pi];
     const prev = Y;
     let next = GROUND_Y + lift[Math.floor(r() * lift.length)];
     if (next < prev - 140) next = prev - 140;
@@ -268,7 +269,11 @@ function buildSide(info: LevelInfo, r: () => number): LevelDef {
       x = run(x, 260, Y + step);
       x = run(x, 260, Y + step / 2);
     }
-    x = pieces[kind](x);
+    // Angelo (2026-10-23): the magma block stack of 3-2's first lift sits
+    // 20 px too high — drop ONLY that stack (blocks + their collision,
+    // which derives from the same def). Mover, heart and gem stay put.
+    const dy = info.index === 5 && pi === 0 ? 20 : 0;
+    x = pieces[kind](x, dy);
   }
   Y = GROUND_Y;
   x += 160;
