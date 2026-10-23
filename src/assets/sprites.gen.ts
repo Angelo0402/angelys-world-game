@@ -3793,6 +3793,7 @@ export const BACKDROPS = {
   "splash3": "assets/runtime/backdrops/splash3.jpg",
   "splash4": "assets/runtime/backdrops/splash4.jpg",
   "splash5": "assets/runtime/backdrops/splash5.jpg",
+  "splash_veil52": "assets/runtime/backdrops/splash_veil52.jpg",
   "splash6": "assets/runtime/backdrops/splash6.jpg",
   "splash7": "assets/runtime/backdrops/splash7.jpg",
   "splash8": "assets/runtime/backdrops/splash8.jpg",

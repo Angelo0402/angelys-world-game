@@ -241,6 +241,8 @@ export interface LevelInfo {
   /** Climb: a storm flood rises from below. */
   flood?: boolean;
   boss?: boolean;
+  /** Per-level splash override for the level-begin screen (else the chapter splash). */
+  splash?: string;
   tip: string;
 }
 
@@ -256,7 +258,7 @@ export const LEVELS: LevelInfo[] = [
   { chapter: 4, stage: 1, name: "Slippery Slopes", mode: "run", goal: "kills", need: 12, terrain: "hills", seed: 53, pieces: ["breakWall", "crateWall", "crumble", "steps", "breakWall"], weapon: "hammer", tip: "Smash cracked walls with the hammer" },
   { chapter: 4, stage: 2, name: "Avalanche Run", mode: "run", goal: "kills", need: 12, terrain: "hills", seed: 59, pieces: ["hops", "spring", "crumble", "steps", "spikes", "crumble", "hops", "spring"], tip: "Watch for falling snow!" },
   { chapter: 5, stage: 1, name: "Shadow Bridge", mode: "run", goal: "kills", need: 12, terrain: "cliffs", seed: 67, pieces: ["crateWall", "target", "crumble", "breakWall", "movingBridge", "lift"], tip: "Use everything you have learned" },
-  { chapter: 5, stage: 2, name: "Umbra's Throne", mode: "run", goal: "boss", need: 0, terrain: "flat", seed: 71, pieces: [], boss: true, tip: "Defeat Queen Umbra!" },
+  { chapter: 5, stage: 2, name: "Umbra's Throne", mode: "run", goal: "boss", need: 0, terrain: "flat", seed: 71, pieces: [], boss: true, splash: "splash_veil52", tip: "Defeat Queen Umbra!" },
   { chapter: 6, stage: 1, name: "Sky Tower", mode: "climb", goal: "reach", need: 0, terrain: "flat", seed: 79, pieces: [], weapon: "boomerang", tip: "Springs and lifts help you climb" },
   { chapter: 6, stage: 2, name: "Storm Spire", mode: "climb", goal: "reach", need: 0, terrain: "flat", seed: 83, pieces: [], flood: true, tip: "The storm is rising. Climb fast!" },
   { chapter: 7, stage: 1, name: "Sunken Temple", mode: "swim", goal: "kills", need: 10, terrain: "hills", seed: 89, pieces: ["hops", "mines", "gate", "spikes", "mines", "gate", "target"], weapon: "wand", tip: "Press JUMP to swim. Watch out for urchins!" },

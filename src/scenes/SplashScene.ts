@@ -18,7 +18,7 @@ export class SplashScene extends Phaser.Scene {
     Audio.music(ch.music);
     Audio.duck(true);
     Audio.sfx("chapter_transition");
-    const img = coverImage(this, ch.splash);
+    const img = coverImage(this, info.splash ?? ch.splash);
     this.tweens.add({ targets: img, scale: img.scale * 1.06, duration: 6000, ease: "Sine.out" });
     this.add.rectangle(0, GAME_H - 172, GAME_W, 172, 0x120d1f, 0.62).setOrigin(0);
     this.add
