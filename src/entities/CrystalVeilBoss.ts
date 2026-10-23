@@ -11,7 +11,7 @@ const SHATTERED_HEIGHT = 245;
 const SOV_HEIGHT = 248;
 type Phase = 1 | 2 | 3;
 type Form = "veil" | "shattered" | "sovereign";
-type State = "intro" | "walk" | "claw" | "slam" | "shoot" | "burst" | "erupt" | "beam" | "hurt" | "recover" | "enrage" | "dead";
+type State = "intro" | "walk" | "claw" | "slam" | "shoot" | "burst" | "erupt" | "beam" | "aim" | "rain" | "radial" | "dash" | "hurt" | "recover" | "enrage" | "dead";
 
 /** Chapter 10: face the target, telegraph, strike, then expose the core. */
 export class CrystalVeilBoss {
@@ -33,6 +33,7 @@ export class CrystalVeilBoss {
   private strikeUntil = 0;
   private hitUntil = 0;
   private beamVariant = 0;
+  private dashTarget = 0;
   private flashUntil = 0;
   private attackIndex = 0;
   private action = 0;
@@ -61,7 +62,7 @@ export class CrystalVeilBoss {
 
   get y() { return GROUND_Y - 110; }
   get alive() { return this.state !== "dead"; }
-  get attacking() { return ["claw","slam","shoot","burst","erupt","beam"].includes(this.state); }
+  get attacking() { return ["claw","slam","shoot","burst","erupt","beam","aim","rain","radial"].includes(this.state); }
   get harmful() {
     const now = this.scene.time.now;
     return this.state === "walk" || (["claw","slam"].includes(this.state) && now >= this.strikeFrom && now < this.strikeUntil);
@@ -102,20 +103,46 @@ export class CrystalVeilBoss {
       this.sprite.clearTint();
       this.sprite.play(`${this.sheet}:idle`, true);
     }
+    if (this.state === "dash") {
+      const step = 660 * Math.min(delta, 50) / 1000;
+      const dx = this.dashTarget - this.x;
+      if (Math.abs(dx) <= step || time > this.stateUntil) {
+        if (Math.abs(dx) <= step) this.x = this.dashTarget;
+        this.state = "walk";
+        this.sprite.anims.timeScale = 1;
+        this.readyAt = time + 200;
+      } else {
+        this.x += Math.sign(dx) * step;
+      }
+    }
     if (this.scene.player.alive && this.state === "walk") {
       const dx = this.scene.player.x - this.x;
       this.dir = dx < 0 ? -1 : 1;
       this.sprite.setFlipX(this.dir < 0);
+      const speed = this.form === "sovereign" ? 215 : [0,132,158,182][this.phase];
       if (Math.abs(dx) > 170) {
-        const speed = this.form === "sovereign" ? 195 : [0,115,145,170][this.phase];
         this.x = Phaser.Math.Clamp(this.x + this.dir * speed * Math.min(delta,50)/1000, this.arena.x0+120, this.arena.x1-120);
+        this.sprite.play(`${this.sheet}:walk`,true);
+      } else if (this.scene.player.sprite.y < GROUND_Y - 150) {
+        // Angelo 2026-10-23: he froze under her platform and read as stuck
+        // on a block. When she is overhead, he steps OUT to striking range
+        // instead of standing under her.
+        const out = (dx > 4 ? -1 : dx < -4 ? 1 : this.x < (this.arena.x0 + this.arena.x1) / 2 ? -1 : 1) as 1 | -1;
+        this.dir = out;
+        this.sprite.setFlipX(this.dir < 0);
+        this.x = Phaser.Math.Clamp(this.x + out * speed * Math.min(delta,50)/1000, this.arena.x0+120, this.arena.x1-120);
         this.sprite.play(`${this.sheet}:walk`,true);
       } else this.sprite.play(`${this.sheet}:idle`,true);
       if (time >= this.readyAt) this.chooseAttack(time, Math.abs(dx));
     } else if (["hurt","recover"].includes(this.state) && time >= this.until) {
       this.sprite.clearTint();
-      this.state = "walk";
-      this.readyAt = time + 90;
+      // Angelo 2026-10-23: he must MOVE. Every third recovery ends in a
+      // dash across the arena instead of standing back up in place.
+      if (this.state === "recover" && this.attackIndex % 3 === 2 && this.scene.player.alive) this.startDash(time);
+      else {
+        this.state = "walk";
+        this.readyAt = time + 90;
+      }
     }
     this.sprite.setPosition(this.x, GROUND_Y + 4);
     this.shadow.setPosition(this.x, GROUND_Y + 6);
@@ -127,10 +154,28 @@ export class CrystalVeilBoss {
     return this.form === "sovereign" ? 0xff9df3 : this.phase === 3 ? 0xff5d7a : this.phase === 2 ? 0xffa94d : 0xb57cff;
   }
 
+  /** Fast repositioning dash THROUGH the player's position to the far
+   *  side — the boss crosses the arena instead of pacing in place. */
+  private startDash(time: number) {
+    const px = this.scene.player.x;
+    const side = px > this.x ? 1 : -1;
+    this.dashTarget = Phaser.Math.Clamp(px + side * 300, this.arena.x0 + 120, this.arena.x1 - 120);
+    this.state = "dash";
+    this.stateUntil = time + 620;
+    this.dir = this.dashTarget >= this.x ? 1 : -1;
+    this.sprite.setFlipX(this.dir < 0);
+    this.sprite.play(`${this.sheet}:walk`, true);
+    this.sprite.anims.timeScale = 2.4;
+    Audio.sfx("ghost_orb");
+  }
+
   private chooseAttack(time: number, distance: number) {
     // The Sovereign blinks across the arena every third attack — she does
-    // not walk at you, she is suddenly behind you.
-    if (this.form === "sovereign" && this.attackIndex % 3 === 2) {
+    // not walk at you, she is suddenly behind you. The Brute learned the
+    // trick too (Angelo 2026-10-23: the boss must move much more).
+    const blinkTurn = (this.form === "sovereign" && this.attackIndex % 3 === 2)
+      || (this.form === "shattered" && this.attackIndex % 4 === 3);
+    if (blinkTurn) {
       this.attackIndex++;
       const px = this.scene.player.x;
       this.scene.fx("crystal_shot", "impact", this.x, GROUND_Y - 110, .9);
@@ -144,16 +189,22 @@ export class CrystalVeilBoss {
       return;
     }
     // Predictable escalation, independent of framerate and Math.random().
+    // Projectile-forward since 2026-10-23 (Angelo): aimed volleys, crystal
+    // rain and radial bursts join the fans; the beam stays in phase 3 only.
     const patterns: State[][] = [
-      [], ["shoot","claw","slam"], ["burst","slam","erupt","claw"], ["beam","erupt","burst","claw","slam"]
+      [], ["shoot","aim","claw","slam"], ["burst","aim","slam","rain","claw"], ["beam","aim","radial","erupt","rain","burst"]
     ];
     let next = patterns[this.phase][this.attackIndex++ % patterns[this.phase].length];
     if (next === "claw" && distance > 210) next = "shoot";
     if (next === "shoot" && distance < 150) next = "claw";
+    if (next === "aim" && distance < 120) next = "claw";
     if (next === "claw") this.melee(time,false);
     else if (next === "slam") this.melee(time,true);
     else if (next === "erupt") this.erupt(time);
     else if (next === "beam") this.beam(time);
+    else if (next === "aim") this.aimedVolley(time);
+    else if (next === "rain") this.crystalRain(time);
+    else if (next === "radial") this.radialBurst(time);
     else this.volley(time,next === "burst");
   }
 
@@ -239,6 +290,58 @@ export class CrystalVeilBoss {
       }
     });
     this.mark(this.x+this.dir*85,85);
+  }
+
+  /** Aimed triple shot AT the player's position (Angelo 2026-10-23:
+   *  projectile attacks over everything). Small spread, real tracking —
+   *  standing still stops being safe. */
+  private aimedVolley(time: number) {
+    this.windup("aim", "shoot", time, 560 * [0,1,.9,.8][this.phase], 240, this.recovery(), () => {
+      Audio.sfx("ghost_orb");
+      const muzzleX = this.x + this.dir * 74, muzzleY = GROUND_Y - 108;
+      const tx = this.scene.player.x, ty = this.scene.player.sprite.y - 52;
+      const base = Math.atan2(ty - muzzleY, tx - muzzleX);
+      const speed = 320 + this.phase * 30;
+      for (const off of [-0.12, 0, 0.12]) {
+        const a = base + off;
+        this.scene.spawnProjectile("crystal_shot", muzzleX, muzzleY,
+          Math.cos(a) * speed, Math.sin(a) * speed, scaleForHeight("crystal_shot", 30, "fly"));
+      }
+    });
+    this.mark(this.x + this.dir * 85, 85);
+  }
+
+  /** Crystal rain: shards fall over the player's stretch of floor,
+   *  telegraphed on the ground first. Punishes camping one spot. */
+  private crystalRain(time: number) {
+    const px = this.scene.player.x;
+    const offsets = this.phase >= 3 ? [-260,-170,-85,0,85,170,260] : [-170,-85,0,85,170];
+    const spots = offsets.map(o => Phaser.Math.Clamp(px + o, this.arena.x0 + 40, this.arena.x1 - 40));
+    this.windup("rain", "erupt", time, 820 * [0,1,.9,.8][this.phase], 420, this.recovery(), () => {
+      Audio.sfx("ghost_orb");
+      for (const x of spots) {
+        this.scene.spawnProjectile("crystal_shot", x, GROUND_Y - 440,
+          0, 305, scaleForHeight("crystal_shot", 30, "fly"));
+      }
+    });
+    spots.forEach(x => this.mark(x, 60));
+  }
+
+  /** Radial burst: crystal shards in every direction except straight
+   *  down into the floor — the gap underneath is the dodge lane. */
+  private radialBurst(time: number) {
+    this.windup("radial", "summon", time, 700, 300, this.recovery(), () => {
+      Audio.sfx("ghost_orb");
+      const cx = this.x, cy = GROUND_Y - 118, speed = 238;
+      for (let k = 0; k < 10; k++) {
+        const deg = k * 36;
+        if (deg === 72 || deg === 108) continue; // the floor gap
+        const a = Phaser.Math.DegToRad(deg);
+        this.scene.spawnProjectile("crystal_shot", cx, cy,
+          Math.cos(a) * speed, Math.sin(a) * speed, scaleForHeight("crystal_shot", 30, "fly"));
+      }
+    });
+    this.mark(this.x, 120);
   }
 
   private erupt(time: number) {

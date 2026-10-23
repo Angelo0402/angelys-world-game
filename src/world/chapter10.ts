@@ -15,6 +15,14 @@ import type { LevelDef } from "./level";
  * balcony to balcony, with a heart at its center. Floor springs are the
  * fast way up; every tier step is 95-120px (jump apex ~186px, spring
  * apex ~366px), and the crown-bridge gaps are a uniform 89px.
+ *
+ * Angelo 2026-10-23: the boss (228-248px tall) kept walking INTO the low
+ * balcony blocks — the G-120/G-225 tiers cut through his body and he read
+ * as stuck on them. ALL tiers moved UP: lows G-120 -> G-265, mids
+ * G-225 -> G-320 (level with the highs), so the lowest platform bottom
+ * clears even the Sovereign's crown by ~17px. The springs are now the
+ * way up to the first tier (apex ~366px clears G-265); the tier steps
+ * after that are 55px and flat hops.
  */
 export function crystalCrownArena(L: LevelDef): LevelDef {
   const G = GROUND_Y;
@@ -29,16 +37,17 @@ export function crystalCrownArena(L: LevelDef): LevelDef {
   );
 
   // --- Side balconies: mirrored stairs on both edges of the arena ---
-  // West ascent (offsets from arena.x0).
+  // West ascent (offsets from arena.x0). Raised 2026-10-23 (see header):
+  // no tier may intersect the boss's body while he walks the lane.
   L.platforms.push(
-    { x: x0 + 280, y: G - 120, prop: "plat_medium" },
-    { x: x0 + 540, y: G - 225, prop: "plat_float" },
+    { x: x0 + 280, y: G - 265, prop: "plat_medium" },
+    { x: x0 + 540, y: G - 320, prop: "plat_float" },
     { x: x0 + 850, y: G - 320, prop: "plat_log" }
   );
   // East ascent (mirror: 2560 - offset).
   L.platforms.push(
-    { x: x0 + 2280, y: G - 120, prop: "plat_medium" },
-    { x: x0 + 2020, y: G - 225, prop: "plat_float" },
+    { x: x0 + 2280, y: G - 265, prop: "plat_medium" },
+    { x: x0 + 2020, y: G - 320, prop: "plat_float" },
     { x: x0 + 1710, y: G - 320, prop: "plat_log" }
   );
 
