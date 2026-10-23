@@ -32,75 +32,33 @@ export const SPRITES = {
         "repeat": -1,
         "h": 248
       },
-      "start": {
-        "start": 31,
-        "end": 33,
-        "fps": 18,
-        "repeat": 0,
-        "h": 248
-      },
-      "stop": {
-        "start": 34,
-        "end": 36,
-        "fps": 14,
-        "repeat": 0,
-        "h": 243
-      },
-      "jump": {
-        "start": 37,
-        "end": 40,
-        "fps": 20,
-        "repeat": 0,
-        "h": 248
-      },
-      "air": {
-        "start": 41,
-        "end": 43,
-        "fps": 8,
-        "repeat": -1,
-        "h": 248
-      },
-      "fall": {
-        "start": 44,
-        "end": 46,
-        "fps": 8,
-        "repeat": -1,
-        "h": 248
-      },
-      "land": {
-        "start": 47,
-        "end": 48,
-        "fps": 12,
-        "repeat": 0,
-        "h": 248
-      },
       "hurt": {
-        "start": 49,
-        "end": 50,
+        "start": 31,
+        "end": 32,
         "fps": 10,
         "repeat": 0,
         "h": 204
       },
       "celebrate": {
-        "start": 51,
-        "end": 54,
+        "start": 33,
+        "end": 36,
         "fps": 7,
         "repeat": -1,
         "h": 222
       },
       "defeat": {
-        "start": 55,
-        "end": 57,
+        "start": 37,
+        "end": 39,
         "fps": 5,
         "repeat": 0,
         "h": 180
       },
       "push": {
-        "start": 58,
-        "end": 63,
+        "start": 40,
+        "end": 51,
         "fps": 9,
         "repeat": -1,
-        "h": 220
+        "h": 248
       }
     }
   },
@@ -121,8 +79,8 @@ export const SPRITES = {
   },
   "angely_bow": {
     "file": "assets/runtime/angely_bow.webp",
-    "frameWidth": 224,
-    "frameHeight": 222,
+    "frameWidth": 280,
+    "frameHeight": 278,
     "originX": 0.3886,
     "originY": 0.982,
     "bodyHeight": 214,
@@ -132,7 +90,7 @@ export const SPRITES = {
         "end": 11,
         "fps": 40,
         "repeat": 0,
-        "h": 210
+        "h": 262
       }
     }
   },

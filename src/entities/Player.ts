@@ -77,7 +77,6 @@ export class Player {
   private wasGrounded = true;
   private lastFallSpeed = 0;
   private landUntil = 0;
-  private moveAnimUntil = 0;
   private lastTrailAt = 0;
   private recoilVx = 0;
   private recoilUntil = 0;
@@ -201,7 +200,6 @@ export class Player {
         this.scene.vfx.landDust(this.x, body.bottom);
         if (this.lastFallSpeed > 380 && this.state === "normal") {
           this.landUntil = time + 120;
-          this.setAnim("angely", "land", true);
         }
       }
     }
@@ -416,10 +414,9 @@ export class Player {
     }
     const body = this.body;
     if (!this.grounded) {
-      const vy = body.velocity.y;
-      if (vy < -260) this.setAnim("angely", "jump");
-      else if (vy < 220) this.setAnim("angely", "air");
-      else this.setAnim("angely", "fall");
+      // Jump/air/fall sprite set removed at Angelo's direction (2026-10-22);
+      // airborne uses idle until a new jump set is generated.
+      this.setAnim("angely", "idle");
       return;
     }
     if (this.pushing && axis !== 0) {
@@ -428,19 +425,7 @@ export class Player {
     }
     if (time < this.landUntil && Math.abs(body.velocity.x) < 200) return;
     const speed = Math.abs(body.velocity.x);
-    const anim = this.sprite.anims.currentAnim?.key ?? "";
-    const pushing = axis !== 0 && Math.sign(axis) === Math.sign(body.velocity.x || axis);
-    if (!pushing && speed > 200 && !anim.endsWith(":stop")) {
-      this.moveAnimUntil = time + 220;
-      this.setAnim("angely", "stop", true);
-      return;
-    }
-    if (pushing && speed < 120 && (anim.endsWith(":idle") || anim.endsWith(":land"))) {
-      this.moveAnimUntil = time + 160;
-      this.setAnim("angely", "start", true);
-      return;
-    }
-    if (time < this.moveAnimUntil && (anim.endsWith(":stop") || anim.endsWith(":start"))) return;
+    // start/stop transition anims removed at Angelo's direction (2026-10-22).
     if (speed > 225) {
       this.setAnim("angely", "run");
       this.sprite.anims.timeScale = Phaser.Math.Clamp(speed / RUN_ANIM_SPEED, 0.7, 1.3);
