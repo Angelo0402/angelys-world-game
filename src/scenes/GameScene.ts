@@ -1488,6 +1488,10 @@ export class GameScene extends Phaser.Scene {
       await this.wormIntro();
       return;
     }
+    if (this.info.chapter === 5) {
+      await this.veilTeaseIntro();
+      return;
+    }
     if (this.info.chapter === 10) {
       await this.veilIntro();
       return;
@@ -1523,6 +1527,51 @@ export class GameScene extends Phaser.Scene {
 
     // No in-game dialogue (2026-10-21 ruling): her entrance staging plays
     // silent, then the fight begins. Her story beats live in the outro videos.
+    this.cinema(false, 600);
+    this.registry.set("boss", { name: BOSS_NAME, hp: boss.hp, max: boss.maxHp });
+    this.game.events.emit("hud:banner", BOSS_NAME);
+    Audio.music("music_boss");
+    this.tweens.killTweensOf(boss);
+    boss.begin();
+    this.cutscene = false;
+  }
+
+  /**
+   * Chapter 5 boss intro (Angelo, 2026-10-23): the generic Umbra entrance
+   * staging plays first, then the Sovereign confrontation key-art VIDEO —
+   * her mid-game appearance, long before the chapter-10 finale. The clip
+   * carries its own music/SFX track (no dialogue by design).
+   */
+  private async veilTeaseIntro() {
+    const arena = this.level.arena!;
+    const cam = this.cameras.main;
+    this.cutscene = true;
+    this.projectiles.clear(true, true);
+    Audio.stopMusic();
+    cam.stopFollow();
+    this.cinema(true, 1400);
+    this.mech.addBarrier(arena.x0 - 20);
+    this.mech.addBarrier(arena.x1 + 20);
+    this.scriptX = arena.x0 + 300;
+    const mid = (arena.x0 + arena.x1) / 2;
+    this.bossShade = this.add.rectangle(mid, GAME_H / 2 + 100, GAME_W + 40, GAME_H + 300, 0x22003d, 0).setDepth(-30);
+    await this.wait(1000);
+
+    cam.shake(1600, 0.005);
+    cam.flash(400, 150, 40, 200);
+    Audio.sfx("boss_roar");
+    this.vfx.bossEntrance(arena.x1 - 300, GROUND_Y - 120);
+    this.tweens.add({ targets: this.bossShade, fillAlpha: 0.42, duration: 1800 });
+    const boss = new Boss(this, arena.x1 + 260, GROUND_Y - 430, arena);
+    boss.dir = -1;
+    boss.sprite.setAlpha(0);
+    this.boss = boss;
+    this.tweens.add({ targets: boss.sprite, alpha: 1, duration: 1200 });
+    this.tweens.add({ targets: boss, x: arena.x1 - 300, y: HOVER_Y, duration: 2800, ease: "Sine.out" });
+    await this.wait(1400);
+    this.player.facing = 1;
+    await this.playCutscene(["veil_52_intro"]);
+
     this.cinema(false, 600);
     this.registry.set("boss", { name: BOSS_NAME, hp: boss.hp, max: boss.maxHp });
     this.game.events.emit("hud:banner", BOSS_NAME);
