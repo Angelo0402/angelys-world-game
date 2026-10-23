@@ -59,6 +59,69 @@ export const SPRITES = {
         "fps": 9,
         "repeat": -1,
         "h": 248
+      },
+      "crouch": {
+        "start": 52,
+        "end": 52,
+        "fps": 10,
+        "repeat": -1,
+        "h": 179
+      },
+      "takeoff": {
+        "start": 53,
+        "end": 53,
+        "fps": 10,
+        "repeat": -1,
+        "h": 247
+      },
+      "rise": {
+        "start": 54,
+        "end": 54,
+        "fps": 10,
+        "repeat": -1,
+        "h": 258
+      },
+      "midrise": {
+        "start": 55,
+        "end": 55,
+        "fps": 10,
+        "repeat": -1,
+        "h": 200
+      },
+      "apex": {
+        "start": 56,
+        "end": 56,
+        "fps": 10,
+        "repeat": -1,
+        "h": 200
+      },
+      "earlyfall": {
+        "start": 57,
+        "end": 57,
+        "fps": 10,
+        "repeat": -1,
+        "h": 253
+      },
+      "fall": {
+        "start": 58,
+        "end": 58,
+        "fps": 10,
+        "repeat": -1,
+        "h": 258
+      },
+      "land": {
+        "start": 59,
+        "end": 59,
+        "fps": 10,
+        "repeat": -1,
+        "h": 179
+      },
+      "recover": {
+        "start": 60,
+        "end": 60,
+        "fps": 10,
+        "repeat": -1,
+        "h": 248
       }
     }
   },

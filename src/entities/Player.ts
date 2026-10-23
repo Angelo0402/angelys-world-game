@@ -77,6 +77,8 @@ export class Player {
   private wasGrounded = true;
   private lastFallSpeed = 0;
   private landUntil = 0;
+  private landStart = -1000;
+  private jumpStart = -1000;
   private lastTrailAt = 0;
   private recoilVx = 0;
   private recoilUntil = 0;
@@ -169,6 +171,7 @@ export class Player {
 
   springBounce() {
     this.body.setVelocityY(-SPRING_V);
+    this.jumpStart = this.scene.time.now;
     this.jumpCut = false;
     this.boosted = true;
     this.lastGrounded = -1000;
@@ -199,7 +202,8 @@ export class Player {
         this.scene.fx("fx_dust", "puff", this.x, body.bottom, 0.22);
         this.scene.vfx.landDust(this.x, body.bottom);
         if (this.lastFallSpeed > 380 && this.state === "normal") {
-          this.landUntil = time + 120;
+          this.landStart = time;
+          this.landUntil = time + 210;
         }
       }
     }
@@ -240,6 +244,7 @@ export class Player {
       const canJump = time - this.lastGrounded < COYOTE_MS;
       if (time - this.jumpBufferedAt < BUFFER_MS && canJump) {
         body.setVelocityY(-JUMP_V);
+        this.jumpStart = time;
         this.jumpBufferedAt = -1000;
         this.lastGrounded = -1000;
         Audio.sfx("jump");
@@ -414,16 +419,31 @@ export class Player {
     }
     const body = this.body;
     if (!this.grounded) {
-      // Jump/air/fall sprite set removed at Angelo's direction (2026-10-22);
-      // airborne uses idle until a new jump set is generated.
-      this.setAnim("angely", "idle");
+      // Jump set of 9 phases (ChatGPT sheet, Angelo-approved GIF 2026-10-23).
+      // The pose is picked by vertical speed as a fraction of the jump
+      // impulse; physics owns the arc, the sheet owns the pose. The crouch
+      // shows only in the first 75 ms after a real jump/spring launch.
+      const f = body.velocity.y / JUMP_V;
+      let anim: string;
+      if (body.velocity.y < -40 && time - this.jumpStart < 75) anim = "crouch";
+      else if (f < -0.55) anim = "takeoff";
+      else if (f < -0.28) anim = "rise";
+      else if (f < -0.1) anim = "midrise";
+      else if (f <= 0.12) anim = "apex";
+      else if (f <= 0.45) anim = "earlyfall";
+      else anim = "fall";
+      this.setAnim("angely", anim);
       return;
     }
     if (this.pushing && axis !== 0) {
       this.setAnim("angely", "push");
       return;
     }
-    if (time < this.landUntil && Math.abs(body.velocity.x) < 200) return;
+    if (time < this.landUntil && Math.abs(body.velocity.x) < 200) {
+      // Landing: contact crouch first, then the recovery rise.
+      this.setAnim("angely", time - this.landStart < 90 ? "land" : "recover");
+      return;
+    }
     const speed = Math.abs(body.velocity.x);
     // start/stop transition anims removed at Angelo's direction (2026-10-22).
     if (speed > 225) {
@@ -437,6 +457,7 @@ export class Player {
 
   stompBounce(jumpHeld: boolean) {
     this.body.setVelocityY(-(jumpHeld ? JUMP_V * 0.95 : STOMP_BOUNCE));
+    this.jumpStart = this.scene.time.now;
     this.jumpCut = !jumpHeld;
     this.lastGrounded = -1000;
   }
