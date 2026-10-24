@@ -101,6 +101,14 @@ export class CrystalVeilBoss {
       this.state = "walk";
       this.readyAt = time + 350;
       this.sprite.clearTint();
+      // A dropped callback mid-blink used to strand the boss invisible
+      // forever: cancelAction() removes blinkTo's arrival timer, whose
+      // callback owned the fade back in. Recovery must restore full
+      // visibility itself — kill any orphaned fade tween, then alpha 1.
+      // (Harness find 2026-10-23: one >700ms frame jump across a
+      // teleport left her at alpha 0 while she kept fighting.)
+      this.scene.tweens.killTweensOf(this.sprite);
+      this.sprite.setAlpha(1);
       this.sprite.play(`${this.sheet}:idle`, true);
     }
     if (this.state === "dash") {
