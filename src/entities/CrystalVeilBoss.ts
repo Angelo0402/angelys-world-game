@@ -11,7 +11,7 @@ const SHATTERED_HEIGHT = 245;
 const SOV_HEIGHT = 248;
 type Phase = 1 | 2 | 3;
 type Form = "veil" | "shattered" | "sovereign";
-type State = "intro" | "walk" | "claw" | "slam" | "shoot" | "burst" | "erupt" | "beam" | "aim" | "rain" | "radial" | "dash" | "hurt" | "recover" | "enrage" | "dead";
+type State = "intro" | "walk" | "claw" | "slam" | "shoot" | "burst" | "erupt" | "beam" | "aim" | "rain" | "radial" | "dash" | "teleport" | "barrage" | "hurt" | "recover" | "enrage" | "dead";
 
 /** Chapter 10: face the target, telegraph, strike, then expose the core. */
 export class CrystalVeilBoss {
@@ -62,12 +62,12 @@ export class CrystalVeilBoss {
 
   get y() { return GROUND_Y - 110; }
   get alive() { return this.state !== "dead"; }
-  get attacking() { return ["claw","slam","shoot","burst","erupt","beam","aim","rain","radial"].includes(this.state); }
+  get attacking() { return ["claw","slam","shoot","burst","erupt","beam","aim","rain","radial","barrage"].includes(this.state); }
   get harmful() {
     const now = this.scene.time.now;
     return this.state === "walk" || (["claw","slam"].includes(this.state) && now >= this.strikeFrom && now < this.strikeUntil);
   }
-  get vulnerable() { return !["intro","enrage","dead"].includes(this.state); }
+  get vulnerable() { return !["intro","enrage","dead","teleport"].includes(this.state); }
 
   /** Sprite sheet + display height of the current form. */
   private get sheet() { return this.form === "sovereign" ? "sovereign2" : this.form === "shattered" ? "veil_form2" : "crystalveil"; }
@@ -164,9 +164,100 @@ export class CrystalVeilBoss {
     this.stateUntil = time + 620;
     this.dir = this.dashTarget >= this.x ? 1 : -1;
     this.sprite.setFlipX(this.dir < 0);
-    this.sprite.play(`${this.sheet}:walk`, true);
-    this.sprite.anims.timeScale = 2.4;
+    // New dash pose (2026-10-23 sheets); older sheets fall back to a
+    // sped-up walk.
+    const meta = (SPRITES as Record<string, { anims: Record<string, unknown> }>)[this.sheet];
+    if (meta.anims.dash) {
+      this.sprite.play(`${this.sheet}:dash`, true);
+      this.sprite.anims.timeScale = 1;
+    } else {
+      this.sprite.play(`${this.sheet}:walk`, true);
+      this.sprite.anims.timeScale = 2.4;
+    }
     Audio.sfx("ghost_orb");
+  }
+
+  /** The white-flash teleport move (Angelo 2026-10-23): she flashes
+   *  WHITE and fades out, then reappears on the other side white and
+   *  settles back into color. Caller owns the state; this only moves. */
+  private blinkTo(target: number, arriveInMs: number) {
+    this.scene.fx("crystal_shot", "impact", this.x, GROUND_Y - 110, .9);
+    Audio.sfx("ghost_orb");
+    this.sprite.setTintFill(0xffffff);
+    this.scene.tweens.add({ targets: this.sprite, alpha: 0, duration: 160, ease: "Quad.In" });
+    this.later(arriveInMs, () => {
+      this.x = target;
+      const px = this.scene.player.x;
+      this.dir = px >= this.x ? 1 : -1;
+      this.sprite.setFlipX(this.dir < 0);
+      this.scene.fx("crystal_shot", "impact", this.x, GROUND_Y - 110, .9);
+      this.scene.tweens.add({ targets: this.sprite, alpha: 1, duration: 230, ease: "Quad.Out" });
+    });
+    this.later(arriveInMs + 110, () => this.sprite.clearTint());
+  }
+
+  /** Sovereign reposition: teleport behind the player, fight on at once. */
+  private teleportStrike(time: number) {
+    this.state = "teleport";
+    this.stateUntil = time + 900;
+    const px = this.scene.player.x;
+    const side = px > this.x ? 1 : -1;
+    const target = Phaser.Math.Clamp(px - side * 300, this.arena.x0 + 120, this.arena.x1 - 120);
+    this.blinkTo(target, 200);
+    this.later(480, () => {
+      if (this.state === "teleport") {
+        this.state = "walk";
+        this.readyAt = this.scene.time.now + 120;
+      }
+    });
+  }
+
+  /** Aimed triple, fired instantly (the barrage's own volley). */
+  private fireAimed() {
+    Audio.sfx("ghost_orb");
+    const muzzleX = this.x + this.dir * 74, muzzleY = GROUND_Y - 108;
+    const tx = this.scene.player.x, ty = this.scene.player.sprite.y - 52;
+    const base = Math.atan2(ty - muzzleY, tx - muzzleX);
+    const speed = 320 + this.phase * 30;
+    for (const off of [-0.12, 0, 0.12]) {
+      const a = base + off;
+      this.scene.spawnProjectile("crystal_shot", muzzleX, muzzleY,
+        Math.cos(a) * speed, Math.sin(a) * speed, scaleForHeight("crystal_shot", 30, "fly"));
+    }
+  }
+
+  /** Radial 8-way, fired instantly (the barrage's finale). */
+  private fireRadial() {
+    Audio.sfx("ghost_orb");
+    const cx = this.x, cy = GROUND_Y - 118, speed = 238;
+    for (let k = 0; k < 10; k++) {
+      const deg = k * 36;
+      if (deg === 72 || deg === 108) continue;
+      const a = Phaser.Math.DegToRad(deg);
+      this.scene.spawnProjectile("crystal_shot", cx, cy,
+        Math.cos(a) * speed, Math.sin(a) * speed, scaleForHeight("crystal_shot", 30, "fly"));
+    }
+  }
+
+  /** SUPER ATTACK (Angelo 2026-10-23): teleport to one side of the
+   *  player, fire an aimed volley, teleport THROUGH to the other side,
+   *  and finish with a radial burst. She is suddenly everywhere. */
+  private barrage(time: number) {
+    this.state = "barrage";
+    this.stateUntil = time + 3800;
+    const land = (sign: number) => Phaser.Math.Clamp(
+      this.scene.player.x + sign * 340, this.arena.x0 + 120, this.arena.x1 - 120);
+    const firstSign = this.scene.player.x > this.x ? -1 : 1;
+    this.blinkTo(land(firstSign), 200);
+    this.later(620, () => this.fireAimed());
+    this.later(1080, () => this.blinkTo(land(this.dir), 200));
+    this.later(1700, () => this.fireRadial());
+    this.later(2250, () => {
+      if (this.state === "barrage") {
+        this.state = "walk";
+        this.readyAt = this.scene.time.now + 500;
+      }
+    });
   }
 
   private chooseAttack(time: number, distance: number) {
@@ -177,6 +268,10 @@ export class CrystalVeilBoss {
       || (this.form === "shattered" && this.attackIndex % 4 === 3);
     if (blinkTurn) {
       this.attackIndex++;
+      // The Sovereign TELEPORTS with Angelo's white-flash effect (color ->
+      // white -> gone, then white -> color on the other side, 2026-10-23).
+      // The Brute just blinks — crude, like him.
+      if (this.form === "sovereign") { this.teleportStrike(time); return; }
       const px = this.scene.player.x;
       this.scene.fx("crystal_shot", "impact", this.x, GROUND_Y - 110, .9);
       Audio.sfx("ghost_orb");
@@ -192,7 +287,7 @@ export class CrystalVeilBoss {
     // Projectile-forward since 2026-10-23 (Angelo): aimed volleys, crystal
     // rain and radial bursts join the fans; the beam stays in phase 3 only.
     const patterns: State[][] = [
-      [], ["shoot","aim","claw","slam"], ["burst","aim","slam","rain","claw"], ["beam","aim","radial","erupt","rain","burst"]
+      [], ["shoot","aim","claw","slam"], ["burst","aim","slam","rain","claw"], ["beam","barrage","aim","radial","erupt","rain","burst"]
     ];
     let next = patterns[this.phase][this.attackIndex++ % patterns[this.phase].length];
     if (next === "claw" && distance > 210) next = "shoot";
@@ -205,6 +300,7 @@ export class CrystalVeilBoss {
     else if (next === "aim") this.aimedVolley(time);
     else if (next === "rain") this.crystalRain(time);
     else if (next === "radial") this.radialBurst(time);
+    else if (next === "barrage") this.barrage(time);
     else this.volley(time,next === "burst");
   }
 
@@ -279,7 +375,7 @@ export class CrystalVeilBoss {
   }
 
   private volley(time: number, burst: boolean) {
-    this.windup(burst ? "burst" : "shoot",burst ? "summon" : "shoot",time,650*[0,1,.9,.8][this.phase],280,this.recovery(),() => {
+    this.windup(burst ? "burst" : "shoot",burst ? "double" : "shoot",time,650*[0,1,.9,.8][this.phase],280,this.recovery(),() => {
       Audio.sfx("ghost_orb");
       const count = this.form === "sovereign" ? 5 : burst ? (this.phase === 3 ? 5 : 3) : this.phase === 1 ? 1 : 2;
       for (let i=0;i<count;i++) {
@@ -296,7 +392,7 @@ export class CrystalVeilBoss {
    *  projectile attacks over everything). Small spread, real tracking —
    *  standing still stops being safe. */
   private aimedVolley(time: number) {
-    this.windup("aim", "shoot", time, 560 * [0,1,.9,.8][this.phase], 240, this.recovery(), () => {
+    this.windup("aim", "aim", time, 560 * [0,1,.9,.8][this.phase], 240, this.recovery(), () => {
       Audio.sfx("ghost_orb");
       const muzzleX = this.x + this.dir * 74, muzzleY = GROUND_Y - 108;
       const tx = this.scene.player.x, ty = this.scene.player.sprite.y - 52;
@@ -306,6 +402,13 @@ export class CrystalVeilBoss {
         const a = base + off;
         this.scene.spawnProjectile("crystal_shot", muzzleX, muzzleY,
           Math.cos(a) * speed, Math.sin(a) * speed, scaleForHeight("crystal_shot", 30, "fly"));
+      }
+      // The Sovereign adds a SEEKER ORB (Angelo 2026-10-23: different
+      // projectiles) — slower than the shards, but it bends after her.
+      if (this.form === "sovereign") {
+        this.scene.spawnProjectile("fx_orb", muzzleX, muzzleY,
+          Math.cos(base) * 205, Math.sin(base) * 205,
+          scaleForHeight("fx_orb", 54, "fly"), 0xffb0f5, undefined, true);
       }
     });
     this.mark(this.x + this.dir * 85, 85);
@@ -317,7 +420,7 @@ export class CrystalVeilBoss {
     const px = this.scene.player.x;
     const offsets = this.phase >= 3 ? [-260,-170,-85,0,85,170,260] : [-170,-85,0,85,170];
     const spots = offsets.map(o => Phaser.Math.Clamp(px + o, this.arena.x0 + 40, this.arena.x1 - 40));
-    this.windup("rain", "erupt", time, 820 * [0,1,.9,.8][this.phase], 420, this.recovery(), () => {
+    this.windup("rain", "sky", time, 820 * [0,1,.9,.8][this.phase], 420, this.recovery(), () => {
       Audio.sfx("ghost_orb");
       for (const x of spots) {
         this.scene.spawnProjectile("crystal_shot", x, GROUND_Y - 440,
@@ -330,17 +433,7 @@ export class CrystalVeilBoss {
   /** Radial burst: crystal shards in every direction except straight
    *  down into the floor — the gap underneath is the dodge lane. */
   private radialBurst(time: number) {
-    this.windup("radial", "summon", time, 700, 300, this.recovery(), () => {
-      Audio.sfx("ghost_orb");
-      const cx = this.x, cy = GROUND_Y - 118, speed = 238;
-      for (let k = 0; k < 10; k++) {
-        const deg = k * 36;
-        if (deg === 72 || deg === 108) continue; // the floor gap
-        const a = Phaser.Math.DegToRad(deg);
-        this.scene.spawnProjectile("crystal_shot", cx, cy,
-          Math.cos(a) * speed, Math.sin(a) * speed, scaleForHeight("crystal_shot", 30, "fly"));
-      }
-    });
+    this.windup("radial", "radial", time, 700, 300, this.recovery(), () => this.fireRadial());
     this.mark(this.x, 120);
   }
 

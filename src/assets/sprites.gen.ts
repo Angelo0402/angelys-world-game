@@ -2757,6 +2757,48 @@ export const SPRITES = {
         "repeat": 0,
         "h": 236
       },
+      "aim": {
+        "start": 56,
+        "end": 58,
+        "frameRate": 8,
+        "repeat": 0,
+        "h": 249
+      },
+      "sky": {
+        "start": 59,
+        "end": 61,
+        "frameRate": 8,
+        "repeat": 0,
+        "h": 347
+      },
+      "radial": {
+        "start": 62,
+        "end": 64,
+        "frameRate": 8,
+        "repeat": 0,
+        "h": 347
+      },
+      "double": {
+        "start": 65,
+        "end": 67,
+        "frameRate": 8,
+        "repeat": 0,
+        "h": 250
+      },
+      "dash": {
+        "start": 68,
+        "end": 70,
+        "frameRate": 12,
+        "repeat": -1,
+        "h": 251
+      },
+      "leap": {
+        "start": 71,
+        "end": 71,
+        "frameRate": 8,
+        "repeat": 0,
+        "h": 347
+      },
       "attack": {
         "start": 12,
         "end": 15,
@@ -2828,6 +2870,48 @@ export const SPRITES = {
         "frameRate": 7,
         "repeat": 0,
         "h": 201
+      },
+      "aim": {
+        "start": 40,
+        "end": 42,
+        "frameRate": 8,
+        "repeat": 0,
+        "h": 234
+      },
+      "sky": {
+        "start": 43,
+        "end": 45,
+        "frameRate": 8,
+        "repeat": 0,
+        "h": 313
+      },
+      "radial": {
+        "start": 46,
+        "end": 48,
+        "frameRate": 8,
+        "repeat": 0,
+        "h": 313
+      },
+      "double": {
+        "start": 49,
+        "end": 51,
+        "frameRate": 8,
+        "repeat": 0,
+        "h": 177
+      },
+      "dash": {
+        "start": 52,
+        "end": 54,
+        "frameRate": 12,
+        "repeat": -1,
+        "h": 215
+      },
+      "leap": {
+        "start": 55,
+        "end": 55,
+        "frameRate": 8,
+        "repeat": 0,
+        "h": 313
       },
       "shoot": {
         "start": 12,

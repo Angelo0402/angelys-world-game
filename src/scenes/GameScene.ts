@@ -1910,9 +1910,10 @@ export class GameScene extends Phaser.Scene {
 
   // -------------------------------------------------------- projectiles/fx
 
-  spawnProjectile(sheet: ProjectileSheet, x: number, y: number, vx: number, vy: number, scale: number, tint?: number, fromKey?: string) {
+  spawnProjectile(sheet: ProjectileSheet, x: number, y: number, vx: number, vy: number, scale: number, tint?: number, fromKey?: string, seek = false) {
     const pr = this.physics.add.sprite(x, y, sheet).setDepth(80).setScale(scale);
     if (fromKey) pr.setData("fromKey", fromKey);
+    if (seek) pr.setData("seek", 1);
     this.projectiles.add(pr);
     applyOrigin(pr, sheet);
     if (sheet === "fx_dust") pr.setFrame(SPRITES.fx_dust.anims.puff.start + 2);
@@ -1933,7 +1934,25 @@ export class GameScene extends Phaser.Scene {
     const now = this.time.now;
     this.projectiles.getChildren().forEach((obj) => {
       const pr = obj as Phaser.Physics.Arcade.Sprite;
-      if (now - (pr.getData("born") as number) > 3200) this.impactProjectile(pr);
+      if (now - (pr.getData("born") as number) > 3200) { this.impactProjectile(pr); return; }
+      // Seeker projectiles (the Sovereign's orb): bend toward the player
+      // at a capped turn rate — dodgeable, but standing still is not.
+      if (pr.getData("seek") && this.player.alive) {
+        const last = (pr.getData("seekT") as number | undefined) ?? now;
+        pr.setData("seekT", now);
+        const dt = Math.min(50, Math.max(0, now - last)) / 1000;
+        if (dt > 0) {
+          const b = pr.body as Phaser.Physics.Arcade.Body;
+          const cur = Math.atan2(b.velocity.y, b.velocity.x);
+          const tgt = Math.atan2(this.player.sprite.y - 52 - pr.y, this.player.x - pr.x);
+          let d = tgt - cur;
+          while (d > Math.PI) d -= Math.PI * 2;
+          while (d < -Math.PI) d += Math.PI * 2;
+          const na = cur + Phaser.Math.Clamp(d, -2.6 * dt, 2.6 * dt);
+          const sp = Math.hypot(b.velocity.x, b.velocity.y);
+          b.setVelocity(Math.cos(na) * sp, Math.sin(na) * sp);
+        }
+      }
     });
   }
 
