@@ -18,8 +18,9 @@ import { Gamepad } from "../input/gamepad";
 import { addWeapon, loadSave, unlockLevel, updateSave } from "../save";
 import { CrystalVeilBoss } from "../entities/CrystalVeilBoss";
 import { Sandworm } from "../entities/Sandworm";
-import { SOVEREIGN_NAME, SOVEREIGN_RISE, VEIL_NAME, VEIL_PHASE2 } from "../story/crystalveil";
+import { VEIL_NAME, VEIL_PHASE2 } from "../story/crystalveil";
 import { VisualFX } from "../effects/VisualFX";
+import { AtmosphereManager } from "../effects/AtmosphereManager";
 import { WORM_NAME } from "../story/worm";
 import { UMBRA_PHASE2, type DialogueLine } from "../story/umbra";
 import { useTouchUi } from "../ui/screen";
@@ -68,6 +69,8 @@ export class GameScene extends Phaser.Scene {
   private rayVariant = 0;
   veilSummons = new Set<Enemy>();
   veilState: "idle" | "intro" | "fight" | "defeat" | "rescue" | "angelo_exit" | "angely_exit" | "done" | "together" | "portal_exit" = "idle";
+  /** Set after the 10-2 entry-drama beat runs (feel package 2026-10-26). */
+  public veilEntryDone = false;
   mech!: Mechanics;
   portal!: Portal;
   cutscene = false;
@@ -92,7 +95,8 @@ export class GameScene extends Phaser.Scene {
   private checkpoints: { spot: Spot; sprite: Phaser.GameObjects.Sprite; active: boolean }[] = [];
   private respawn: Spot = { x: 160, y: GROUND_Y - 80 };
   private portalArrow!: Phaser.GameObjects.Container;
-  private ambient!: Phaser.GameObjects.Particles.ParticleEmitter;
+  /** Per-chapter atmosphere (particles, fog/cloud layers, glows). Public so harness QA can read debugCounts(). */
+  public atmosphere?: AtmosphereManager;
   public vfx!: VisualFX;
   private hitStopActive = false;
   private swordStone?: Phaser.GameObjects.Sprite;
@@ -122,7 +126,6 @@ export class GameScene extends Phaser.Scene {
   private flood?: Phaser.GameObjects.Container;
   // swim
   private water?: Phaser.GameObjects.Rectangle;
-  private bubbles?: Phaser.GameObjects.Particles.ParticleEmitter;
 
   constructor() {
     super("Game");
@@ -162,7 +165,7 @@ export class GameScene extends Phaser.Scene {
     this.chaseDust = undefined;
     this.flood = undefined;
     this.water = undefined;
-    this.bubbles = undefined;
+    this.atmosphere = undefined;
   }
 
   create() {
@@ -187,6 +190,9 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(0x120d1f);
 
     this.buildBackground();
+    // Chapter atmosphere (replaces the old generic mote emitter and the swim
+    // bubble emitter — both now live inside the per-chapter presets).
+    this.atmosphere = new AtmosphereManager(this, this.info.chapter);
     this.groundGroup = this.physics.add.staticGroup();
     this.platformGroup = this.physics.add.staticGroup();
     this.enemyGroup = this.physics.add.group();
@@ -268,6 +274,7 @@ export class GameScene extends Phaser.Scene {
       this.tweens.killAll();
       this.time.removeAllEvents();
     });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.atmosphere?.destroy());
     this.game.events.on("pause-request", this.pauseGame, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.game.events.off("pause-request", this.pauseGame, this));
 
@@ -323,21 +330,6 @@ export class GameScene extends Phaser.Scene {
     this.far.setScale(zoom);
     // The sky tower's bright sky would wash out its white platforms.
     if (this.chapter.id === 6) this.far.setTint(0xaebbe0);
-    const amb = this.chapter.ambient;
-    this.ambient = this.add
-      .particles(0, 0, "dot", {
-        x: { min: 0, max: GAME_W },
-        y: { min: 40, max: GAME_H - 60 },
-        lifespan: 4200,
-        speedY: { min: -26, max: -6 },
-        speedX: { min: -14, max: 14 },
-        scale: { start: 0.32, end: 0 },
-        alpha: { start: 0.85, end: 0 },
-        tint: amb.color,
-        blendMode: Phaser.BlendModes.ADD,
-        frequency: 4200 / amb.count,
-      })
-      .setDepth(-40);
         // DioramaLook disabled: it was causing a black horizontal bar across the screen.
     // this.look = new DioramaLook(this, this.far, this.chapter);
   }
@@ -352,9 +344,8 @@ export class GameScene extends Phaser.Scene {
     // Climbing: the sky drifts down slowly as Angely rises.
     const ty = climb ? Phaser.Math.Clamp((view.y - this.level.top) / Math.max(1, GAME_H - this.level.top), 0, 1) : 0.6;
     this.far.setPosition(view.x - (this.far.displayWidth - GAME_W) * t, view.y - extra * ty);
-    this.ambient.setPosition(view.x, view.y);
+    this.atmosphere?.place(view);
     this.water?.setPosition(view.x, view.y);
-    this.bubbles?.setPosition(view.x, view.y);
     this.lowHealthVignette?.setPosition(view.centerX, view.centerY);
     this.look?.place(view, this.far, span, t, ty);
   }
@@ -652,19 +643,7 @@ export class GameScene extends Phaser.Scene {
 
   private buildWater() {
     this.water = this.add.rectangle(0, 0, GAME_W, GAME_H, 0x1e6fb8, 0.16).setOrigin(0).setDepth(94);
-    this.bubbles = this.add
-      .particles(0, 0, "dot", {
-        x: { min: 0, max: GAME_W },
-        y: GAME_H + 10,
-        speedY: { min: -120, max: -50 },
-        speedX: { min: -10, max: 10 },
-        lifespan: 5200,
-        scale: { start: 0.18, end: 0.42 },
-        alpha: { start: 0.55, end: 0 },
-        tint: 0xdff8ff,
-        frequency: 110,
-      })
-      .setDepth(93);
+    // Bubbles now come from the AtmosphereManager chapter-7 preset.
   }
 
   // ----------------------------------------------------------------- update
@@ -740,14 +719,18 @@ export class GameScene extends Phaser.Scene {
     }
     if (!this.lowHealthActive) {
       this.lowHealthActive = true;
-      this.lastLowHealth = time - 1200;
+      this.lastLowHealth = time - 1100;
     }
-    if (time - this.lastLowHealth < 1200) return;
+    // Feel package 2026-10-26: vignette pulse 0.20 -> 0.32 -> 0.20, heartbeat
+    // every ~1100ms. With MAX_HEARTS = 5, hearts === 1 is both the <=30%
+    // vignette tier and the <=20% heartbeat tier; a <=10% faster tier cannot
+    // exist (0 hearts is death), so it is deliberately not added.
+    if (time - this.lastLowHealth < 1100) return;
     this.lastLowHealth = time;
     Audio.sfx("low_health");
     this.tweens.killTweensOf(vignette);
-    vignette.setAlpha(0.52);
-    this.tweens.add({ targets: vignette, alpha: 0.16, duration: 900, ease: "Sine.out" });
+    vignette.setAlpha(0.32);
+    this.tweens.add({ targets: vignette, alpha: 0.20, duration: 900, ease: "Sine.out" });
   }
 
   private scriptedInput(): FrameInput {
@@ -984,6 +967,25 @@ export class GameScene extends Phaser.Scene {
     return any;
   }
 
+  /**
+   * Central camera presets: the single place for combat camera feedback.
+   * Existing scattered shakes migrate here opportunistically; new code
+   * must use a preset, not a raw shake call.
+   */
+  cameraKick(preset: "light" | "heavy" | "hammer" | "slam" | "parry" | "explosion" | "landing"): void {
+    const table: Record<string, [number, number]> = {
+      light: [90, 0.006],
+      heavy: [160, 0.008],
+      hammer: [160, 0.01],
+      slam: [180, 0.006],
+      parry: [120, 0.007],
+      explosion: [300, 0.008],
+      landing: [140, 0.005],
+    };
+    const [ms, amp] = table[preset];
+    this.cameras.main.shake(ms, amp);
+  }
+
   /** Hit-stop: freeze the world for a few frames on impact (game feel). */
   hitStop(ms = 70): void {
     if (this.hitStopActive || this.physics.world.isPaused) return;
@@ -995,28 +997,68 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  /** Impact frame: 2-frame white flash overlay on strong hits (game feel). */
+  /**
+   * Impact frame: the whole screen goes black-and-white for 2 frames on
+   * strong hits (game feel, reels 2-3). True grayscale via a post pipeline.
+   * Phaser only applies pipelines registered by name, so the class is
+   * registered first (idempotent) and set by string; if anything fails, or
+   * the pipeline did not actually apply, it falls back to the old
+   * white/black flash. The effect always removes itself, so a shader
+   * problem can never stick.
+   */
   impactFrame(): void {
-    const flash = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0xffffff, 0.85)
-      .setOrigin(0).setScrollFactor(0).setDepth(9999);
-    this.time.delayedCall(33, () => flash.setFillStyle(0x000000, 0.6));
-    this.time.delayedCall(66, () => flash.destroy());
+    const cam = this.cameras.main;
+    try {
+      const renderer = this.game.renderer as Phaser.Renderer.WebGL.WebGLRenderer;
+      renderer.pipelines.addPostPipeline('GrayScale', GrayScalePipeline);
+      cam.setPostPipeline('GrayScale');
+      if (cam.postPipelines.length === 0) throw new Error('GrayScale did not apply');
+      this.time.delayedCall(33, () => {
+        try { cam.removePostPipeline('GrayScale'); } catch { /* noop */ }
+      });
+    } catch {
+      const flash = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0xffffff, 0.85)
+        .setOrigin(0).setScrollFactor(0).setDepth(9999);
+      this.time.delayedCall(33, () => flash.setFillStyle(0x000000, 0.6));
+      this.time.delayedCall(66, () => flash.destroy());
+    }
   }
 
   /** Slow-mo: dramatic slowdown on boss kill (game feel). */
-  bossKillSlowMo(): void {
+  bossKillSlowMo(onDone?: () => void): void {
     const previousClockScale = this.time.timeScale;
     const previousTweenScale = this.tweens.timeScale;
     this.time.timeScale = 0.3;
     this.tweens.timeScale = 0.3;
-    const restore = () => {
+    let done = false;
+    const restore = (fromShutdown = false) => {
+      if (done) return;
+      done = true;
       this.time.timeScale = previousClockScale;
       this.tweens.timeScale = previousTweenScale;
-      this.events.off(Phaser.Scenes.Events.SHUTDOWN, restore);
+      this.events.off(Phaser.Scenes.Events.SHUTDOWN, onShutdown);
+      if (!fromShutdown) onDone?.();
     };
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, restore);
+    const onShutdown = () => restore(true);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, onShutdown);
     // The scene clock is slowed too, so 120 game-ms lasts about 400 real-ms.
-    this.time.delayedCall(120, restore);
+    this.time.delayedCall(120, () => restore(false));
+  }
+
+  /**
+   * Boss kill sequence (game feel, reel 5 #10): slow-mo -> freeze -> flash,
+   * then onDone (the outro). Damage numbers are deliberately NOT part of
+   * this (Angelo, 2026-10-25: rejected).
+   */
+  bossKillSequence(onDone: () => void): void {
+    this.bossKillSlowMo(() => {
+      this.physics.pause();
+      this.time.delayedCall(150, () => {
+        this.physics.resume();
+        this.cameras.main.flash(150, 255, 255, 255);
+        this.time.delayedCall(150, onDone);
+      });
+    });
   }
 
   swordHit(r: Phaser.Geom.Rectangle, hits: Set<unknown>) {
@@ -1024,20 +1066,21 @@ export class GameScene extends Phaser.Scene {
     this.hitArea(r, hits, 1, "sword", this.player.x);
     if (hits.size > before) {
       Audio.sfx("sword_hit");
-      this.cameras.main.shake(90, 0.006);
+      this.cameraKick("light");
       this.hitStop(60);
       this.player.applyRecoil(this.player.facing);
     }
     if (!hits.has(this.mech) && this.mech.swordAt(r)) hits.add(this.mech);
     this.projectiles.getChildren().forEach((obj) => {
       const pr = obj as Phaser.Physics.Arcade.Sprite;
-      if (pr.active && Phaser.Geom.Rectangle.Overlaps(r, pr.getBounds())) this.impactProjectile(pr);
+      if (pr.active && Phaser.Geom.Rectangle.Overlaps(r, pr.getBounds())) this.impactProjectile(pr, true);
     });
   }
 
   hammerHit(r: Phaser.Geom.Rectangle, hits: Set<unknown>, impactX: number, floorY: number, grounded: boolean) {
     Audio.sfx("hammer_smash");
-    this.cameras.main.shake(160, grounded ? 0.01 : 0.005);
+    if (grounded) this.cameraKick("hammer");
+    else this.cameras.main.shake(160, 0.005);
     this.hitStop(90);
     this.impactFrame();
     if (grounded) {
@@ -1086,11 +1129,11 @@ export class GameScene extends Phaser.Scene {
         ang = Math.atan2(dy, p.x - x);
       }
     }
-    this.launch("fx_arrow", x, y, ang, ARROW_SPEED, 22, "arrow", 900);
+    this.launch("fx_arrow", x, y, ang, ARROW_SPEED, 22, "arrow", 900, undefined, 1, 0x9ff5ff);
   }
 
   /** Spawns a player projectile that the per-frame arrow logic moves and resolves. */
-  private launch(key: SpriteKey, x: number, y: number, ang: number, speed: number, h: number, kind: string, life: number, anim?: string, stretchX = 1) {
+  private launch(key: SpriteKey, x: number, y: number, ang: number, speed: number, h: number, kind: string, life: number, anim?: string, stretchX = 1, trail = 0) {
     const a = this.physics.add.sprite(x, y, key).setDepth(85);
     const s = scaleForHeight(key, h);
     a.setScale(s * stretchX, s);
@@ -1106,6 +1149,7 @@ export class GameScene extends Phaser.Scene {
     a.setData("life", life);
     a.setData("kind", kind);
     a.setData("hits", new Set());
+    if (trail) a.setData("trail", trail);
     return a;
   }
 
@@ -1114,7 +1158,7 @@ export class GameScene extends Phaser.Scene {
   shootRay(x: number, y: number, dir: 1 | -1) {
     Audio.sfx("ray");
     const variant = "abc"[this.rayVariant++ % 3];
-    this.launch("fx_ray", x, y, dir > 0 ? 0 : Math.PI, 1180, 34, "ray", 650, `fx_ray:fly_${variant}`, 1.5);
+    this.launch("fx_ray", x, y, dir > 0 ? 0 : Math.PI, 1180, 34, "ray", 650, `fx_ray:fly_${variant}`, 1.5, 0xff7ad9);
   }
 
   /** The cog saw flies straight and keeps going through armored enemies. */
@@ -1136,7 +1180,7 @@ export class GameScene extends Phaser.Scene {
     Audio.sfx("wand_cast");
     [-0.35, 0, 0.35].forEach((spread, i) => {
       const ang = (dir > 0 ? 0 : Math.PI) + spread * dir;
-      const s = this.launch("fx_star", x, y, ang, 520, 20, "star", 1500);
+      const s = this.launch("fx_star", x, y, ang, 520, 20, "star", 1500, undefined, 1, 0xffe27a);
       s.setData("seekAfter", this.time.now + 80 + i * 40);
     });
   }
@@ -1147,6 +1191,18 @@ export class GameScene extends Phaser.Scene {
     this.arrows.getChildren().forEach((obj) => {
       const a = obj as Phaser.Physics.Arcade.Sprite;
       if (!a.active) return;
+      // Player projectile trail (same fading-ghost pattern as enemy
+      // projectiles). Cog and boomerang skip it: their spin already reads.
+      const trail = a.getData("trail") as number | undefined;
+      if (trail) {
+        const last = (a.getData("trailT") as number | undefined) ?? 0;
+        if (now - last > 60) {
+          a.setData("trailT", now);
+          const g = this.add.image(a.x, a.y, a.texture.key, a.frame.name)
+            .setDepth(84).setScale(a.scaleX, a.scaleY).setAlpha(0.4).setTint(trail).setRotation(a.rotation);
+          this.tweens.add({ targets: g, alpha: 0, duration: 200, onComplete: () => g.destroy() });
+        }
+      }
       const body = a.body as Phaser.Physics.Arcade.Body;
       const kind = a.getData("kind") as string;
       const age = now - (a.getData("born") as number);
@@ -1281,7 +1337,15 @@ export class GameScene extends Phaser.Scene {
       this.physics.pause();
       Barks.play(this, ["angely_bark_05"], 1, true);
       Audio.music("music_game_over");
-      this.game.events.emit("hud:gameover", { level: this.info.index, goal: { ...this.goal } });
+      // Feel package 2026-10-26: the retry screen shows boss progress on
+      // the final boss only; other chapters get the plain game-over flow.
+      const payload: { level: number; goal: Goal; bossHp?: number; bossMax?: number; bossPhase?: number } = { level: this.info.index, goal: { ...this.goal } };
+      if (this.info.chapter === 10 && this.boss instanceof CrystalVeilBoss && this.boss.alive) {
+        payload.bossHp = this.boss.hp;
+        payload.bossMax = this.boss.maxHp;
+        payload.bossPhase = this.boss.phase;
+      }
+      this.game.events.emit("hud:gameover", payload);
     });
   }
 
@@ -1390,7 +1454,7 @@ export class GameScene extends Phaser.Scene {
     this.cinema(true, 600);
     this.boss?.vanish();
     await this.wait(500);
-    await this.playCutscene(["angelo_praise"]);
+    await this.playCutscene(["worm_victory"]);
     this.portal.appear();
     this.portal.open();
     Audio.sfx("portal_unlock");
@@ -1428,9 +1492,9 @@ export class GameScene extends Phaser.Scene {
     await this.wait(1500);
     this.player.facing = 1;
     try {
-      // The Sovereign's challenge is a story VIDEO now (2026-10-21 ruling):
-      // no in-game dialogue, no Angelo — Angely faces her alone.
-      await this.playCutscene(["veil_epic_intro"]);
+      // Final boss intro (Angelo, 2026-10-24): the Beast intro replaces
+      // the old Sovereign intro — phase 3 is discarded. Old file kept.
+      await this.playCutscene(["final_boss_intro"]);
     } finally {
       this.game.events.emit("hud:cinema", false);
       cam.pan(this.player.x, GAME_H / 2, 500, "Sine.easeInOut", true, (_c, p) => {
@@ -1438,6 +1502,16 @@ export class GameScene extends Phaser.Scene {
       });
       this.registry.set("boss", { name: VEIL_NAME, hp: boss.hp, max: boss.maxHp, veilPhase: boss.phase });
       this.game.events.emit("hud:banner", VEIL_NAME);
+      // Entry drama (feel package 2026-10-26, ~1.8s, no camera changes):
+      // silhouette fade-in, arena crystals lighting in sequence, one heavy
+      // tone — then the fight begins. veilEntryDone is the harness hook.
+      boss.sprite.setTintFill(0x1a0f2e).setAlpha(0.45);
+      this.tweens.add({ targets: boss.sprite, alpha: 1, duration: 500, onComplete: () => boss.sprite.clearTint() });
+      const arenaXs = [arena.x0 + 200, (arena.x0 + arena.x1) / 2 - 150, (arena.x0 + arena.x1) / 2 + 150, arena.x1 - 200];
+      arenaXs.forEach((x, i) => this.time.delayedCall(200 + i * 200, () => this.fx("crystal_shot", "impact", x, GROUND_Y - 110, 0.5)));
+      Audio.sfx("ground_slam");
+      await this.wait(900);
+      this.veilEntryDone = true;
       Audio.music("music_boss");
       boss.begin();
       this.veilState = "fight";
@@ -1468,7 +1542,9 @@ export class GameScene extends Phaser.Scene {
     // Directed ending (2026-10-21): the finale trilogy in VIDEO — the Veil
     // tears, the worlds relight, Angelo's rift opens, the hug, and father and
     // daughter leave together through the golden portal. No in-engine staging.
-    await this.playCutscene(["veil_epic_finale"]);
+    // Angelo (2026-10-24): the phase-2 kill video plays first — it is the
+    // killing blow on the Brute, the last phase.
+    await this.playCutscene(["final_boss_phase2_kill"]);
     this.veilState = "done";
     this.ending = true;
     updateSave({ cleared: true, finaleSeen: true });
@@ -1562,7 +1638,7 @@ export class GameScene extends Phaser.Scene {
     Audio.sfx("boss_roar");
     this.vfx.bossEntrance(arena.x1 - 300, GROUND_Y - 120);
     this.tweens.add({ targets: this.bossShade, fillAlpha: 0.42, duration: 1800 });
-    const boss = new Boss(this, arena.x1 + 260, GROUND_Y - 430, arena);
+    const boss = new Boss(this, arena.x1 + 260, GROUND_Y - 430, arena, true);
     boss.dir = -1;
     boss.sprite.setAlpha(0);
     this.boss = boss;
@@ -1595,8 +1671,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   onBossHp(hp: number, max: number, dmg: number) {
-    const sovereign = this.boss instanceof CrystalVeilBoss && this.boss.form === "sovereign";
-    const name = this.info.chapter === 2 ? SENTINEL_NAME : this.info.chapter === 8 ? WORM_NAME : this.info.chapter === 10 ? (sovereign ? SOVEREIGN_NAME : VEIL_NAME) : BOSS_NAME;
+    const name = this.info.chapter === 2 ? SENTINEL_NAME : this.info.chapter === 8 ? WORM_NAME : this.info.chapter === 10 ? VEIL_NAME : BOSS_NAME;
     const veilPhase = this.boss instanceof CrystalVeilBoss ? this.boss.phase : undefined;
     this.registry.set("boss", { name, hp, max, veilPhase });
     this.cameras.main.shake(90, 0.005);
@@ -1641,6 +1716,7 @@ export class GameScene extends Phaser.Scene {
     this.hitStop(110);
     this.spawnShockwave(this.boss.x, 1, 0xc59bff);
     this.spawnShockwave(this.boss.x, -1, 0xc59bff);
+    this.spawnShockRing(this.boss.x);
     this.fx("crystal_shot", "impact", this.boss.x, GROUND_Y - 110, 0.6);
     this.fx("crystal_shot", "impact", this.boss.x - 60, GROUND_Y - 60, 0.45);
     this.fx("crystal_shot", "impact", this.boss.x + 60, GROUND_Y - 60, 0.45);
@@ -1648,37 +1724,22 @@ export class GameScene extends Phaser.Scene {
     if (this.boss instanceof CrystalVeilBoss) this.boss.beginPhase2();
   }
 
-  /** The Veil's crown broke and the Sovereign rose. Angelo (2026-10-22):
-   *  the transformation gets its own cutscene video; when it ends, her
-   *  threat plays as a VOICE bark over the fight — no subtitle text — and
-   *  the fight resumes while it still hangs in the air. */
-  onSovereignRise() {
-    void this.veilTransform2Cutscene();
+  /** 5-2 second bar empty (Angelo, 2026-10-24): the POV cutscene plays
+   *  mid-fight, then the fight continues with a final stand. */
+  onUmbraPovCutscene() {
+    void this.umbraPovCutscene();
   }
 
-  private async veilTransform2Cutscene() {
+  private async umbraPovCutscene() {
     this.projectiles.clear(true, true);
-    this.hazards.getChildren().forEach((h) => h.destroy());
-    Audio.stopVoice();
     this.cutscene = true;
-    await this.playCutscene(["veil_transform_2"]);
+    await this.playCutscene(["veil_pov_cutscene"]);
     this.cutscene = false;
-    // Transformation juice: frozen beat, shockwaves, shard burst.
-    this.hitStop(150);
-    if (this.boss) {
-      this.spawnShockwave(this.boss.x, 1, 0xff9df3);
-      this.spawnShockwave(this.boss.x, -1, 0xff9df3);
-      this.fx("crystal_shot", "impact", this.boss.x, GROUND_Y - 120, 0.7);
-    }
-    this.game.events.emit("hud:voice", SOVEREIGN_RISE[0]);
-    this.time.delayedCall(3400, () => {
-      if (this.boss instanceof CrystalVeilBoss) this.boss.beginSovereign();
-    });
+    if (this.boss instanceof Boss) this.boss.resumeAfterPov();
   }
 
   onBossDefeated() {
-    this.bossKillSlowMo();
-    void this.bossOutro();
+    this.bossKillSequence(() => void this.bossOutro());
   }
 
   /** Umbra's farewell, or the dune reunion with Angelo. */
@@ -1727,9 +1788,9 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.flash(700, 255, 240, 200);
     await this.wait(1400);
 
-    // Her fall — and Angelo's arrival — play as story VIDEOS (2026-10-21).
+    // Her fall plays as a story VIDEO (2026-10-21; dad_kiddo deleted 2026-10-24).
     this.cinema(false, 400);
-    await this.playCutscene(["umbra_falls", "dad_kiddo"]);
+    await this.playCutscene(["umbra_falls"]);
 
     this.portal.appear();
     this.portal.open();
@@ -1738,6 +1799,15 @@ export class GameScene extends Phaser.Scene {
     this.game.events.emit("hud:banner", "TO THE SKY TOWER!");
     this.cutscene = false;
     this.time.delayedCall(1600, () => this.toast("Step into the portal: your adventure continues!"));
+  }
+
+  /** Expanding ground ring (feel package 2026-10-26): pre-rendered ring
+   *  texture, flat on the ground, gone in ~280ms. Only for boss slams,
+   *  final ice spikes, transition blasts and landings — never sword hits. */
+  spawnShockRing(x: number, tint = 0xc59bff) {
+    const ring = this.add.image(x, GROUND_Y - 14, "feel_ring").setScale(0.2, 0.2).setAlpha(0.8).setDepth(33);
+    if (tint) ring.setTint(tint);
+    this.tweens.add({ targets: ring, scaleX: 2.2, scaleY: 0.65, alpha: 0, duration: 280, ease: "Quad.out", onComplete: () => ring.destroy() });
   }
 
   /** Ground shockwave travelling outward from Umbra's slam. */
@@ -1866,8 +1936,7 @@ export class GameScene extends Phaser.Scene {
   /** The Veil's own crystal court answers per phase (Angelo 2026-10-22:
    *  different enemies per phase) — capped at three alive, on a slow
    *  schedule so the duel stays the main event. P1 the Beast calls crystal
-   *  imps, P2 the Brute calls crystal golems, P3 the Sovereign calls both
-   *  on a faster cadence. */
+   *  imps, P2 the Brute calls crystal golems. */
   private spawnVeilWave() {
     if (!(this.boss instanceof CrystalVeilBoss)) return;
     for (const e of [...this.veilSummons]) if (!e.alive) this.veilSummons.delete(e);
@@ -1876,7 +1945,7 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     const phase = this.boss.phase;
-    const comp = phase === 1 ? ["crystal_imp", "crystal_imp"] : phase === 2 ? ["crystal_golem", "crystal_imp"] : ["crystal_imp", "crystal_golem", "crystal_imp"];
+    const comp = phase === 1 ? ["crystal_imp", "crystal_imp"] : ["crystal_golem", "crystal_imp"];
     const arena = this.level.arena!;
     comp.forEach((key, i) => {
       if (this.veilSummons.size >= 3) return;
@@ -1887,7 +1956,7 @@ export class GameScene extends Phaser.Scene {
       this.veilSummons.add(e);
     });
     Audio.sfx("portal_unlock");
-    this.nextVeilWave = this.time.now + (phase === 3 ? 14000 : 17000);
+    this.nextVeilWave = this.time.now + 17000;
   }
 
   /** Top Y of the nearest surface at or below `fromY` (null over a pit). */
@@ -1910,24 +1979,26 @@ export class GameScene extends Phaser.Scene {
 
   // -------------------------------------------------------- projectiles/fx
 
-  spawnProjectile(sheet: ProjectileSheet, x: number, y: number, vx: number, vy: number, scale: number, tint?: number, fromKey?: string, seek = false) {
+  spawnProjectile(sheet: ProjectileSheet, x: number, y: number, vx: number, vy: number, scale: number, tint?: number, fromKey?: string, seek = false, frame?: number, trail = 0) {
     const pr = this.physics.add.sprite(x, y, sheet).setDepth(80).setScale(scale);
     if (fromKey) pr.setData("fromKey", fromKey);
     if (seek) pr.setData("seek", 1);
     this.projectiles.add(pr);
     applyOrigin(pr, sheet);
     if (sheet === "fx_dust") pr.setFrame(SPRITES.fx_dust.anims.puff.start + 2);
+    else if (frame !== undefined) pr.setFrame(frame);
     else pr.play(`${sheet}:fly`);
     if (tint) pr.setTint(tint);
     const body = pr.body as Phaser.Physics.Arcade.Body;
     body.setAllowGravity(false);
-    const r = sheet === "crystal_shot" ? 22 : SPRITES[sheet].frameHeight * 0.3;
+    const r = sheet === "crystal_shot" ? 22 : sheet === "umbra_sky" ? 90 : SPRITES[sheet].frameHeight * 0.3;
     body.setCircle(r, SPRITES[sheet].frameWidth / 2 - r, SPRITES[sheet].frameHeight / 2 - r);
     body.setVelocity(vx, vy);
     pr.setFlipX(vx < 0);
-    pr.setRotation(sheet === "fx_dust" || sheet === "crystal_shot" ? 0 : Math.atan2(vy, Math.abs(vx)) * (vx < 0 ? -1 : 1));
+    pr.setRotation(sheet === "fx_dust" || sheet === "crystal_shot" || sheet === "umbra_sky" ? 0 : Math.atan2(vy, Math.abs(vx)) * (vx < 0 ? -1 : 1));
     pr.setData("born", this.time.now);
     pr.setData("sheet", sheet);
+    if (trail) pr.setData("trail", trail);
   }
 
   private updateProjectiles() {
@@ -1935,6 +2006,18 @@ export class GameScene extends Phaser.Scene {
     this.projectiles.getChildren().forEach((obj) => {
       const pr = obj as Phaser.Physics.Arcade.Sprite;
       if (now - (pr.getData("born") as number) > 3200) { this.impactProjectile(pr); return; }
+      // Boss projectile trail (BossFeel palette rule): fading afterimages in
+      // the boss's own color. Only projectiles spawned with a trail color.
+      const trail = pr.getData("trail") as number | undefined;
+      if (trail) {
+        const last = (pr.getData("trailT") as number | undefined) ?? 0;
+        if (now - last > 60) {
+          pr.setData("trailT", now);
+          const g = this.add.image(pr.x, pr.y, pr.texture.key, pr.frame.name)
+            .setDepth(79).setScale(pr.scaleX, pr.scaleY).setAlpha(0.4).setTint(trail).setRotation(pr.rotation);
+          this.tweens.add({ targets: g, alpha: 0, duration: 200, onComplete: () => g.destroy() });
+        }
+      }
       // Seeker projectiles (the Sovereign's orb): bend toward the player
       // at a capped turn rate — dodgeable, but standing still is not.
       if (pr.getData("seek") && this.player.alive) {
@@ -1964,7 +2047,13 @@ export class GameScene extends Phaser.Scene {
     this.impactProjectile(pr);
   }
 
-  private impactProjectile(pr: Phaser.Physics.Arcade.Sprite) {
+  /**
+   * Destroys a projectile after its impact FX. `parried` marks the sword
+   * deflection: the projectile still dies (that behavior is unchanged),
+   * but the deflection now reads — brief freeze, parry camera kick, and a
+   * bright spark distinct from a wall/ground impact.
+   */
+  private impactProjectile(pr: Phaser.Physics.Arcade.Sprite, parried = false) {
     if (!pr.active) return;
     const sheet = pr.getData("sheet") as ProjectileSheet;
     if (sheet === "fx_fireball") {
@@ -1974,6 +2063,11 @@ export class GameScene extends Phaser.Scene {
     }
     if (sheet === "fx_dust") this.fx("fx_dust", "puff", pr.x, pr.y + 20, 0.3, 0xc9ff9a);
     else this.fx(sheet, "impact", pr.x, pr.y, pr.scale);
+    if (parried) {
+      this.hitStop(40);
+      this.cameraKick("parry");
+      this.fx("fx_spark", "hit", pr.x, pr.y, 0.3, 0xffffff);
+    }
     pr.destroy();
   }
 
@@ -2018,6 +2112,53 @@ export class GameScene extends Phaser.Scene {
     this.game.events.emit("hud:toast", text);
   }
 
+  /** Wall-break payoff: the nearest untaken star gem flies to the player.
+   *  Kills-goal levels spawn no gems (L.gems is gems-goal only), and a real
+   *  pickup there would corrupt the kill counter — so with no gem nearby,
+   *  a cosmetic crystal flies to the player and bursts instead. No goal,
+   *  no counter, no sound effect: purely the reel's visual payoff. */
+  flyGemToPlayer(x: number, y: number, radius = 300): void {
+    let best: Pickup | undefined;
+    let bestD = radius;
+    for (const g of this.gems) {
+      if (g.taken) continue;
+      const d = Phaser.Math.Distance.Between(x, y, g.sprite.x, g.sprite.y);
+      if (d < bestD) { bestD = d; best = g; }
+    }
+    if (!best) {
+      const spr = this.add.sprite(x, y, "stargem").setDepth(50);
+      spr.setScale(scaleForHeight("stargem", 46));
+      applyOrigin(spr, "stargem");
+      spr.play("stargem:glow");
+      this.tweens.add({
+        targets: spr,
+        x: this.player.x,
+        y: this.player.body.center.y - 20,
+        duration: 550,
+        ease: "Quad.in",
+        onComplete: () => {
+          this.fx("fx_spark", "hit", spr.x, spr.y, 0.35, 0x9ff5ff);
+          spr.destroy();
+        },
+      });
+      return;
+    }
+    const target = best;
+    const spr = target.sprite;
+    this.tweens.killTweensOf(spr);
+    this.tweens.add({
+      targets: spr,
+      x: this.player.x,
+      y: this.player.body.center.y - 20,
+      duration: 550,
+      ease: "Quad.in",
+      onComplete: () => {
+        // Player moved away mid-flight: the gem rests as a normal pickup.
+        if (!target.taken) this.tweens.add({ targets: spr, y: spr.y - 12, duration: 700, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+      },
+    });
+  }
+
   /** Angely spots a cracked wall: she calls for the hammer she needs (or has ready). */
   barkBreakableWall() {
     if (this.player.weapon === "hammer") Barks.play(this, ["bark_hammer_have"], 1);
@@ -2026,5 +2167,29 @@ export class GameScene extends Phaser.Scene {
 
   get label() {
     return levelLabel(this.info);
+  }
+}
+
+/**
+ * True black-and-white post pipeline for the impact frame (game feel).
+ * Phaser supplies the vertex shader (outTexCoord) and uMainSampler; this
+ * fragment shader only desaturates. A compile failure throws at
+ * construction, which impactFrame() catches and falls back from.
+ */
+class GrayScalePipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPipeline {
+  constructor(game: Phaser.Game) {
+    super({
+      game,
+      renderTarget: true,
+      fragShader: `
+        precision mediump float;
+        uniform sampler2D uMainSampler;
+        varying vec2 outTexCoord;
+        void main() {
+          vec4 color = texture2D(uMainSampler, outTexCoord);
+          float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+          gl_FragColor = vec4(vec3(gray), color.a);
+        }`,
+    });
   }
 }

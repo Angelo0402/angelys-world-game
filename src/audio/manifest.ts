@@ -34,6 +34,8 @@ export type SfxName =
   | "hammer_swing"
   | "hammer_smash"
   | "wall_break"
+  | "tok"
+  | "crunch"
   | "crate_push"
   | "spring"
   | "crumble"

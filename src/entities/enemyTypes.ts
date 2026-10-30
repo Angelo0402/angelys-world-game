@@ -2,7 +2,7 @@ import type { SpriteKey } from "../assets/sprites.gen";
 import type { SfxName } from "../audio/manifest";
 
 type AttackKind = "melee" | "lunge" | "roll" | "dive" | "shoot" | "slam" | "lava";
-export type ProjectileSheet = "fx_orb" | "fx_bolt" | "fx_fireball" | "fx_dust" | "crystal_shot";
+export type ProjectileSheet = "fx_orb" | "fx_bolt" | "fx_fireball" | "fx_dust" | "crystal_shot" | "umbra_bolt" | "umbra_aim" | "umbra_double" | "umbra_shard" | "umbra_sky" | "dragon_fire";
 
 export interface EnemyType {
   key: SpriteKey;
@@ -16,6 +16,8 @@ export interface EnemyType {
   cooldown: number;
   windup: number;
   projectile?: { sheet: ProjectileSheet; speed: number; aimed: boolean; tint?: number; scale: number };
+  /** Knockback scale: 1 = normal, <1 = heavy, >1 = light. Default 1. */
+  weight?: number;
   armoredFront?: boolean;
   heartDrop?: number;
   attackSfx: SfxName;
@@ -41,12 +43,12 @@ export const ENEMY_TYPES: Record<string, EnemyType> = {
   },
   firefly: {
     key: "firefly", height: 60, hp: 1, speed: 105, flying: true, attack: "dive", range: 260, cooldown: 2600, windup: 520,
-    attackSfx: "bat_dive", body: [0.55, 0.6],
+    attackSfx: "bat_dive", body: [0.55, 0.6], weight: 1.25,
   },
   // Chapter 2: Moonlit Ruins
   golem: {
     key: "golem", height: 104, hp: 3, speed: 42, attack: "slam", range: 150, cooldown: 2600, windup: 750,
-    attackSfx: "ground_slam", body: [0.5, 0.85], heartDrop: 0.3,
+    attackSfx: "ground_slam", body: [0.5, 0.85], heartDrop: 0.3, weight: 0.4,
   },
   ghost: {
     key: "ghost", height: 82, hp: 2, speed: 70, flying: true, attack: "shoot", range: 460, cooldown: 2400, windup: 560,
@@ -74,11 +76,11 @@ export const ENEMY_TYPES: Record<string, EnemyType> = {
   },
   crab: {
     key: "crab", height: 70, hp: 3, speed: 80, attack: "melee", range: 115, cooldown: 1600, windup: 450, armoredFront: true,
-    attackSfx: "skeleton_swing", body: [0.55, 0.75], heartDrop: 0.25,
+    attackSfx: "skeleton_swing", body: [0.55, 0.75], heartDrop: 0.25, weight: 0.7,
   },
   magmagolem: {
     key: "magmagolem", height: 112, hp: 4, speed: 44, attack: "slam", range: 150, cooldown: 2500, windup: 780,
-    attackSfx: "ground_slam", body: [0.5, 0.85], heartDrop: 0.35,
+    attackSfx: "ground_slam", body: [0.5, 0.85], heartDrop: 0.35, weight: 0.4,
   },
   // Chapter 4: Frozen Peaks
   frostwolf: {
@@ -96,12 +98,12 @@ export const ENEMY_TYPES: Record<string, EnemyType> = {
   },
   yeti: {
     key: "yeti", height: 116, hp: 4, speed: 46, attack: "slam", range: 155, cooldown: 2400, windup: 760,
-    attackSfx: "ground_slam", body: [0.5, 0.85], heartDrop: 0.35,
+    attackSfx: "ground_slam", body: [0.25, 0.85], heartDrop: 0.35, weight: 0.4,
   },
   // Chapter 6: The Sky Tower (30-frame sheets)
   stormbird: {
     key: "stormbird", height: 70, hp: 2, speed: 120, flying: true, attack: "dive", range: 300, cooldown: 2300, windup: 480,
-    attackSfx: "bat_dive", body: [0.55, 0.6],
+    attackSfx: "bat_dive", body: [0.55, 0.6], weight: 1.25,
   },
   thunderimp: {
     key: "thunderimp", height: 68, hp: 2, speed: 80, flying: true, attack: "shoot", range: 480, cooldown: 2300, windup: 620,
@@ -116,11 +118,11 @@ export const ENEMY_TYPES: Record<string, EnemyType> = {
   // Chapter 8: The Clockwork Desert
   cogmoth: {
     key: "cogmoth", height: 68, hp: 1, speed: 115, flying: true, attack: "dive", range: 280, cooldown: 2200, windup: 460,
-    attackSfx: "bat_dive", body: [0.55, 0.55],
+    attackSfx: "bat_dive", body: [0.55, 0.55], weight: 1.25,
   },
   gearcrab: {
     key: "gearcrab", height: 72, hp: 3, speed: 70, attack: "melee", range: 120, cooldown: 1600, windup: 440, armoredFront: true,
-    attackSfx: "skeleton_swing", body: [0.55, 0.75], heartDrop: 0.25,
+    attackSfx: "skeleton_swing", body: [0.55, 0.75], heartDrop: 0.25, weight: 0.7,
   },
   // Chapter 9: Squishy Valley
   blob: {
@@ -151,11 +153,11 @@ export const ENEMY_TYPES: Record<string, EnemyType> = {
   // Veil boss summons (Angelo 2026-10-22): the boss's own crystal court.
   crystal_imp: {
     key: "crystal_imp", height: 64, hp: 1, speed: 118, attack: "lunge", range: 120, cooldown: 1500, windup: 380,
-    attackSfx: "skeleton_swing", body: [0.44, 0.8],
+    attackSfx: "skeleton_swing", body: [0.44, 0.8], weight: 1.25,
   },
   crystal_golem: {
     key: "crystal_golem", height: 112, hp: 4, speed: 40, attack: "slam", range: 150, cooldown: 2600, windup: 750,
-    attackSfx: "ground_slam", body: [0.5, 0.85], heartDrop: 0.3,
+    attackSfx: "ground_slam", body: [0.5, 0.85], heartDrop: 0.3, weight: 0.4,
   },
   shardknight: {
     key: "shardknight", height: 96, hp: 3, speed: 72, attack: "lunge", range: 130, cooldown: 1800, windup: 460,
@@ -173,6 +175,6 @@ export const ENEMY_TYPES: Record<string, EnemyType> = {
   },
   stormgolem: {
     key: "stormgolem", height: 108, hp: 4, speed: 40, attack: "slam", range: 150, cooldown: 2800, windup: 780,
-    attackSfx: "ground_slam", body: [0.52, 0.82], heartDrop: 0.3,
+    attackSfx: "ground_slam", body: [0.52, 0.82], heartDrop: 0.3, weight: 0.4,
   },
 };

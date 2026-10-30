@@ -220,7 +220,10 @@ export class Enemy {
           vx = Math.cos(ang) * p.speed;
           vy = Math.sin(ang) * p.speed;
         }
-        scene.spawnProjectile(p.sheet, ox, oy, vx, vy, p.scale, p.tint, this.type.key);
+        // Bolt/orb/fireball shots get a fading trail (same system as the boss
+        // orbs); slow dust puffs do not — a trail on a puff is noise.
+        const trail = p.sheet === "fx_dust" ? 0 : (p.tint ?? (p.sheet === "fx_bolt" ? 0x9ff5ff : p.sheet === "fx_fireball" ? 0xffb14a : 0xd9a6ff));
+        scene.spawnProjectile(p.sheet, ox, oy, vx, vy, p.scale, p.tint, this.type.key, false, undefined, trail);
         this.setState("recover", 450);
         break;
       }
@@ -307,9 +310,24 @@ export class Enemy {
       return true;
     }
     Audio.sfx("enemy_hit");
+    // Projectile hits carry their own brief freeze (sword/hammer already
+    // freeze upstream; hitStop is guarded against doubling).
+    if (kind === "arrow" || kind === "cog") this.scene.hitStop(30);
     this.play("hurt", false);
-    this.body.setVelocityX(-fromSide * 260);
-    if (!this.type.flying && kind !== "stomp") this.body.setVelocityY(kind === "hammer" ? -320 : -180);
+    // Weight scales the knockback: heavy golems barely move, light flyers fly.
+    const w = this.type.weight ?? 1;
+    this.body.setVelocityX(-fromSide * 260 * w);
+    if (!this.type.flying && kind !== "stomp") this.body.setVelocityY((kind === "hammer" ? -320 : -180) * w);
+    // Hurt squash: a quick compress-and-recover on the sprite only (sync
+    // never touches scale, so this cannot stick). Killed by die() if the
+    // next hit is lethal.
+    const s = this.scale;
+    this.scene.tweens.add({
+      targets: this.sprite, scaleX: s * 1.06, scaleY: s * 0.94, duration: 80,
+      onComplete: () => {
+        if (this.sprite.active) this.scene.tweens.add({ targets: this.sprite, scaleX: s, scaleY: s, duration: 120 });
+      },
+    });
     this.setState("hurt", 380);
     this.nextAttack = Math.max(this.nextAttack, this.scene.time.now + 700);
     return true;
@@ -324,6 +342,15 @@ export class Enemy {
     Audio.sfx("enemy_defeat");
     this.scene.vfx.enemyPoof(this.x, this.body.center.y);
     this.play("dead", false);
+    // Kill any hurt squash so the death pop owns the scale from here.
+    this.scene.tweens.killTweensOf(this.sprite);
+    const s = this.scale;
+    this.scene.tweens.add({
+      targets: this.sprite, scaleX: s * 1.12, scaleY: s * 0.85, duration: 130,
+      onComplete: () => {
+        if (this.sprite.active) this.scene.tweens.add({ targets: this.sprite, scaleX: s, scaleY: s, duration: 200 });
+      },
+    });
     if (this.type.flying) {
       this.scene.tweens.add({ targets: this.sprite, y: this.sprite.y + 40, duration: 400, ease: "Quad.in" });
     }

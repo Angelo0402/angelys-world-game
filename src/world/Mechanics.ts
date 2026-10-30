@@ -15,7 +15,16 @@ interface Wall {
   broken: boolean;
   /** Breakable walls announce themselves with a voice bark, once each. */
   barked?: boolean;
+  /** Hammer hits landed (breakable walls only). Breaks at def.hits ?? 3. */
+  hits: number;
+  /** Pulsing gold glint overlay, alive until the first hit. */
+  glint?: Phaser.GameObjects.Graphics;
+  glintTween?: Phaser.Tweens.Tween;
 }
+
+/** Breakable-wall block stage textures (baked cracks, approved sprites). */
+const WALLBLOCK_STAGE = ["wallblock_intact", "wallblock_cracked", "wallblock_heavy"];
+const WALLBLOCK_CHUNKS = 12;
 
 interface Crate {
   rect: Phaser.GameObjects.Rectangle;
@@ -133,23 +142,26 @@ export class Mechanics {
     const body = this.scene.add.rectangle(def.x, def.y + (dir * h) / 2, BLOCK_W, h).setVisible(false);
     this.wallGroup.add(body);
     const parts: Phaser.GameObjects.GameObject[] = [];
+    const glint = def.breakable ? this.scene.add.graphics().setDepth(13.6).setAlpha(0.15) : undefined;
     for (let i = 0; i < def.blocks; i++) {
       const y = def.y + dir * BLOCK_H * (i + 0.5);
-      const img = this.scene.add.image(def.x, y, this.prop("block")).setDisplaySize(BLOCK_W + 6, BLOCK_H + 8).setDepth(13 + i * 0.01);
+      // Breakable walls use the approved stage sprites (baked cracks); all
+      // other walls keep their chapter block texture.
+      const tex = def.breakable ? WALLBLOCK_STAGE[0] : this.prop("block");
+      const img = this.scene.add.image(def.x, y, tex).setDisplaySize(BLOCK_W + 6, BLOCK_H + 8).setDepth(13 + i * 0.01);
       if (i % 2) img.setFlipX(true);
       parts.push(img);
       if (def.breakable) {
-        img.setTint(0xe8d6c0);
-        const g = this.scene.add.graphics().setDepth(13.5);
-        g.lineStyle(3, 0x2a1a12, 0.85);
         const cx = def.x + (i % 2 ? 8 : -6);
-        g.beginPath().moveTo(cx - 4, y - BLOCK_H / 2 + 6).lineTo(cx + 8, y - 8).lineTo(cx - 6, y + 6).lineTo(cx + 4, y + BLOCK_H / 2 - 6).strokePath();
-        g.beginPath().moveTo(cx + 8, y - 8).lineTo(cx + 26, y - 2).strokePath();
-        g.beginPath().moveTo(cx - 6, y + 6).lineTo(cx - 24, y + 14).strokePath();
-        parts.push(g);
+        // Gold glint lines over the block, pulsing until the first hit.
+        glint!.lineStyle(2, 0xffd94d, 0.9);
+        glint!.beginPath().moveTo(cx - 4, y - BLOCK_H / 2 + 6).lineTo(cx + 8, y - 8).lineTo(cx - 6, y + 6).lineTo(cx + 4, y + BLOCK_H / 2 - 6).strokePath();
       }
     }
-    const wall: Wall = { def, body, parts, broken: false };
+    const wall: Wall = { def, body, parts, broken: false, hits: 0, glint };
+    if (glint) {
+      wall.glintTween = this.scene.tweens.add({ targets: glint, alpha: { from: 0.15, to: 0.5 }, duration: 900, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+    }
     this.walls.push(wall);
     if (def.hang) {
       // Gates (swim levels) explain themselves.
@@ -444,18 +456,50 @@ export class Mechanics {
 
   // ---------------------------------------------------------------- weapons
 
-  /** Hammer impact: smash cracked walls touching the swing. */
+  /** Hammer impact: cracked walls take hits; they break at def.hits ?? 3. */
   hammerAt(r: Phaser.Geom.Rectangle) {
-    let broke = false;
+    let hit = false;
     for (const w of this.walls) {
       if (w.broken || !w.def.breakable) continue;
       const wr = new Phaser.Geom.Rectangle(w.def.x - BLOCK_W / 2 - 20, w.def.y - w.def.blocks * BLOCK_H, BLOCK_W + 40, w.def.blocks * BLOCK_H);
       if (Phaser.Geom.Rectangle.Overlaps(r, wr)) {
-        this.breakWall(w);
-        broke = true;
+        hit = true;
+        w.hits++;
+        const maxHits = w.def.hits ?? 3;
+        if (w.hits >= maxHits) this.breakWall(w);
+        else this.wallHit(w, r, wr, maxHits);
       }
     }
-    return broke;
+    return hit;
+  }
+
+  /** Non-breaking hammer hit: tok, shake, chips, heavier cracks, bounce. */
+  private wallHit(w: Wall, r: Phaser.Geom.Rectangle, wr: Phaser.Geom.Rectangle, maxHits: number) {
+    const ix = Phaser.Math.Clamp((r.left + r.right) / 2, wr.left, wr.right);
+    const iy = Phaser.Math.Clamp((r.top + r.bottom) / 2, wr.top, wr.bottom);
+    Audio.sfx("tok");
+    const almost = w.hits === maxHits - 1;
+    if (almost) Audio.sfx("crunch");
+    this.scene.cameras.main.shake(almost ? 200 : 120, almost ? 0.01 : 0.006);
+    this.scene.fx("fx_dust", "puff", ix, iy, 0.3);
+    for (let i = 0; i < 3; i++) this.scene.fx("fx_spark", "hit", ix + Phaser.Math.Between(-14, 14), iy + Phaser.Math.Between(-14, 14), 0.22, 0xffc35a);
+    // Baked crack stage: hit 1 -> cracked sprite, hit 2 -> heavily cracked.
+    const stage = WALLBLOCK_STAGE[Math.min(w.hits, WALLBLOCK_STAGE.length - 1)];
+    for (const p of w.parts) (p as Phaser.GameObjects.Image).setTexture(stage);
+    // Impact compress: the whole block visibly shudders (scale pulse, yoyo
+    // back to its real scale). No new art needed.
+    for (const p of w.parts) {
+      const o = p as Phaser.GameObjects.Image;
+      this.scene.tweens.add({ targets: o, scaleX: o.scaleX * 1.04, scaleY: o.scaleY * 0.96, duration: 80, yoyo: true });
+    }
+    // First hit kills the gold glint; the secret is out.
+    if (w.hits === 1 && w.glint) {
+      w.glintTween?.stop();
+      w.glint.destroy();
+      w.glint = undefined;
+    }
+    // Hammer bounces off the wall, away from it.
+    this.scene.player.applyRecoil(this.scene.player.facing);
   }
 
   /** Sword against a cracked wall just clinks. */
@@ -479,8 +523,13 @@ export class Mechanics {
     w.broken = true;
     w.body.destroy();
     this.wallGroup.refresh();
+    // The glint does not fly off with the blocks.
+    w.glintTween?.stop();
+    w.glint?.destroy();
     Audio.sfx("wall_break");
     this.scene.cameras.main.shake(260, 0.012);
+    this.scene.fx("fx_dust", "puff", w.def.x - 40, w.def.y, 0.4);
+    this.scene.fx("fx_dust", "puff", w.def.x + 40, w.def.y, 0.4);
     const dir = this.scene.player.x < w.def.x ? 1 : -1;
     w.parts.forEach((p, i) => {
       const o = p as Phaser.GameObjects.Image;
@@ -495,7 +544,31 @@ export class Mechanics {
         onComplete: () => o.destroy(),
       });
     });
+    // Rubble chunks (approved sprites) burst out alongside the flying blocks.
+    const dir2 = dir;
+    for (let i = 0; i < w.def.blocks; i++) {
+      for (let k = 0; k < 2; k++) {
+        const key = `wallblock_chunk${Phaser.Math.Between(0, WALLBLOCK_CHUNKS - 1)}`;
+        if (!this.scene.textures.exists(key)) continue;
+        const by = w.def.y - i * BLOCK_H;
+        const c = this.scene.add.image(w.def.x + Phaser.Math.Between(-20, 20), by, key).setDepth(13.2);
+        const srcImg = this.scene.textures.get(key).getSourceImage() as HTMLImageElement;
+        c.setScale(54 / Math.max(srcImg.width, srcImg.height));
+        this.scene.tweens.add({
+          targets: c,
+          x: c.x + dir2 * Phaser.Math.Between(40, 200),
+          y: by + 50 + Phaser.Math.Between(0, 70),
+          angle: dir2 * Phaser.Math.Between(90, 300),
+          alpha: 0,
+          duration: 700 + i * 40 + k * 60,
+          ease: "Quad.in",
+          onComplete: () => c.destroy(),
+        });
+      }
+    }
     for (let i = 0; i < w.def.blocks; i++) this.scene.fx("fx_dust", "puff", w.def.x + Phaser.Math.Between(-30, 30), w.def.y - i * BLOCK_H, 0.45);
+    // Payoff: the gem behind the wall flies to the player.
+    this.scene.flyGemToPlayer(w.def.x, w.def.y - (w.def.blocks * BLOCK_H) / 2);
   }
 
   /** Arrow vs star targets. Returns true if one was hit. */

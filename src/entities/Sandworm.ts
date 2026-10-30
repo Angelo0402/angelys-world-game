@@ -6,7 +6,7 @@ import type { GameScene } from "../scenes/GameScene";
 import { WORM_PHASE } from "../story/worm";
 import type { DamageKind } from "./Enemy";
 
-type WState = "intro" | "idle" | "spit" | "lunge" | "burrow" | "dead";
+type WState = "intro" | "idle" | "spit" | "lunge" | "burrow" | "crawl" | "dead";
 
 const HEIGHT = 250;
 
@@ -29,6 +29,7 @@ export class Sandworm {
   private hitUntil = 0;
   private risen = false;
   private bob = 0;
+  private crawlGoal = 0;
 
   constructor(scene: GameScene, x: number, arena: { x0: number; x1: number }) {
     this.scene = scene;
@@ -57,6 +58,11 @@ export class Sandworm {
 
   hitbox() {
     if (!this.harmful) return new Phaser.Geom.Rectangle(0, 0, 0, 0);
+    if (this.state === "crawl") {
+      // Ground slither: low, long body stretched along the floor.
+      const left = this.dir < 0 ? this.x - 200 : this.x - 40;
+      return new Phaser.Geom.Rectangle(left, GROUND_Y - 60, 240, 60);
+    }
     const left = this.dir < 0 ? this.x - 140 : this.x - 40;
     return new Phaser.Geom.Rectangle(left, GROUND_Y - HEIGHT + 10, 190, HEIGHT);
   }
@@ -82,14 +88,20 @@ export class Sandworm {
       const goal = Phaser.Math.Clamp(this.scene.player.x + this.dir * -80, this.arena.x0 + 90, this.arena.x1 - 90);
       this.x += Math.sign(goal - this.x) * Math.min(step, Math.abs(goal - this.x));
     }
+    if (this.state === "crawl") {
+      this.facePlayer();
+      const step = (this.phase === 2 ? 200 : 170) * dt;
+      this.x += Math.sign(this.crawlGoal - this.x) * Math.min(step, Math.abs(this.crawlGoal - this.x));
+    }
     const wave = Math.sin(this.bob * 0.007);
-    const thrash = this.risen && this.state !== "burrow" && this.state !== "intro";
+    const thrash = this.risen && this.state !== "burrow" && this.state !== "intro" && this.state !== "crawl";
     this.sprite.setPosition(this.x, this.y + (thrash ? wave * 14 : 0));
     this.sprite.setFlipX(this.dir > 0);
     if (thrash && (this.state === "idle" || this.state === "lunge")) this.sprite.setAngle(wave * 10);
     else this.sprite.setAngle(0);
     if (this.state === "intro" || time < this.until) return;
     if (this.state === "idle") this.pick(time);
+    else if (this.state === "crawl") this.endCrawl(time);
     else if (this.state === "spit" || this.state === "lunge") {
       if (Math.random() < 0.45) this.burrow(time);
       else this.rest(time);
@@ -110,9 +122,12 @@ export class Sandworm {
   private pick(time: number) {
     this.facePlayer();
     const roll = Math.random();
-    if (roll < 0.34) this.spit(time);
-    else if (roll < 0.58) this.rain(time);
-    else if (roll < 0.8) this.slam(time);
+    // Crawl only fires once the crawl strip is integrated (anim exists);
+    // before that the roll falls through to spit, so the fight still works.
+    if (roll < 0.15 && this.scene.anims.exists("sandworm:crawl")) this.crawl(time);
+    else if (roll < 0.42) this.spit(time);
+    else if (roll < 0.62) this.rain(time);
+    else if (roll < 0.82) this.slam(time);
     else this.lunge(time);
   }
 
@@ -169,6 +184,23 @@ export class Sandworm {
     this.sprite.play("sandworm:rise", true);
     Audio.sfx("boss_swoop");
     this.until = time + (this.phase === 2 ? 700 : 800);
+  }
+
+  /** Ground slither: the worm crawls low across the floor past Angely's side, then rears back up. */
+  private crawl(time: number) {
+    this.state = "crawl";
+    this.sprite.play("sandworm:crawl", true);
+    Audio.sfx("boss_swoop");
+    const px = this.scene.player.x;
+    const side = px < this.x ? -1 : 1;
+    this.crawlGoal = Phaser.Math.Clamp(px + side * 160, this.arena.x0 + 120, this.arena.x1 - 120);
+    this.until = time + 1600;
+  }
+
+  private endCrawl(time: number) {
+    this.state = "idle";
+    this.sprite.play("sandworm:rise", true);
+    this.until = time + 900;
   }
 
   private burrow(time: number) {

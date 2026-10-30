@@ -295,6 +295,8 @@ class AudioManagerImpl {
       case "hammer_swing": this.noise(t, 0.3, 0.3, 500, "bandpass", 1600); break;
       case "hammer_smash": this.tone(t, 120, 0.4, "sine", 0.55, 45); this.noise(t, 0.35, 0.45, 700, "lowpass", 120); break;
       case "wall_break": this.noise(t, 0.6, 0.5, 900, "lowpass", 150); [0, 0.08, 0.17].forEach((d) => this.tone(t + d, 160 - d * 300, 0.18, "square", 0.12, 60)); break;
+      case "tok": this.tone(t, 900, 0.06, "square", 0.25, 500); this.noise(t, 0.05, 0.2, 2500, "bandpass", 3000); break;
+      case "crunch": this.noise(t, 0.25, 0.4, 800, "lowpass", 300); this.tone(t, 180, 0.15, "square", 0.2, 90); break;
       case "crate_push": this.noise(t, 0.12, 0.12, 260, "lowpass"); break;
       case "spring": this.tone(t, 220, 0.3, "sine", 0.3, 880); this.tone(t, 330, 0.25, "triangle", 0.12, 1320); break;
       case "crumble": this.noise(t, 0.4, 0.3, 500, "lowpass", 200); break;

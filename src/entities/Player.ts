@@ -7,6 +7,48 @@ import { Barks } from "../audio/barks";
 import { MAX_HEARTS, WEAPON_ORDER, type WeaponId } from "../config";
 import type { FrameInput } from "../input/controls";
 import type { GameScene } from "../scenes/GameScene";
+import { MotionPolish } from "./motionPolish";
+
+/**
+ * Attack timing, measured from the actual sprite sheets (poses verified
+ * frame by frame, 2026-10-27). Local frame = anim-local index (0 = first
+ * frame of the attack anim). Phases: windup (slow, readable) -> strike
+ * (fast) -> recovery (visible but short). Combat events are keyed to
+ * frames, never to wall time, so they stay synced when timeScale changes.
+ *
+ * windupEnd: last local frame of the windup. strikeEnd: last local frame
+ * of the strike (recovery = the rest). release: one-shot fire frame for
+ * projectile weapons (undefined for melee). stateMs: full attack state
+ * length, sized to cover the modulated anim (windup/scale + strike/scale
+ * + recovery/scale) with a small margin.
+ */
+interface AttackTiming {
+  windupEnd: number;
+  strikeEnd: number;
+  release?: number;
+  windupScale: number;
+  strikeScale: number;
+  recoveryScale: number;
+  stateMs: number;
+}
+
+const ATTACK_TIMING: Record<WeaponId, AttackTiming> & { sword_air: AttackTiming } = {
+  // Slash 11f @34fps: ready, raise, overhead | swing, contact, follow | recover x5.
+  sword: { windupEnd: 2, strikeEnd: 5, windupScale: 0.55, strikeScale: 1.5, recoveryScale: 0.8, stateMs: 410 },
+  // Air slash 4f @14fps: high, tuck | slash arc, follow.
+  sword_air: { windupEnd: 1, strikeEnd: 3, windupScale: 0.8, strikeScale: 1.4, recoveryScale: 0.9, stateMs: 360 },
+  // Smash 12f @27fps: lift x6 | ground impact (dust baked) | recover x5.
+  hammer: { windupEnd: 5, strikeEnd: 6, release: 6, windupScale: 0.7, strikeScale: 0.5, recoveryScale: 0.85, stateMs: 615 },
+  // Shoot 12f @40fps: raise x2, draw x4 | release | lower x5.
+  bow: { windupEnd: 5, strikeEnd: 6, release: 6, windupScale: 0.65, strikeScale: 1.6, recoveryScale: 0.8, stateMs: 410 },
+  // Cast 9f @29fps: raise, charge x2 | release | recover x5.
+  wand: { windupEnd: 2, strikeEnd: 3, release: 3, windupScale: 0.7, strikeScale: 1.5, recoveryScale: 0.85, stateMs: 380 },
+  // Throw 6f @30fps: wind-up x2 | throw, release | follow x2. Shared by cog.
+  boomerang: { windupEnd: 1, strikeEnd: 3, release: 3, windupScale: 0.7, strikeScale: 1.4, recoveryScale: 0.8, stateMs: 300 },
+  cog: { windupEnd: 1, strikeEnd: 3, release: 3, windupScale: 0.7, strikeScale: 1.4, recoveryScale: 0.8, stateMs: 280 },
+  // Shoot 10f @25fps: raise, aim x2 | muzzle burst x3 | lower x4.
+  ray: { windupEnd: 2, strikeEnd: 5, release: 3, windupScale: 0.75, strikeScale: 1.3, recoveryScale: 0.85, stateMs: 445 },
+};
 
 const SPEED = 350;
 export const PUSH_SPEED = 140;
@@ -71,7 +113,6 @@ export class Player {
   private shieldUntil = 0;
   private shieldWas = false;
   private stateUntil = 0;
-  private attackStart = 0;
   private attackHits = new Set<unknown>();
   private airAttack = false;
   private wasGrounded = true;
@@ -80,6 +121,15 @@ export class Player {
   private landStart = -1000;
   private jumpStart = -1000;
   private lastTrailAt = 0;
+  /** Reusable body-motion layer (breathing, bob, squash/stretch). */
+  private motion = new MotionPolish();
+  /** Attack press buffered during the last 150ms of an attack (chains). */
+  private attackBufferedAt = -1000;
+  /** Subtle body factor per attack phase (windup compress, strike stretch). */
+  private attackScale: { sx: number; sy: number } | null = null;
+  /** Armed while running; disarmed when the stop settle fires. */
+  private stopArmed = false;
+  private lastWalkDust = 0;
   private recoilVx = 0;
   private recoilUntil = 0;
 
@@ -199,8 +249,12 @@ export class Player {
       this.lastGrounded = time;
       this.jumpCut = false;
       if (!this.wasGrounded && body.velocity.y >= 0) {
+        this.motion.land(time);
         this.scene.fx("fx_dust", "puff", this.x, body.bottom, 0.22);
         this.scene.vfx.landDust(this.x, body.bottom);
+        // Big drops (not ordinary jumps, which land near ~840) get a small
+        // camera kick. Guarded off during cutscenes.
+        if (this.lastFallSpeed > 1100 && !this.scene.cutscene) this.scene.cameraKick("landing");
         if (this.lastFallSpeed > 380 && this.state === "normal") {
           this.landStart = time;
           this.landUntil = time + 210;
@@ -220,6 +274,14 @@ export class Player {
     if (this.state === "attack" && time > this.stateUntil) this.state = "normal";
 
     if (input.jumpPressed) this.jumpBufferedAt = time;
+    if (input.attackPressed) this.attackBufferedAt = time;
+    // Chained attack: a press made during the last 150ms of an attack
+    // starts the next one the moment the state frees (presses made earlier
+    // already expired, so this never double-fires with the live check).
+    if (!input.attackPressed && this.state === "normal" && this.weapon && time - this.attackBufferedAt < 150) {
+      this.attackBufferedAt = -1000;
+      this.startAttack(time);
+    }
 
     if (this.state !== "hurt") {
       let speed = this.swim ? SWIM_SPEED : SPEED;
@@ -231,6 +293,13 @@ export class Player {
       const accel = !grounded ? AIR_ACCEL : braking ? GROUND_DECEL * this.grip : GROUND_ACCEL * Math.max(0.45, this.grip);
       const step = accel * dt;
       body.setVelocityX(Math.abs(target - vx) <= step ? target : vx + Math.sign(target - vx) * step);
+      // Braking to a full stop: one settle squash, then the idle breathing
+      // takes over. Armed while fast, fires once when speed drops under 10.
+      if (Math.abs(body.velocity.x) > 150) this.stopArmed = true;
+      else if (grounded && Math.abs(body.velocity.x) < 10 && this.stopArmed) {
+        this.motion.stop(time);
+        this.stopArmed = false;
+      }
       if (input.axis !== 0 && this.state !== "attack") this.facing = input.axis > 0 ? 1 : -1;
 
       if (this.swim) {
@@ -245,6 +314,7 @@ export class Player {
       if (time - this.jumpBufferedAt < BUFFER_MS && canJump) {
         body.setVelocityY(-JUMP_V);
         this.jumpStart = time;
+        this.motion.jump(time);
         this.jumpBufferedAt = -1000;
         this.lastGrounded = -1000;
         Audio.sfx("jump");
@@ -301,46 +371,69 @@ export class Player {
     for (let i = 0; i < n; i++) this.scene.time.delayedCall(i * 70, () => this.bubbles.emitParticleAt(mx + Phaser.Math.Between(-3, 3), my, 1));
   }
 
-  private attackUpdate(time: number) {
+  /** Timing config for the running attack (air sword has its own row). */
+  private attackTiming(): AttackTiming {
+    if (this.attackWeapon === "sword" && this.airAttack) return ATTACK_TIMING.sword_air;
+    return ATTACK_TIMING[this.attackWeapon];
+  }
+
+  /** Anim-local frame of the running attack (0 = first frame). Progress
+   *  based, so it stays correct under timeScale modulation. */
+  private attackLocalFrame(): number {
+    const anim = this.sprite.anims.currentAnim;
+    if (!anim) return 0;
+    const n = anim.frames.length;
+    return Math.min(n - 1, Math.floor(this.sprite.anims.getProgress() * n));
+  }
+
+  private attackUpdate(_time: number) {
     const body = this.body;
-    const t = time - this.attackStart;
+    const cfg = this.attackTiming();
+    const local = this.attackLocalFrame();
+    // Phase timing: slow the wind-up so it reads, snap the strike, let the
+    // recovery show briefly. pickAnim resets timeScale to 1 when the state
+    // frees, so nothing here can leak into idle or walk.
+    const phase = local <= cfg.windupEnd ? "windup" : local <= cfg.strikeEnd ? "strike" : "recovery";
+    this.sprite.anims.timeScale = phase === "windup" ? cfg.windupScale : phase === "strike" ? cfg.strikeScale : cfg.recoveryScale;
+    this.attackScale =
+      phase === "windup" ? { sx: 1.05, sy: 0.94 } : phase === "strike" ? { sx: 0.97, sy: 1.05 } : { sx: 1.02, sy: 0.98 };
     if (this.attackWeapon === "ray") {
-      if (!this.shotFired && t > 170) {
+      if (!this.shotFired && local >= (cfg.release ?? 0)) {
         this.shotFired = true;
         this.scene.shootRay(this.x + this.facing * 48, body.top + body.height * 0.38, this.facing);
       }
       return;
     }
     if (this.attackWeapon === "cog") {
-      if (!this.shotFired && t > 140) {
+      if (!this.shotFired && local >= (cfg.release ?? 0)) {
         this.shotFired = true;
         this.scene.throwCog(this.x + this.facing * 46, body.top + body.height * 0.32, this.facing);
       }
       return;
     }
     if (this.attackWeapon === "boomerang") {
-      if (!this.shotFired && t > 150) {
+      if (!this.shotFired && local >= (cfg.release ?? 0)) {
         this.shotFired = true;
         this.scene.throwBoomerang(this.x + this.facing * 40, body.top + body.height * 0.3, this.facing);
       }
       return;
     }
     if (this.attackWeapon === "wand") {
-      if (!this.shotFired && t > 190) {
+      if (!this.shotFired && local >= (cfg.release ?? 0)) {
         this.shotFired = true;
         this.scene.castStars(this.x + this.facing * 50, body.top + body.height * 0.25, this.facing);
       }
       return;
     }
     if (this.attackWeapon === "bow") {
-      if (!this.shotFired && t > 145) {
+      if (!this.shotFired && local >= (cfg.release ?? 0)) {
         this.shotFired = true;
         this.scene.shootArrow(this.x + this.facing * 46, body.top + body.height * 0.36, this.facing);
       }
       return;
     }
     if (this.attackWeapon === "hammer") {
-      if (!this.shotFired && t > 250) {
+      if (!this.shotFired && local >= (cfg.release ?? 0)) {
         this.shotFired = true;
         const reach = 160;
         const r = new Phaser.Geom.Rectangle(this.facing > 0 ? this.x - 30 : this.x - reach, body.top - 30, reach + 30, body.height + 50);
@@ -348,7 +441,10 @@ export class Player {
       }
       return;
     }
-    if (t > 50 && t < 250) {
+    // Sword: the hitbox lives only while the blade is visibly swinging
+    // (strike frames), never during the raise. This also gates projectile
+    // deflection (swordHit) to the same window.
+    if (local > cfg.windupEnd && local <= cfg.strikeEnd) {
       const reach = this.airAttack ? 120 : 130;
       const r = new Phaser.Geom.Rectangle(
         this.facing > 0 ? this.x - 20 : this.x - reach,
@@ -365,34 +461,35 @@ export class Player {
     if (w === "boomerang" && this.scene.boomerangOut) return;
     this.state = "attack";
     this.attackWeapon = w;
-    this.attackStart = time;
     this.attackHits.clear();
     this.shotFired = false;
     this.airAttack = !this.grounded;
+    // State length comes from the timing table (covers the modulated anim).
+    // attackWeapon is set before this block, so attackTiming() resolves.
     if (w === "ray") {
-      this.stateUntil = time + 400;
+      this.stateUntil = time + ATTACK_TIMING.ray.stateMs;
       this.setAnim("angely_ray", "shoot", true);
       Audio.sfx("ray");
     } else if (w === "cog") {
-      this.stateUntil = time + 280;
+      this.stateUntil = time + ATTACK_TIMING.cog.stateMs;
       this.setAnim("angely_boomerang", "throw", true);
     } else if (w === "boomerang") {
-      this.stateUntil = time + 300;
+      this.stateUntil = time + ATTACK_TIMING.boomerang.stateMs;
       this.setAnim("angely_boomerang", "throw", true);
     } else if (w === "wand") {
-      this.stateUntil = time + 340;
+      this.stateUntil = time + ATTACK_TIMING.wand.stateMs;
       this.setAnim("angely_wand", "cast", true);
       Audio.sfx("wand_charge");
     } else if (w === "bow") {
-      this.stateUntil = time + 300;
+      this.stateUntil = time + ATTACK_TIMING.bow.stateMs;
       this.setAnim("angely_bow", "shoot", true);
     } else if (w === "hammer") {
-      this.stateUntil = time + 450;
+      this.stateUntil = time + ATTACK_TIMING.hammer.stateMs;
       this.setAnim("angely_hammer", "smash", true);
       Audio.sfx("hammer_swing");
       Barks.play(this.scene, ["angely_bark_09"], 0.22);
     } else {
-      this.stateUntil = time + (this.airAttack ? 360 : 320);
+      this.stateUntil = time + (this.airAttack ? ATTACK_TIMING.sword_air.stateMs : ATTACK_TIMING.sword.stateMs);
       this.setAnim("angely_sword", this.airAttack ? "jump_attack" : "slash", true);
       Audio.sfx("sword_swing");
       Barks.play(this.scene, ["angely_bark_09"], 0.22);
@@ -580,6 +677,27 @@ export class Player {
       this.lastTrailAt = time;
       this.scene.vfx.runTrail(this.x - this.facing * 20, this.body.bottom - 30);
     }
+    // Quiet walk dust below sprint speed (sprint already has its trail).
+    if (this.grounded && Math.abs(this.body.velocity.x) > 60 && Math.abs(this.body.velocity.x) <= 225 && this.alive && time - this.lastWalkDust > 400) {
+      this.lastWalkDust = time;
+      this.scene.fx("fx_dust", "puff", this.x, this.body.bottom, 0.15);
+    }
+    // Body motion via the reusable MotionPolish layer (scale ONLY, physics
+    // untouched). Formulas identical to the previous inline code; only the
+    // home changed, so any character can use it with its own base scale.
+    const base = this.scales[this.sheet ?? "angely"];
+    const { sx, sy } = this.motion.compute(
+      time,
+      {
+        grounded: this.grounded,
+        speedX: Math.abs(this.body.velocity.x),
+        velY: this.body.velocity.y,
+        x: this.x,
+        active: this.state === "normal" && !this.swim,
+      },
+      this.state === "attack" ? this.attackScale : null,
+    );
+    s.setScale(base * sx, base * sy);
     s.y = swimSheet ? this.body.bottom - HEIGHT / 2 + 4 : this.body.bottom + 1;
     const tilt = swimSheet && s.anims.currentAnim?.key === "angely_swim:swim" ? Phaser.Math.Clamp(this.body.velocity.y / 900, -0.35, 0.35) * this.facing : 0;
     s.rotation = Phaser.Math.Linear(s.rotation, tilt, 0.2);

@@ -46,6 +46,14 @@ export class HudScene extends Phaser.Scene {
   private bossSegs: { back: Phaser.GameObjects.Rectangle; chip: Phaser.GameObjects.Rectangle; fill: Phaser.GameObjects.Rectangle; w: number }[] = [];
   private veilPhase = 0;
   private veilPulse?: Phaser.Tweens.Tween;
+  /** Phase checkpoint marker on the veil boss bar (feel package 2026-10-26). */
+  private bossCheckpoint?: Phaser.GameObjects.Container;
+  /** Panel fade tween, tracked so a stale fade-out cannot hide the panel
+   *  after a newer setBoss re-showed it (harness find 2026-10-26: the
+   *  cinema-end null-then-boss sequence left the 10-2 bar hidden until the
+   *  first HP change). The phase-change scale pop is a separate tween and
+   *  is never touched by this field. */
+  private bossPanelFade?: Phaser.Tweens.Tween;
   private weaponSlot!: Phaser.GameObjects.Container;
   private weaponIcon!: Phaser.GameObjects.Image;
   private weaponKey!: Phaser.GameObjects.Text;
@@ -114,7 +122,7 @@ export class HudScene extends Phaser.Scene {
       "hud:toast": (t: string) => this.toast(t),
       "hud:banner": (t: string) => this.banner(t),
       "hud:paused": () => this.showPause(),
-      "hud:gameover": (d: { level: number; goal: GoalState }) => this.showGameOver(d),
+      "hud:gameover": (d: { level: number; goal: GoalState; bossHp?: number; bossMax?: number; bossPhase?: number }) => this.showGameOver(d),
       "hud:victory": () => this.showVictory(),
       "hud:cinema": (on: boolean) => this.setCinema(on),
       "hud:dialogue": (d: { lines: DialogueLine[]; done: () => void; onLine?: (l: DialogueLine) => void }) => this.dialogue.play(d.lines, d.done, d.onLine),
@@ -209,10 +217,10 @@ export class HudScene extends Phaser.Scene {
     this.bossChip = this.add.rectangle(GAME_W / 2 - 230, 50, 460, 16, 0xffffff).setOrigin(0, 0.5);
     this.bossFill = this.add.rectangle(GAME_W / 2 - 230, 50, 460, 16, 0xb57cff).setOrigin(0, 0.5);
     const frame = this.add.rectangle(GAME_W / 2, 50, 462, 18).setStrokeStyle(2, 0xffffff, 0.6);
-    // Veil phase segments: 460 total = 181 + 4 + 136 + 4 + 135 (HP 64/48/48 of 160)
-    const segCols = [0xff5ad1, 0xb57cff, 0xff4040];
-    const segDark = [0x3d1030, 0x241239, 0x3d0f14];
-    const segW = [181, 136, 135];
+    // Veil phase segments: 460 total = 182 + 4 + 274 (HP 40/60 of 100, Angelo 2026-10-24: 2 phases)
+    const segCols = [0xff5ad1, 0xb57cff];
+    const segDark = [0x3d1030, 0x241239];
+    const segW = [182, 274];
     let sx = GAME_W / 2 - 230;
     this.bossSegs = segW.map((w, i) => {
       const sb = this.add.rectangle(sx, 50, w, 16, segDark[i]).setOrigin(0, 0.5).setVisible(false);
@@ -222,7 +230,15 @@ export class HudScene extends Phaser.Scene {
       return { back: sb, chip: sc, fill: sf, w };
     });
     const segObjs = this.bossSegs.flatMap((s) => [s.back, s.chip, s.fill]);
-    this.bossPanel = this.add.container(0, 0, [g, name, back, this.bossChip, this.bossFill, ...segObjs, frame]).setVisible(false);
+    // Phase checkpoint (feel package 2026-10-26): permanent divider + crystal
+    // icon at the 60% threshold (bar center - 46 = left seg 182 + 4 gap / 2).
+    // Veil bar only; hidden with the panel and for non-veil bosses.
+    const divX = GAME_W / 2 - 46;
+    this.bossCheckpoint = this.add.container(0, 0, [
+      this.add.rectangle(divX, 50, 4, 18, 0xffffff).setOrigin(0.5),
+      this.add.image(divX, 38, "feel_crystal").setDisplaySize(14, 14),
+    ]).setVisible(false);
+    this.bossPanel = this.add.container(0, 0, [g, name, back, this.bossChip, this.bossFill, ...segObjs, frame, this.bossCheckpoint]).setVisible(false);
   }
 
   private setBoss(b: { name: string; hp: number; max: number; veilPhase?: number } | null) {
@@ -232,12 +248,20 @@ export class HudScene extends Phaser.Scene {
       this.veilPhase = 0;
       this.veilPulse?.remove();
       this.veilPulse = undefined;
-      if (this.bossPanel.visible) this.tweens.add({ targets: this.bossPanel, alpha: 0, duration: 400, onComplete: () => this.bossPanel.setVisible(false).setAlpha(1) });
+      this.bossPanelFade?.remove();
+      this.bossPanelFade = undefined;
+      if (this.bossPanel.visible) this.bossPanelFade = this.tweens.add({ targets: this.bossPanel, alpha: 0, duration: 400, onComplete: () => this.bossPanel.setVisible(false).setAlpha(1) });
       return;
     }
+    // A pending fade-out must die here, or its onComplete hides the panel
+    // after this re-show (the cinema-end null-then-boss sequence).
+    this.bossPanelFade?.remove();
+    this.bossPanelFade = undefined;
     if (!this.bossPanel.visible) {
       this.bossPanel.setVisible(true).setAlpha(0);
-      this.tweens.add({ targets: this.bossPanel, alpha: 1, duration: 400 });
+      this.bossPanelFade = this.tweens.add({ targets: this.bossPanel, alpha: 1, duration: 400 });
+    } else {
+      this.bossPanel.setAlpha(1);
     }
     this.bossName.setText(b.name);
     const veil = b.veilPhase !== undefined;
@@ -249,6 +273,7 @@ export class HudScene extends Phaser.Scene {
       s.chip.setVisible(veil);
       s.fill.setVisible(veil);
     });
+    this.bossCheckpoint?.setVisible(veil);
     if (!veil) {
       const k = Phaser.Math.Clamp(b.hp / b.max, 0, 1);
       this.bossFill.width = 460 * k;
@@ -257,16 +282,15 @@ export class HudScene extends Phaser.Scene {
       this.tweens.add({ targets: this.bossChip, width: 460 * k, delay: 250, duration: 400 });
       return;
     }
-    // Veil: three phase bars. Thresholds mirror CrystalVeilBoss (60% / 30%).
+    // Veil: two phase bars. Threshold mirrors CrystalVeilBoss (60%).
     const phase = b.veilPhase!;
-    const t2 = b.max * 0.6, t3 = b.max * 0.3;
+    const t2 = b.max * 0.6;
     const ks = [
       Phaser.Math.Clamp((b.hp - t2) / (b.max - t2), 0, 1),
-      Phaser.Math.Clamp((b.hp - t3) / (t2 - t3), 0, 1),
-      Phaser.Math.Clamp(b.hp / t3, 0, 1),
+      Phaser.Math.Clamp(b.hp / t2, 0, 1),
     ];
-    const cols = [0xff5ad1, 0xb57cff, 0xff4040];
-    const dark = [0x57163f, 0x342058, 0x571318];
+    const cols = [0xff5ad1, 0xb57cff];
+    const dark = [0x57163f, 0x342058];
     this.bossSegs.forEach((s, i) => {
       const done = phase > i + 1 || (i + 1 < phase);
       const dead = ks[i] <= 0;
@@ -277,9 +301,18 @@ export class HudScene extends Phaser.Scene {
       this.tweens.add({ targets: s.chip, width: s.w * ks[i], delay: 250, duration: 400 });
       void done;
     });
+    // Near-threshold glow: within 15 HP above the threshold the checkpoint
+    // sits at full brightness; otherwise it rests dimmer.
+    const nearThreshold = phase === 1 && b.hp > t2 && b.hp <= t2 + 15;
+    this.bossCheckpoint?.setAlpha(nearThreshold ? 1 : 0.65);
     if (phase !== this.veilPhase) {
       // Phase change: shatter flash over the bar that just died + panel pop.
       if (this.veilPhase > 0 && phase > this.veilPhase) {
+        // Checkpoint crossing pulse: brief full-bright flash, then back to rest.
+        if (this.bossCheckpoint) {
+          this.bossCheckpoint.setAlpha(1);
+          this.tweens.add({ targets: this.bossCheckpoint, alpha: 0.65, delay: 150, duration: 500 });
+        }
         const dead = this.bossSegs[phase - 2];
         if (dead) {
           const flash = this.add.rectangle(dead.fill.x, 50, dead.w, 16, 0xffffff).setOrigin(0, 0.5).setAlpha(0.95);
@@ -584,43 +617,223 @@ export class HudScene extends Phaser.Scene {
     this.syncTouchVisibility();
   }
 
-  private controlsHelp() {
-    if (Gamepad.connected) return "Stick / D-pad: move   A: jump (and swim)   X / B: attack   Y: swap weapon   Menu: resume";
-    if (this.showTouch) return "Joystick: move   JUMP: jump & stomp   Weapon button: attack   SWAP: change weapon";
-    return "A/D or arrows: move   W/Space: jump   J/K: attack   Q: swap weapon   Esc: pause";
-  }
-
   private showPause() {
     if (this.overlay) return;
-    const c = this.openOverlay(440);
-    const top = GAME_H / 2 - 220;
-    c.add(titleText(this, GAME_W / 2, top + 50, "PAUSED", 46));
-    const resume = new Button(this, GAME_W / 2, top + 125, "RESUME", () => {
+    // Pause EXACTO (2026-10-30, pedido de Angelo): el arte concepto entero,
+    // ajustado a la pantalla del juego (contain 1280x576, sin recorte) +
+    // zonas invisibles sobre los 5 botones pintados, como el game-over art.
+    // Los toggles MUSIC/SFX son la única excepción visual: cuando están en
+    // OFF, un parche pequeño tapa solo la palabra ON con OFF (en ON, la
+    // imagen es exactamente la enviada).
+    resetTouch();
+    this.joyId = this.jumpId = this.attackId = -1;
+    this.resetJoy();
+    const c = this.add.container(0, 0).setDepth(100);
+    // Pilares oscuros + bloqueo de input por debajo.
+    c.add(this.add.rectangle(0, 0, GAME_W, GAME_H, 0x0b0716, 1).setOrigin(0).setInteractive());
+    // Arte: contain (nada se recorta) o dim clásico si falta la textura.
+    let dispX = 0;
+    let dispY = 0;
+    let dispW = GAME_W;
+    let dispH = GAME_H;
+    if (this.textures.exists("pause_menu_art")) {
+      const img = this.add.image(GAME_W / 2, GAME_H / 2, "pause_menu_art");
+      const s = Math.min(GAME_W / img.width, GAME_H / img.height);
+      img.setScale(s);
+      dispW = img.width * s;
+      dispH = img.height * s;
+      dispX = (GAME_W - dispW) / 2;
+      dispY = (GAME_H - dispH) / 2;
+      c.add(img);
+    } else {
+      c.add(this.add.rectangle(0, 0, GAME_W, GAME_H, 0x0b0716, 0.72).setOrigin(0));
+    }
+    type ZoneCtl = { x: number; y: number; focus: (on: boolean) => void; activate: () => void };
+    const zone = (fx0: number, fx1: number, fy0: number, fy1: number, fn: () => void): ZoneCtl => {
+      const zx = dispX + ((fx0 + fx1) / 2) * dispW;
+      const zy = dispY + ((fy0 + fy1) / 2) * dispH;
+      const zw = (fx1 - fx0) * dispW;
+      const zh = (fy1 - fy0) * dispH;
+      const r = this.add.rectangle(zx, zy, zw, zh, 0xffffff, 0).setInteractive({ useHandCursor: true });
+      const frame = this.add.rectangle(zx, zy, zw, zh).setStrokeStyle(4, 0xffd36b).setAlpha(0);
+      r.on("pointerup", () => {
+        Audio.sfx("button");
+        fn();
+      });
+      c.add([r, frame]);
+      return {
+        x: zx,
+        y: zy,
+        focus: (on: boolean) => {
+          frame.setAlpha(on ? 1 : 0);
+        },
+        activate: () => {
+          Audio.sfx("button");
+          fn();
+        },
+      };
+    };
+    // Parches OFF: tapan solo la palabra ON del botón verde (medido del arte).
+    const offPatch = (fx: number, fy: number) => {
+      const px = dispX + fx * dispW;
+      const py = dispY + fy * dispH;
+      const g = this.add.graphics();
+      g.fillStyle(0x0c7c37, 1).fillRoundedRect(px - 25, py - 13, 50, 26, 8);
+      const t = this.add
+        .text(px, py, "OFF", { fontFamily: FONT, fontSize: "20px", fontStyle: "bold", color: "#ffffff", stroke: "#2a1640", strokeThickness: 4 })
+        .setOrigin(0.5);
+      const grp = this.add.container(0, 0, [g, t]);
+      c.add(grp);
+      return grp;
+    };
+    const musicOff = offPatch(754.5 / 1672, 710 / 941);
+    const sfxOff = offPatch(1017 / 1672, 710 / 941);
+    musicOff.setVisible(!Audio.musicOn);
+    sfxOff.setVisible(!Audio.sfxOn);
+    const resume = zone(610 / 1672, 1076 / 1672, 498 / 941, 570 / 941, () => {
       this.closeOverlay();
       Audio.duck(false);
       this.scene.resume("Game");
-    }, { width: 300, height: 58 });
-    const restart = new Button(this, GAME_W / 2 - 130, top + 200, "RESTART", () => this.restartLevel(), { width: 230, height: 52, fontSize: 22, color: 0x7a5aa8 });
-    const select = new Button(this, GAME_W / 2 + 130, top + 200, "LEVELS", () => this.toChapterSelect(), { width: 230, height: 52, fontSize: 22, color: 0x7a5aa8 });
-    const music = new Button(this, GAME_W / 2 - 130, top + 275, `MUSIC: ${Audio.musicOn ? "ON" : "OFF"}`, () => {
+    });
+    const restart = zone(565 / 1672, 835 / 1672, 594 / 941, 652 / 941, () => this.restartLevel());
+    const select = zone(845 / 1672, 1115 / 1672, 594 / 941, 652 / 941, () => this.toChapterSelect());
+    const music = zone(583 / 1672, 836 / 1672, 677 / 941, 742 / 941, () => {
       Audio.setMusic(!Audio.musicOn);
-      music.setText(`MUSIC: ${Audio.musicOn ? "ON" : "OFF"}`);
-    }, { width: 230, height: 52, fontSize: 22, color: 0x3f8f6a });
-    const sfx = new Button(this, GAME_W / 2 + 130, top + 275, `SFX: ${Audio.sfxOn ? "ON" : "OFF"}`, () => {
+      musicOff.setVisible(!Audio.musicOn);
+    });
+    const sfx = zone(857 / 1672, 1106 / 1672, 677 / 941, 742 / 941, () => {
       Audio.setSfx(!Audio.sfxOn);
-      sfx.setText(`SFX: ${Audio.sfxOn ? "ON" : "OFF"}`);
-    }, { width: 230, height: 52, fontSize: 22, color: 0x3f8f6a });
-    const help = this.add
-      .text(GAME_W / 2, top + 352, this.controlsHelp(), { fontFamily: FONT, fontSize: "15px", color: "#cfc6e8", align: "center", wordWrap: { width: 560 } })
-      .setOrigin(0.5);
-    c.add([resume, restart, select, music, sfx, help]);
+      sfxOff.setVisible(!Audio.sfxOn);
+    });
+    c.setAlpha(0);
+    this.tweens.add({ targets: c, alpha: 1, duration: 200 });
+    this.overlay = c;
+    this.syncTouchVisibility();
     this.menu = new PadMenu(this, [resume, restart, select, music, sfx], { back: () => resume.activate(), menuIsBack: true });
   }
-
-  private showGameOver(d: { level: number; goal: GoalState }) {
+  private showGameOver(d: { level: number; goal: GoalState; bossHp?: number; bossMax?: number; bossPhase?: number }) {
     this.time.delayedCall(10, () => {
       if (this.overlay) this.closeOverlay();
       const info = LEVELS[d.level];
+      const key = `gameover_ch${info.chapter}`;
+      if (this.textures.exists(key)) {
+        this.showGameOverArt(d, info, key);
+        return;
+      }
+      // Asset failed to load: fall back to the plain text panel.
+      this.showGameOverLegacy(d, info);
+    });
+  }
+
+  /**
+   * Game-over art (2026-10-26, landscape swap): the chapter's painted screen.
+   * Landscape art (1870x841) goes FULL-BLEED cover on the 1280x576 canvas
+   * (aspects differ by <0.1%, cropping is negligible); portrait art falls
+   * back to the centered height-limited panel. The painted buttons ARE the
+   * buttons: invisible zones sit over them, wired to the existing handlers.
+   * No new visible buttons. Boss retry line (chapter 10) renders on a dark
+   * strip at the bottom edge on full-bleed art. No damage stats, no DPS.
+   */
+  private showGameOverArt(d: { level: number; goal: GoalState; bossHp?: number; bossMax?: number; bossPhase?: number }, info: (typeof LEVELS)[number], key: string) {
+    const hasBoss = info.chapter === 10 && d.bossHp !== undefined && d.bossMax !== undefined && d.bossMax > 0;
+    const src = this.textures.get(key).getSourceImage() as unknown as { width?: number; height?: number } | null;
+    const iw = src?.width ?? 941;
+    const ih = src?.height ?? 1672;
+    const isLandscape = iw > ih;
+    resetTouch();
+    this.joyId = this.jumpId = this.attackId = -1;
+    this.resetJoy();
+    const c = this.add.container(0, 0).setDepth(100);
+    // Display rect of the art on the canvas.
+    let dispX: number;
+    let dispY: number;
+    let dispW: number;
+    let dispH: number;
+    if (isLandscape) {
+      const scale = Math.max(GAME_W / iw, GAME_H / ih);
+      dispW = iw * scale;
+      dispH = ih * scale;
+      dispX = (GAME_W - dispW) / 2;
+      dispY = (GAME_H - dispH) / 2;
+      // Full-bleed: the art itself covers the canvas, no dim needed.
+      c.add(this.add.image(GAME_W / 2, GAME_H / 2, key).setDisplaySize(dispW, dispH));
+    } else {
+      const panelH = hasBoss ? Math.floor(GAME_H * 0.92) : GAME_H;
+      dispW = panelH * (941 / 1672);
+      dispH = panelH;
+      dispX = GAME_W / 2 - dispW / 2;
+      dispY = 0;
+      c.add(this.add.rectangle(0, 0, GAME_W, GAME_H, 0x0b0716, 0.72).setOrigin(0).setInteractive());
+      c.add(this.add.image(GAME_W / 2, panelH / 2, key).setDisplaySize(dispW, dispH));
+    }
+    type ZoneCtl = { x: number; y: number; focus: (on: boolean) => void; activate: () => void };
+    const zone = (fx0: number, fx1: number, fy0: number, fy1: number, fn: () => void): ZoneCtl => {
+      const zx = dispX + ((fx0 + fx1) / 2) * dispW;
+      const zy = dispY + ((fy0 + fy1) / 2) * dispH;
+      const zw = (fx1 - fx0) * dispW;
+      const zh = (fy1 - fy0) * dispH;
+      const r = this.add.rectangle(zx, zy, zw, zh, 0xffffff, 0).setInteractive({ useHandCursor: true });
+      const frame = this.add.rectangle(zx, zy, zw, zh).setStrokeStyle(4, 0xffd36b).setAlpha(0);
+      r.on("pointerup", () => {
+        Audio.sfx("button");
+        fn();
+      });
+      c.add([r, frame]);
+      return {
+        x: zx,
+        y: zy,
+        // Focus ring only ever shows with a connected gamepad (PadMenu
+        // calls focus only then); touch/mouse play sees just the art.
+        focus: (on: boolean) => {
+          frame.setAlpha(on ? 1 : 0);
+        },
+        activate: () => {
+          Audio.sfx("button");
+          fn();
+        },
+      };
+    };
+    const bossLine = () => {
+      const pct = Math.floor((1 - (d.bossHp ?? 0) / (d.bossMax ?? 1)) * 100);
+      const phase = d.bossPhase ?? 1;
+      return `Llegaste a la fase ${phase}. Estuviste ${pct}% de la pelea.`;
+    };
+    let again: ZoneCtl;
+    let select: ZoneCtl;
+    if (isLandscape) {
+      // Zones measured from the art itself (enlarged button-row crops of the
+      // ch1 and ch10 panels, intersected): inside the painted pills on both.
+      again = zone(0.45, 0.65, 0.70, 0.79, () => this.restartLevel());
+      select = zone(0.69, 0.82, 0.70, 0.79, () => this.toChapterSelect());
+      if (hasBoss) {
+        c.add(this.add.rectangle(GAME_W / 2, GAME_H - 18, GAME_W, 36, 0x0b0716, 0.6).setOrigin(0.5));
+        c.add(
+          this.add
+            .text(GAME_W / 2, GAME_H - 18, bossLine(), { fontFamily: FONT, fontSize: "19px", fontStyle: "bold", color: "#ffd36b" })
+            .setOrigin(0.5),
+        );
+      }
+    } else {
+      // Portrait panel zones (measured 2026-10-26 on the ch1/ch10 panels).
+      again = zone(0.21, 0.79, 0.606, 0.652, () => this.restartLevel());
+      select = zone(0.25, 0.75, 0.694, 0.738, () => this.toChapterSelect());
+      if (hasBoss) {
+        c.add(
+          this.add
+            .text(GAME_W / 2, dispH + (GAME_H - dispH) / 2, bossLine(), { fontFamily: FONT, fontSize: "19px", fontStyle: "bold", color: "#ffd36b" })
+            .setOrigin(0.5),
+        );
+      }
+    }
+    c.setAlpha(0);
+    this.tweens.add({ targets: c, alpha: 1, duration: 200 });
+    this.overlay = c;
+    this.syncTouchVisibility();
+    this.menu = new PadMenu(this, [again, select]);
+  }
+
+  private showGameOverLegacy(d: { level: number; goal: GoalState; bossHp?: number; bossMax?: number; bossPhase?: number }, info: (typeof LEVELS)[number]) {
+    {
       const c = this.openOverlay(420);
       const top = GAME_H / 2 - 210;
       c.add(this.add.text(GAME_W / 2, top + 42, "ANGELY'S WORLD", { fontFamily: FONT, fontSize: "20px", fontStyle: "bold", color: "#ffd36b" }).setOrigin(0.5));
@@ -641,11 +854,18 @@ export class HudScene extends Phaser.Scene {
           : g.kind === "reach" ? "So close! Try again, Angely!"
             : `${g.kind === "gems" ? "Star gems" : "Enemies defeated"}: ${Math.min(g.have, g.need)} / ${g.need}`;
       c.add(this.add.text(GAME_W / 2, top + 200, line, { fontFamily: FONT, fontSize: "21px", fontStyle: "bold", color: "#9ff5ff" }).setOrigin(0.5));
+      // Feel package 2026-10-26: final-boss retry progress. No damage stats,
+      // no DPS, no floating numbers — just how far into the fight she got.
+      if (info.chapter === 10 && d.bossHp !== undefined && d.bossMax) {
+        const pct = Math.floor((1 - d.bossHp / d.bossMax) * 100);
+        const phase = d.bossPhase ?? 1;
+        c.add(this.add.text(GAME_W / 2, top + 232, `Llegaste a la fase ${phase}. Estuviste ${pct}% de la pelea.`, { fontFamily: FONT, fontSize: "19px", fontStyle: "bold", color: "#ffd36b" }).setOrigin(0.5));
+      }
       const again = new Button(this, GAME_W / 2, top + 280, "TRY AGAIN", () => this.restartLevel(), { width: 320, height: 64, fontSize: 30 });
       const select = new Button(this, GAME_W / 2, top + 360, "LEVEL SELECT", () => this.toChapterSelect(), { width: 300, height: 52, fontSize: 22, color: 0x7a5aa8 });
       c.add([again, select]);
       this.menu = new PadMenu(this, [again, select]);
-    });
+    }
   }
 
   private showVictory() {
@@ -655,17 +875,13 @@ export class HudScene extends Phaser.Scene {
     this.dialogue.cinema(false);
     this.syncTouchVisibility();
     const c = this.add.container(0,0).setDepth(300);
-    c.add(this.add.rectangle(0,0,GAME_W,GAME_H,0x080b21).setOrigin(0).setInteractive());
-    const glow = this.add.image(GAME_W/2,220,"glow").setTint(0x358fdf).setAlpha(.18).setDisplaySize(850,480);
-    c.add(glow);
-    c.add(this.add.text(GAME_W/2,152,"ANGELO & ANGELY",{
-      fontFamily:FONT,fontSize:"24px",fontStyle:"bold",color:"#9deeff",letterSpacing:4
-    }).setOrigin(.5));
-    c.add(titleText(this,GAME_W/2,244,"THE END",54,"#fff4d6"));
-    c.add(this.add.text(GAME_W/2,316,"Together, wherever the next adventure takes us.",{
-      fontFamily:FONT,fontSize:"21px",color:"#b8cde5",align:"center"
-    }).setOrigin(.5));
-    const levels = new Button(this,GAME_W/2,420,"BACK TO LEVELS",() => this.toChapterSelect(),{
+    // End art (2026-10-24): full-bleed illustration, top-aligned cover so the
+    // logo and Angely stay in frame and the art's own button stays off-screen
+    // (the game's real button below handles the tap). Replaces the dark
+    // "ANGELO & ANGELY" text screen.
+    const art = this.add.image(GAME_W/2,0,"the_end_art").setOrigin(0.5,0).setDisplaySize(GAME_W,720).setInteractive();
+    c.add(art);
+    const levels = new Button(this,GAME_W/2,520,"BACK TO LEVELS",() => this.toChapterSelect(),{
       width:360,height:62,fontSize:26,color:0x426eaa
     });
     c.add(levels);
@@ -681,11 +897,13 @@ export class HudScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN,() => this.input.keyboard?.off("keydown",onKey));
   }
   private restartLevel() {
+    this.closeOverlay();
     Audio.duck(false);
     this.scene.start("Game", { level: this.levelIndex });
   }
 
   private toChapterSelect() {
+    this.closeOverlay();
     this.scene.stop("Game");
     this.scene.start("Title", { select: true });
   }

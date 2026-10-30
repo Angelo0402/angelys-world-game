@@ -24,9 +24,9 @@ export class CutsceneScene extends Phaser.Scene {
 
   create() {
     fitCamera(this);
-    // The clips are silent video files: the game's music IS the cutscene
-    // soundtrack, so it must run at full level, never ducked (Angelo,
-    // 2026-10-22: "los cut scenes no se escuchan").
+    // Clips carry their own sound (loader passes noAudio=false since
+    // 2026-10-24 — the old noAudio=true flag muted every cutscene). Keep
+    // the game music at full level, never ducked, under the video.
     Audio.duck(false);
     this.cameras.main.setBackgroundColor(0x000000);
     this.cameras.main.fadeIn(250, 0, 0, 0);

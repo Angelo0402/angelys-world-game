@@ -26,6 +26,8 @@ export interface WallDef {
   blocks: number;
   breakable?: boolean;
   hang?: boolean;
+  /** Hammer hits to break a breakable wall (default 3). */
+  hits?: number;
 }
 
 /** One-way platform shuttling between two points (top surface coordinates). */
@@ -116,17 +118,32 @@ export function buildLevel(info: LevelInfo): LevelDef {
   return L;
 }
 
-/** One Star Shield per level, on open ground near the middle and clear of spikes. */
+/** One Star Shield per level, on open ground near the middle and clear of spikes.
+ * Angelo (2026-10-27): the 7-2, 9-2, 1-1 and 5-1 stars spawned INSIDE wall
+ * columns (dead center in 7-2) and could not be grabbed. A star must sit in
+ * open air: clear of spikes, wall columns and crates, with margin. */
 function placeStars(L: LevelDef) {
   const grounds = L.ground.filter((g) => g.x1 - g.x0 > 320);
   if (!grounds.length) return;
   const mid = Math.floor(grounds.length / 2);
   const order = grounds.map((_, i) => i).sort((a, b) => Math.abs(a - mid) - Math.abs(b - mid));
+  const blocked = (x: number, y: number) => {
+    if (L.spikes.some((s) => Math.abs(s.x - x) < 90)) return true;
+    for (const w of L.walls) {
+      const top = w.hang ? w.y + w.blocks * BLOCK_H : w.y - w.blocks * BLOCK_H;
+      const bottom = w.hang ? w.y : w.y;
+      const lo = Math.min(top, bottom);
+      const hi = Math.max(top, bottom);
+      if (Math.abs(w.x - x) < 70 && y > lo && y < hi) return true;
+    }
+    if (L.crates.some((c) => Math.abs(c.x - x) < 70 && y > c.y - CRATE_SIZE && y < c.y)) return true;
+    return false;
+  };
   for (const i of order) {
     const g = grounds[i];
-    for (const f of [0.5, 0.35, 0.65]) {
+    for (const f of [0.5, 0.35, 0.65, 0.25, 0.75, 0.2, 0.8]) {
       const x = Math.round(g.x0 + (g.x1 - g.x0) * f);
-      if (L.spikes.some((s) => Math.abs(s.x - x) < 90)) continue;
+      if (blocked(x, g.y - 96)) continue;
       L.stars.push({ x, y: g.y - 96 });
       return;
     }
@@ -183,6 +200,13 @@ function buildSide(info: LevelInfo, r: () => number): LevelDef {
       L.walls.push({ x: x + 480, y: Y, blocks: 4 });
       L.hearts.push({ x: x + 480, y: Y - 4 * BLOCK_H - 50 });
       gemSpots.push({ x: x + 420, y: Y - 4 * BLOCK_H - 130 });
+      // Return path (Angelo, 2026-10-27): after springing over the wall
+      // Angely could not come back for a missed pickup. A platform past the
+      // wall reopens the way: ground -> platform (rise 140, within her
+      // ~145 px jump) -> wall top (rise 140, 30 px gap) -> drop down the
+      // near side. It sits clear of the spring's landing and of the
+      // heart/gem above the wall.
+      L.platforms.push({ x: x + 600, y: Y - 140, prop: "plat_float_small" });
       return run(x, 1000);
     },
     crateWall: (x) => {

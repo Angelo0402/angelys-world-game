@@ -9,6 +9,7 @@ import { HudScene } from "./scenes/HudScene";
 import { SplashScene } from "./scenes/SplashScene";
 import { TitleScene } from "./scenes/TitleScene";
 import { CANVAS_H, CANVAS_W, patchTextResolution, startPerfGuard } from "./render";
+import { installDevHooks } from "./devhooks";
 
 patchTextResolution();
 
@@ -47,3 +48,4 @@ declare global {
   }
 }
 window.__game = game;
+installDevHooks(game);
