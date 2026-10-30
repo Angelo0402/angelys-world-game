@@ -115,3 +115,46 @@ Trivia de diseño del Dino de Chrome; dos puntos transferibles:
 - **Segundo obstáculo a mitad de run**: los pájaros entran a los ~450 puntos, a otra altura, cuando el jugador ya dominó los cactus — romper el piloto automático con un patrón distinto. Nota de diseño para niveles largos/chase: introducir la variante cuando el patrón base ya se siente automático.
 
 Nada implementado; referencia.
+
+## Paquete 2026-10-26 — ChatGPT: "Boss Readability + Escalation" (guardado, sin implementar)
+**Idea central:** no más juice genérico. Un sistema reusable de encuentro de boss, que
+debuta en el boss final Crystal Veil (ya tiene barra de 2 segmentos, fases y kill
+sequence). El Warden 2-2 lo recibe después, simplificado, cuando el sistema esté probado.
+Jump feel y pickup feel quedan para otro paquete aparte, no aquí.
+
+**Orden de prioridad:**
+1. **Checkpoints de fase en la barra del boss** (barato) — marca divisoria permanente,
+   icono de cristal, glow al acercarse, pulso al cruzar. Sin números, la barra cuenta sola.
+2. **Ventana de inmunidad en transición de fase** (barato) — al llegar al umbral, HP se
+   fija, boss inmune ~700–1000ms (animación de transición + partículas), luego fase 2.
+   Inmune, no intangible: los golpes conectan visualmente con chispa de cristal y sonido
+   opaco, sin hit-stop ni recoil.
+3. **Entrada dramática del boss** (barato–medio) — ~1.8s, sin tocar cámara: se sellan
+   salidas, partículas bajan, silueta aparece, cristales de la arena encienden en secuencia,
+   nombre + barra entran, un tono grave, empieza la pelea.
+4. **Ice Spikes, ataque firma de Crystal Veil** (medio) — 6 tiempos: telegraph 450–650ms
+   con grietas de escarcha, cadena hacia la X del jugador calculada UNA vez (no persigue),
+   erupción con scaleY 0→1.05, abanico de 3 carriles cerca del jugador, golpe final 25–35%
+   más grande con shockwave, escarcha residual 1–2s. Máximo 8–12 púas vivas, 4–8 partículas
+   por erupción.
+5. **Shockwave ring en suelo** (barato) — solo para slams de boss, ice spike final,
+   explosión de transición y aterrizajes. Textura de anillo pre-renderizada, escala X 2.2 /
+   Y 0.65, 280ms. No en cada golpe de espada.
+6. **Viñeta roja + heartbeat a bajo HP del jugador** (barato) — ≤30% viñeta, ≤20%
+   heartbeat ~1100ms, ≤10% ~650ms. PNG con alpha (no otro shader encima del pipeline
+   actual). Suave, nunca molesto.
+7. **Hazards que deja el boss** (barato–medio) — púa → rompe → parche de escarcha →
+   desvanece. Fase 1 solo visual; fase 2, parches peligrosos 1.5–2.5s. Máximo 8, con pool
+   (no crear/destruir cuerpos físicos todo el rato).
+8. **Pantalla de retry "qué tan cerca estuviste"** (casi gratis) — progreso del boss, no
+   HP crudo: "Llegaste a la fase 2. Estuviste 84% de la pelea." Sin stats, sin números
+   de daño.
+
+**Ciclo resultante:** entrada → checkpoints → combate → ice spikes → shockwave +
+escarcha → checkpoint → inmunidad + espectáculo → fase 2 con hazards → jugador bajo
+(viñeta + heartbeat) → victoria (kill sequence existente) o derrota (retry con %).
+
+**Arquitectura sugerida:** servicios reusables (BossPhaseController, BossIntroController,
+BossHazardPool) para que cada boss use lo mismo con su propio ataque firma.
+
+**Estado: SOLO DISEÑO. Nada implementado.** Sin damage numbers en ninguna parte.
