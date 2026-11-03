@@ -19,16 +19,21 @@ export class TitleScene extends Phaser.Scene {
     Audio.duck(false);
     this.cameras.main.fadeIn(500, 18, 13, 31);
     if (data?.select) {
-      // Tap-through guard (2026-11-03): taps that open this screen fire on
+      // Tap-through guard (2026-11-03, fixed 2026-11-03): taps that open this screen fire on
       // pointerdown (pause LEVELS zone, victory BACK TO LEVELS). That finger
       // is still down when this scene creates, and its pointerup would
       // otherwise land on a chapter pill and auto-start a level. Drop all
       // input until that pointer lifts (1s failsafe so input never wedges).
+      // NOTE: measure elapsed with performance.now(), NOT this.time.now.
+      // A freshly created scene's clock reads 0 in create() and jumps to the
+      // game-global time on the next step, so `now - started` with the scene
+      // clock reads thousands of ms at the first recheck and the guard
+      // releases instantly (v53 bug, caught by the PC harness 2026-11-03).
       if (this.input.activePointer.isDown) {
         this.input.enabled = false;
-        const started = this.time.now;
+        const started = performance.now();
         const recheck = () => {
-          if (!this.input.activePointer.isDown || this.time.now - started > 1000) {
+          if (!this.input.activePointer.isDown || performance.now() - started > 1000) {
             this.input.enabled = true;
           } else {
             this.time.delayedCall(50, recheck);
