@@ -10,6 +10,8 @@ import { Audio } from "../audio/AudioManager";
  * scene emits "cutscene:done" on the global game events, resumes Game and
  * stops itself. A clip can be skipped with a tap/click after 1.2 s. Every
  * clip has a watchdog so a stalled video can never soft-lock the game.
+ * Plus a 15 s start guard (2026-11-01, final-boss freeze): if a clip never
+ * starts, it fails forward instead of hanging Game paused forever.
  */
 export class CutsceneScene extends Phaser.Scene {
   private clips: string[] = [];
@@ -66,11 +68,34 @@ export class CutsceneScene extends Phaser.Scene {
       }
       const startedAt = performance.now();
       let watchdog: ReturnType<typeof setTimeout> | undefined;
+      let startGuard: ReturnType<typeof setTimeout> | undefined;
+      const el = video.video as HTMLVideoElement | undefined;
+      const onVideoError = () => {
+        console.warn(`[cutscene] video error for ${key}`);
+        cleanup();
+        settle();
+      };
       const cleanup = () => {
         if (watchdog) clearTimeout(watchdog);
+        if (startGuard) {
+          clearTimeout(startGuard);
+          startGuard = undefined;
+        }
+        el?.removeEventListener("error", onVideoError);
         this.input.off("pointerdown", skip);
         video.destroy();
       };
+      // Start guard (2026-11-01, freeze del final boss): el watchdog de
+      // duración solo se armaba en "created". Si el video falla antes de
+      // arrancar en el teléfono, no había salida y Game quedaba pausado
+      // para siempre. 15 s sin "created" y el clip se da por fallido: el
+      // juego sigue al final en vez de quedarse congelado.
+      startGuard = setTimeout(() => {
+        console.warn(`[cutscene] start guard fired for ${key}`);
+        cleanup();
+        settle();
+      }, 15000);
+      el?.addEventListener("error", onVideoError);
       const skip = () => {
         if (performance.now() - startedAt < 1200) return;
         cleanup();
@@ -85,6 +110,11 @@ export class CutsceneScene extends Phaser.Scene {
       };
       video.on("created", () => {
         fit();
+        // El video arrancó: el watchdog de duración toma el relevo.
+        if (startGuard) {
+          clearTimeout(startGuard);
+          startGuard = undefined;
+        }
         const dur = video.getDuration();
         const ms = Number.isFinite(dur) && dur > 0 ? dur * 1000 + 5000 : 45000;
         // Real-time watchdog (not scene time): even if rendering crawls,

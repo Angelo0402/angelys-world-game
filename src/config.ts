@@ -158,8 +158,8 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
   9: {
     id: 9,
     name: "Squishy Valley",
-    splash: "splash9",
-    background: "bg9",
+    splash: "splash9_pixel",
+    background: "bg9_pixel",
     music: "music_squish",
     enemies: ["squish", "blob", "toxic", "squish"],
     maxAlive: 4,

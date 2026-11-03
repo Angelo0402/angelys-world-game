@@ -36,11 +36,11 @@ export class Portal {
   private sparks: Phaser.GameObjects.Particles.ParticleEmitter;
   private spin = 0.0007;
 
-  constructor(scene: Phaser.Scene, x: number, visible = true, floorY = GROUND_Y) {
+  constructor(scene: Phaser.Scene, x: number, visible = true, floorY = GROUND_Y, pixel = false) {
     this.scene = scene;
     this.x = x;
-    const meta = SPRITES.portal;
-    const s = scaleForHeight("portal", ARCH_H);
+    const meta = SPRITES[pixel ? "portal_pixel" : "portal"];
+    const s = scaleForHeight(pixel ? "portal_pixel" : "portal", ARCH_H);
     const ox = meta.originX * meta.frameWidth;
     const oy = meta.originY * meta.frameHeight;
     this.baseY = floorY;
@@ -63,10 +63,10 @@ export class Portal {
     this.floorGlow.setDisplaySize(w * 3.4, 40);
 
     this.inside = scene.add.rectangle(this.cx, this.cy, w + 4, h + 4, 0x150d2a).setDepth(15.4).setMask(mask);
-    const vs = (h * 1.25) / (SPRITES.vortex.frameHeight * 0.92);
-    this.vortex = scene.add.image(this.cx, this.cy, "vortex", 0).setDepth(15.5).setScale(vs).setTint(0x4a4466).setAlpha(0.5).setMask(mask);
+    const vs = (h * 1.25) / (SPRITES[pixel ? "vortex_pixel" : "vortex"].frameHeight * 0.92);
+    this.vortex = scene.add.image(this.cx, this.cy, pixel ? "vortex_pixel" : "vortex", 0).setDepth(15.5).setScale(vs).setTint(0x4a4466).setAlpha(0.5).setMask(mask);
     this.vortexInner = scene.add
-      .image(this.cx, this.cy, "vortex", 0)
+      .image(this.cx, this.cy, pixel ? "vortex_pixel" : "vortex", 0)
       .setDepth(15.6)
       .setScale(vs * 0.6)
       .setFlipX(true)
@@ -91,10 +91,10 @@ export class Portal {
       .setDepth(15.8)
       .setMask(mask);
 
-    this.arch = scene.add.sprite(x, baseY, "portal").setDepth(16).setScale(s).setTint(0x8a86a0);
-    applyOrigin(this.arch, "portal");
-    this.runes = scene.add.sprite(x, baseY, "portal").setDepth(16.1).setScale(s).setTint(0x9ff5ff).setAlpha(0).setBlendMode(Phaser.BlendModes.ADD);
-    applyOrigin(this.runes, "portal");
+    this.arch = scene.add.sprite(x, baseY, pixel ? "portal_pixel" : "portal").setDepth(16).setScale(s).setTint(0x8a86a0);
+    applyOrigin(this.arch, pixel ? "portal_pixel" : "portal");
+    this.runes = scene.add.sprite(x, baseY, pixel ? "portal_pixel" : "portal").setDepth(16.1).setScale(s).setTint(0x9ff5ff).setAlpha(0).setBlendMode(Phaser.BlendModes.ADD);
+    applyOrigin(this.runes, pixel ? "portal_pixel" : "portal");
 
     this.lock = scene.add.graphics().setDepth(17);
     drawLock(this.lock, this.cx, this.cy - 14, 0.9);

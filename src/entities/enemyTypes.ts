@@ -2,7 +2,7 @@ import type { SpriteKey } from "../assets/sprites.gen";
 import type { SfxName } from "../audio/manifest";
 
 type AttackKind = "melee" | "lunge" | "roll" | "dive" | "shoot" | "slam" | "lava";
-export type ProjectileSheet = "fx_orb" | "fx_bolt" | "fx_fireball" | "fx_dust" | "crystal_shot" | "umbra_bolt" | "umbra_aim" | "umbra_double" | "umbra_shard" | "umbra_sky" | "dragon_fire";
+export type ProjectileSheet = "fx_orb" | "fx_orb_pixel" | "fx_dust" | "fx_dust_pixel" | "fx_bolt" | "fx_fireball" | "crystal_shot" | "umbra_bolt" | "umbra_aim" | "umbra_double" | "umbra_shard" | "umbra_sky" | "dragon_fire";
 
 export interface EnemyType {
   key: SpriteKey;

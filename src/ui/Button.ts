@@ -10,6 +10,9 @@ interface ButtonOpts {
   textColor?: string;
   fontSize?: number;
   disabled?: boolean;
+  // When true, the click fires on pointerdown (once per pointer) instead of
+  // pointerup. For phones whose WebView loses pointerup: a tap must not die.
+  fireOnDown?: boolean;
 }
 
 export class Button extends Phaser.GameObjects.Container implements NavItem {
@@ -22,6 +25,8 @@ export class Button extends Phaser.GameObjects.Container implements NavItem {
   private focused = false;
   private focusTween?: Phaser.Tweens.Tween;
   private onClick: () => void;
+  private fireOnDown: boolean;
+  private firedPointers = new Set<number>();
 
   constructor(scene: Phaser.Scene, x: number, y: number, text: string, onClick: () => void, opts: ButtonOpts = {}) {
     super(scene, x, y);
@@ -30,6 +35,7 @@ export class Button extends Phaser.GameObjects.Container implements NavItem {
     this.color = opts.color ?? 0xff8a3d;
     this.disabled = !!opts.disabled;
     this.onClick = onClick;
+    this.fireOnDown = !!opts.fireOnDown;
     this.bg = scene.add.graphics();
     this.label = scene.add
       .text(0, 0, text, {
@@ -45,16 +51,25 @@ export class Button extends Phaser.GameObjects.Container implements NavItem {
     this.setSize(this.bw, this.bh);
     this.draw(false);
     this.setInteractive({ useHandCursor: true });
-    this.on("pointerdown", () => {
+    this.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
       if (this.disabled) return;
       this.draw(true);
+      if (!this.fireOnDown || this.firedPointers.has(pointer.id)) return;
+      this.firedPointers.add(pointer.id);
+      Audio.sfx("button");
+      this.onClick();
     });
     this.on("pointerout", () => this.draw(false));
-    this.on("pointerup", () => {
+    this.on("pointerup", (pointer: Phaser.Input.Pointer) => {
       if (this.disabled) return;
       this.draw(false);
+      // Already fired on down: swallow the up so one tap never double-fires.
+      if (this.firedPointers.delete(pointer.id)) return;
       Audio.sfx("button");
-      onClick();
+      this.onClick();
+    });
+    this.on("pointerupoutside", (pointer: Phaser.Input.Pointer) => {
+      this.firedPointers.delete(pointer.id);
     });
     scene.add.existing(this);
   }

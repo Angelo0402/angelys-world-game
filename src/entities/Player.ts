@@ -86,6 +86,8 @@ export class Player {
   private shadow: Phaser.GameObjects.Image;
   private scene: GameScene;
   private sheet?: SpriteKey;
+  /** True in chapter 9: pixel sheets replace the flat ones. */
+  private pixel = false;
   private scales: Record<string, number>;
   hearts = MAX_HEARTS;
   facing: 1 | -1 = 1;
@@ -161,6 +163,11 @@ export class Player {
       angely_ray: scaleForHeight("angely", HEIGHT, "idle"),
       angely_swim: scaleForHeight("angely", HEIGHT, "idle"),
       angely_got: scaleForHeight("angely", HEIGHT, "idle"),
+      // Chapter 9 pixel variants (same heights as the flat sheets, so the
+      // same base scale applies — pixel sheets keep the original dims).
+      angely_pixel: scaleForHeight("angely_pixel", HEIGHT, "idle"),
+      angely_ray_pixel: scaleForHeight("angely_pixel", HEIGHT, "idle"),
+      angely_got_pixel: scaleForHeight("angely_pixel", HEIGHT, "idle"),
     };
     this.bubbles = scene.add
       .particles(0, 0, "bubble", {
@@ -174,7 +181,8 @@ export class Player {
       })
       .setDepth(61);
     this.shadow = scene.add.image(x, y, "shadow").setAlpha(0.3).setDepth(30);
-    this.sprite = scene.add.sprite(x, y, "angely").setDepth(60);
+    this.pixel = scene.info.chapter === 9;
+    this.sprite = scene.add.sprite(x, y, this.pixel ? "angely_pixel" : "angely").setDepth(60);
     this.setAnim("angely", "idle");
   }
 
@@ -233,6 +241,13 @@ export class Player {
   }
 
   private setAnim(sheet: SpriteKey, anim: string, restart = false) {
+    // Chapter 9: every angely sheet (base, ray pickup, got poses) has a
+    // pixel twin; other weapon sheets never appear in ch9 (ray only).
+    if (this.pixel) {
+      if (sheet === "angely") sheet = "angely_pixel";
+      else if (sheet === "angely_ray") sheet = "angely_ray_pixel";
+      else if (sheet === "angely_got") sheet = "angely_got_pixel";
+    }
     if (sheet !== this.sheet) {
       this.sheet = sheet;
       this.sprite.setScale(this.scales[sheet]);

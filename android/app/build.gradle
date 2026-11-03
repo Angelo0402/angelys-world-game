@@ -7,7 +7,7 @@ android {
         applicationId "com.angelysworld.game"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 13
+        versionCode 17
         versionName "1.7.3-spritefix"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {

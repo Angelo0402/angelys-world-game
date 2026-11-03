@@ -131,6 +131,7 @@ export class Mechanics {
   }
 
   private prop(name: string) {
+    if (this.chapter.id === 9) return `${name}_9_pixel`;
     return `${name}_${this.chapter.id}`;
   }
 
@@ -204,9 +205,10 @@ export class Mechanics {
   }
 
   private addSpring({ x, y }: Spot) {
-    const sprite = this.scene.add.sprite(x, y + 4, "spring").setDepth(15);
-    sprite.setScale(scaleForHeight("spring", 60));
-    applyOrigin(sprite, "spring");
+    const springKey = this.chapter.id === 9 ? "spring_pixel" : "spring";
+    const sprite = this.scene.add.sprite(x, y + 4, springKey).setDepth(15);
+    sprite.setScale(scaleForHeight(springKey, 60));
+    applyOrigin(sprite, springKey);
     this.springs.push({ x, y, sprite, base: sprite.scaleY, last: 0 });
   }
 

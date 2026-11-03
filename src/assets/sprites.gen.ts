@@ -137,8 +137,145 @@ export const SPRITES = {
       }
     }
   },
+"angely_pixel": {
+    "file": "assets/runtime/angely_pixel.webp",
+    "frameWidth": 313,
+    "frameHeight": 263,
+    "originX": 0.5781,
+    "originY": 0.9848,
+    "bodyHeight": 243,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 7,
+        "fps": 10,
+        "repeat": -1,
+        "h": 243
+      },
+      "walk": {
+        "start": 8,
+        "end": 22,
+        "fps": 24,
+        "repeat": -1,
+        "h": 249
+      },
+      "run": {
+        "start": 23,
+        "end": 30,
+        "fps": 15,
+        "repeat": -1,
+        "h": 248
+      },
+      "hurt": {
+        "start": 31,
+        "end": 32,
+        "fps": 10,
+        "repeat": 0,
+        "h": 204
+      },
+      "celebrate": {
+        "start": 33,
+        "end": 36,
+        "fps": 7,
+        "repeat": -1,
+        "h": 222
+      },
+      "defeat": {
+        "start": 37,
+        "end": 39,
+        "fps": 5,
+        "repeat": 0,
+        "h": 180
+      },
+      "push": {
+        "start": 40,
+        "end": 51,
+        "fps": 9,
+        "repeat": -1,
+        "h": 248
+      },
+      "crouch": {
+        "start": 52,
+        "end": 52,
+        "fps": 10,
+        "repeat": -1,
+        "h": 179
+      },
+      "takeoff": {
+        "start": 53,
+        "end": 53,
+        "fps": 10,
+        "repeat": -1,
+        "h": 247
+      },
+      "rise": {
+        "start": 54,
+        "end": 54,
+        "fps": 10,
+        "repeat": -1,
+        "h": 258
+      },
+      "midrise": {
+        "start": 55,
+        "end": 55,
+        "fps": 10,
+        "repeat": -1,
+        "h": 200
+      },
+      "apex": {
+        "start": 56,
+        "end": 56,
+        "fps": 10,
+        "repeat": -1,
+        "h": 200
+      },
+      "earlyfall": {
+        "start": 57,
+        "end": 57,
+        "fps": 10,
+        "repeat": -1,
+        "h": 253
+      },
+      "fall": {
+        "start": 58,
+        "end": 58,
+        "fps": 10,
+        "repeat": -1,
+        "h": 258
+      },
+      "land": {
+        "start": 59,
+        "end": 59,
+        "fps": 10,
+        "repeat": -1,
+        "h": 179
+      },
+      "recover": {
+        "start": 60,
+        "end": 60,
+        "fps": 10,
+        "repeat": -1,
+        "h": 248
+      }
+    }
+  },
   "angely_got": {
     "file": "assets/runtime/angely_got.webp",
+    "frameWidth": 313,
+    "frameHeight": 263,
+    "originX": 0.5781,
+    "originY": 0.9848,
+    "bodyHeight": 243,
+    "anims": {
+      "got_bow": { "start": 0, "end": 0, "fps": 6, "repeat": 0, "h": 243 },
+      "got_boomerang": { "start": 1, "end": 1, "fps": 6, "repeat": 0, "h": 243 },
+      "got_wand": { "start": 2, "end": 2, "fps": 6, "repeat": 0, "h": 243 },
+      "got_hammer": { "start": 3, "end": 3, "fps": 6, "repeat": 0, "h": 243 },
+      "got_ray": { "start": 4, "end": 4, "fps": 6, "repeat": 0, "h": 243 }
+    }
+  },
+"angely_got_pixel": {
+    "file": "assets/runtime/angely_got_pixel.webp",
     "frameWidth": 313,
     "frameHeight": 263,
     "originX": 0.5781,
@@ -188,6 +325,51 @@ export const SPRITES = {
   },
   "toxic": {
     "file": "assets/runtime/toxic.webp",
+    "frameWidth": 240,
+    "frameHeight": 219,
+    "originX": 0.3708,
+    "originY": 0.9817,
+    "bodyHeight": 211,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 3,
+        "fps": 6,
+        "repeat": -1,
+        "h": 188
+      },
+      "walk": {
+        "start": 4,
+        "end": 7,
+        "fps": 8,
+        "repeat": -1,
+        "h": 188
+      },
+      "attack": {
+        "start": 8,
+        "end": 9,
+        "fps": 10,
+        "repeat": 0,
+        "h": 185
+      },
+      "hurt": {
+        "start": 10,
+        "end": 10,
+        "fps": 8,
+        "repeat": 0,
+        "h": 166
+      },
+      "dead": {
+        "start": 11,
+        "end": 11,
+        "fps": 6,
+        "repeat": 0,
+        "h": 156
+      }
+    }
+  },
+"toxic_pixel": {
+    "file": "assets/runtime/toxic_pixel.webp",
     "frameWidth": 240,
     "frameHeight": 219,
     "originX": 0.3708,
@@ -583,6 +765,23 @@ export const SPRITES = {
   },
   "angely_ray": {
     "file": "assets/runtime/angely_ray.webp",
+    "frameWidth": 243,
+    "frameHeight": 251,
+    "originX": 0.475,
+    "originY": 0.9841,
+    "bodyHeight": 243,
+    "anims": {
+      "shoot": {
+        "start": 0,
+        "end": 9,
+        "fps": 25,
+        "repeat": 0,
+        "h": 235
+      }
+    }
+  },
+"angely_ray_pixel": {
+    "file": "assets/runtime/angely_ray_pixel.webp",
     "frameWidth": 243,
     "frameHeight": 251,
     "originX": 0.475,
@@ -1048,8 +1247,38 @@ export const SPRITES = {
       }
     }
   },
+"weapon_ray_pixel": {
+    "file": "assets/runtime/weapon_ray_pixel.webp",
+    "frameWidth": 352,
+    "frameHeight": 258,
+    "originX": 0.5,
+    "originY": 0.5,
+    "bodyHeight": 250,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 0,
+        "fps": 1,
+        "repeat": -1,
+        "h": 250
+      }
+    }
+  },
   "fx_ray": {
     "file": "assets/runtime/fx_ray.webp",
+    "frameWidth": 355,
+    "frameHeight": 204,
+    "originX": 0.5,
+    "originY": 0.5,
+    "bodyHeight": 102,
+    "anims": {
+      "fly_a": { "start": 0, "end": 3, "fps": 16, "repeat": -1, "h": 178 },
+      "fly_b": { "start": 4, "end": 7, "fps": 16, "repeat": -1, "h": 188 },
+      "fly_c": { "start": 8, "end": 11, "fps": 16, "repeat": -1, "h": 187 }
+    }
+  },
+"fx_ray_pixel": {
+    "file": "assets/runtime/fx_ray_pixel.webp",
     "frameWidth": 355,
     "frameHeight": 204,
     "originX": 0.5,
@@ -1935,48 +2164,138 @@ export const SPRITES = {
       }
     }
   },
-  "squish": {
-    "file": "assets/runtime/squish.webp",
-    "frameWidth": 229,
-    "frameHeight": 246,
+"blob_pixel": {
+    "file": "assets/runtime/blob_pixel.webp",
+    "frameWidth": 242,
+    "frameHeight": 234,
     "originX": 0.5,
-    "originY": 0.9837,
-    "bodyHeight": 212,
+    "originY": 0.9829,
+    "bodyHeight": 194,
     "anims": {
       "idle": {
         "start": 0,
         "end": 3,
         "fps": 5,
         "repeat": -1,
-        "h": 192
+        "h": 172
       },
       "walk": {
         "start": 4,
         "end": 7,
         "fps": 8,
         "repeat": -1,
-        "h": 192
+        "h": 172
       },
       "attack": {
         "start": 8,
         "end": 9,
         "fps": 7,
         "repeat": 0,
-        "h": 229
+        "h": 185
       },
       "hurt": {
         "start": 10,
         "end": 10,
         "fps": 8,
         "repeat": 0,
-        "h": 184
+        "h": 173
       },
       "dead": {
         "start": 11,
         "end": 12,
         "fps": 6,
         "repeat": 0,
-        "h": 151
+        "h": 159
+      }
+    }
+  },
+  "squish": {
+    "file": "assets/runtime/squish.webp",
+    "frameWidth": 212,
+    "frameHeight": 210,
+    "originX": 0.5,
+    "originY": 0.981,
+    "bodyHeight": 202,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 7,
+        "fps": 4,
+        "repeat": -1,
+        "h": 179
+      },
+      "walk": {
+        "start": 8,
+        "end": 19,
+        "fps": 8,
+        "repeat": -1,
+        "h": 130
+      },
+      "attack": {
+        "start": 8,
+        "end": 11,
+        "fps": 7,
+        "repeat": 0,
+        "h": 131
+      },
+      "hurt": {
+        "start": 13,
+        "end": 13,
+        "fps": 8,
+        "repeat": 0,
+        "h": 103
+      },
+      "dead": {
+        "start": 13,
+        "end": 13,
+        "fps": 6,
+        "repeat": 0,
+        "h": 103
+      }
+    }
+  },
+"squish_pixel": {
+    "file": "assets/runtime/squish_pixel.webp",
+    "frameWidth": 212,
+    "frameHeight": 210,
+    "originX": 0.5,
+    "originY": 0.981,
+    "bodyHeight": 202,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 7,
+        "fps": 4,
+        "repeat": -1,
+        "h": 179
+      },
+      "walk": {
+        "start": 8,
+        "end": 19,
+        "fps": 8,
+        "repeat": -1,
+        "h": 130
+      },
+      "attack": {
+        "start": 8,
+        "end": 11,
+        "fps": 7,
+        "repeat": 0,
+        "h": 131
+      },
+      "hurt": {
+        "start": 13,
+        "end": 13,
+        "fps": 8,
+        "repeat": 0,
+        "h": 103
+      },
+      "dead": {
+        "start": 13,
+        "end": 13,
+        "fps": 6,
+        "repeat": 0,
+        "h": 103
       }
     }
   },
@@ -2617,6 +2936,30 @@ export const SPRITES = {
       }
     }
   },
+"fx_orb_pixel": {
+    "file": "assets/runtime/fx_orb_pixel.webp",
+    "frameWidth": 160,
+    "frameHeight": 106,
+    "originX": 0.5,
+    "originY": 0.5,
+    "bodyHeight": 76,
+    "anims": {
+      "fly": {
+        "start": 0,
+        "end": 3,
+        "fps": 12,
+        "repeat": -1,
+        "h": 69
+      },
+      "impact": {
+        "start": 4,
+        "end": 5,
+        "fps": 14,
+        "repeat": 0,
+        "h": 87
+      }
+    }
+  },
   "fx_bolt": {
     "file": "assets/runtime/fx_bolt.webp",
     "frameWidth": 177,
@@ -2760,6 +3103,23 @@ export const SPRITES = {
       }
     }
   },
+"fx_dust_pixel": {
+    "file": "assets/runtime/fx_dust_pixel.webp",
+    "frameWidth": 150,
+    "frameHeight": 76,
+    "originX": 0.4559,
+    "originY": 0.9474,
+    "bodyHeight": 68,
+    "anims": {
+      "puff": {
+        "start": 0,
+        "end": 3,
+        "fps": 14,
+        "repeat": 0,
+        "h": 57
+      }
+    }
+  },
   "fx_explode": {
     "file": "assets/runtime/fx_explode.webp",
     "frameWidth": 203,
@@ -2811,6 +3171,23 @@ export const SPRITES = {
       }
     }
   },
+"heart_pixel": {
+    "file": "assets/runtime/heart_pixel.webp",
+    "frameWidth": 117,
+    "frameHeight": 97,
+    "originX": 0.5,
+    "originY": 0.5,
+    "bodyHeight": 89,
+    "anims": {
+      "glow": {
+        "start": 0,
+        "end": 2,
+        "fps": 6,
+        "repeat": -1,
+        "h": 68
+      }
+    }
+  },
   "flag": {
     "file": "assets/runtime/flag.webp",
     "frameWidth": 268,
@@ -2835,8 +3212,49 @@ export const SPRITES = {
       }
     }
   },
+"flag_pixel": {
+    "file": "assets/runtime/flag_pixel.webp",
+    "frameWidth": 268,
+    "frameHeight": 219,
+    "originX": 0.4403,
+    "originY": 0.9817,
+    "bodyHeight": 206,
+    "anims": {
+      "down": {
+        "start": 0,
+        "end": 0,
+        "fps": 1,
+        "repeat": -1,
+        "h": 206
+      },
+      "up": {
+        "start": 1,
+        "end": 1,
+        "fps": 1,
+        "repeat": -1,
+        "h": 211
+      }
+    }
+  },
   "spring": {
     "file": "assets/runtime/spring.webp",
+    "frameWidth": 146,
+    "frameHeight": 157,
+    "originX": 0.5123,
+    "originY": 0.9745,
+    "bodyHeight": 149,
+    "anims": {
+      "idle": {
+        "start": 0,
+        "end": 0,
+        "fps": 1,
+        "repeat": -1,
+        "h": 149
+      }
+    }
+  },
+"spring_pixel": {
+    "file": "assets/runtime/spring_pixel.webp",
     "frameWidth": 146,
     "frameHeight": 157,
     "originX": 0.5123,
@@ -2886,8 +3304,42 @@ export const SPRITES = {
       }
     }
   },
+"portal_pixel": {
+    "file": "assets/runtime/portal_pixel.webp",
+    "frameWidth": 342,
+    "frameHeight": 380,
+    "originX": 0.3641,
+    "originY": 0.9895,
+    "bodyHeight": 372,
+    "anims": {
+      "arch": {
+        "start": 0,
+        "end": 0,
+        "fps": 1,
+        "repeat": -1,
+        "h": 372
+      }
+    }
+  },
   "vortex": {
     "file": "assets/runtime/vortex.webp",
+    "frameWidth": 309,
+    "frameHeight": 309,
+    "originX": 0.5,
+    "originY": 0.5,
+    "bodyHeight": 301,
+    "anims": {
+      "spin": {
+        "start": 0,
+        "end": 0,
+        "fps": 1,
+        "repeat": -1,
+        "h": 301
+      }
+    }
+  },
+"vortex_pixel": {
+    "file": "assets/runtime/vortex_pixel.webp",
     "frameWidth": 309,
     "frameHeight": 309,
     "originX": 0.5,
@@ -2920,8 +3372,42 @@ export const SPRITES = {
       }
     }
   },
+"stargem_pixel": {
+    "file": "assets/runtime/stargem_pixel.webp",
+    "frameWidth": 268,
+    "frameHeight": 248,
+    "originX": 0.5,
+    "originY": 0.5,
+    "bodyHeight": 248,
+    "anims": {
+      "glow": {
+        "start": 0,
+        "end": 7,
+        "fps": 12,
+        "repeat": -1,
+        "h": 248
+      }
+    }
+  },
   "starshield": {
     "file": "assets/runtime/starshield.webp",
+    "frameWidth": 268,
+    "frameHeight": 238,
+    "originX": 0.5,
+    "originY": 0.5,
+    "bodyHeight": 238,
+    "anims": {
+      "glow": {
+        "start": 0,
+        "end": 7,
+        "fps": 12,
+        "repeat": -1,
+        "h": 238
+      }
+    }
+  },
+"starshield_pixel": {
+    "file": "assets/runtime/starshield_pixel.webp",
     "frameWidth": 268,
     "frameHeight": 238,
     "originX": 0.5,
@@ -4050,8 +4536,20 @@ export const PROPS = {
     "height": 74.6,
     "surface": 0.0
   },
+"ground_9_pixel": {
+    "file": "assets/runtime/props/ground_9_pixel.webp",
+    "width": 640,
+    "height": 74.6,
+    "surface": 0.0
+  },
   "plat_l_9": {
     "file": "assets/runtime/props/plat_l_9.webp",
+    "width": 190,
+    "height": 63.6,
+    "surface": 0.0
+  },
+"plat_l_9_pixel": {
+    "file": "assets/runtime/props/plat_l_9_pixel.webp",
     "width": 190,
     "height": 63.6,
     "surface": 0.0
@@ -4062,8 +4560,20 @@ export const PROPS = {
     "height": 65.0,
     "surface": 0.0
   },
+"plat_m_9_pixel": {
+    "file": "assets/runtime/props/plat_m_9_pixel.webp",
+    "width": 145,
+    "height": 65.0,
+    "surface": 0.0
+  },
   "plat_s_9": {
     "file": "assets/runtime/props/plat_s_9.webp",
+    "width": 100,
+    "height": 47.5,
+    "surface": 0.0
+  },
+"plat_s_9_pixel": {
+    "file": "assets/runtime/props/plat_s_9_pixel.webp",
     "width": 100,
     "height": 47.5,
     "surface": 0.0
@@ -4074,14 +4584,32 @@ export const PROPS = {
     "height": 34.6,
     "surface": 0.159
   },
+"spikes_9_pixel": {
+    "file": "assets/runtime/props/spikes_9_pixel.webp",
+    "width": 100,
+    "height": 34.6,
+    "surface": 0.159
+  },
   "crate_9": {
     "file": "assets/runtime/props/crate_9.webp",
     "width": 84,
     "height": 80.7,
     "surface": 0.025
   },
+"crate_9_pixel": {
+    "file": "assets/runtime/props/crate_9_pixel.webp",
+    "width": 84,
+    "height": 80.7,
+    "surface": 0.025
+  },
   "block_9": {
     "file": "assets/runtime/props/block_9.webp",
+    "width": 84,
+    "height": 74.2,
+    "surface": 0.02
+  },
+"block_9_pixel": {
+    "file": "assets/runtime/props/block_9_pixel.webp",
     "width": 84,
     "height": 74.2,
     "surface": 0.02
@@ -4140,6 +4668,7 @@ export const BACKDROPS = {
   "bg7": "assets/runtime/backdrops/bg7.jpg",
   "bg8": "assets/runtime/backdrops/bg8.jpg",
   "bg9": "assets/runtime/backdrops/bg9.jpg",
+  "bg9_pixel": "assets/runtime/backdrops/bg9_pixel.jpg",
   "bg10": "assets/runtime/backdrops/bg10.jpg",
   "title_bg": "assets/runtime/backdrops/title_bg.jpg",
   "title_splash": "assets/runtime/backdrops/title_splash.jpg",
@@ -4154,6 +4683,7 @@ export const BACKDROPS = {
   "splash7": "assets/runtime/backdrops/splash7.jpg",
   "splash8": "assets/runtime/backdrops/splash8.jpg",
   "splash9": "assets/runtime/backdrops/splash9.jpg",
+  "splash9_pixel": "assets/runtime/backdrops/splash9_pixel.jpg",
   "splash10": "assets/runtime/backdrops/splash10.jpg",
   "portrait_angely": "assets/runtime/backdrops/portrait_angely.webp",
   "portrait_angely_wow": "assets/runtime/backdrops/portrait_angely_wow.webp",

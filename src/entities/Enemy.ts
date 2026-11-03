@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { applyOrigin, scaleForHeight } from "../assets/manifest";
-import { SPRITES } from "../assets/sprites.gen";
+import { SPRITES, type SpriteKey } from "../assets/sprites.gen";
 import { Audio } from "../audio/AudioManager";
 import { HURT_BARKS } from "../audio/barks";
 import type { GameScene } from "../scenes/GameScene";
@@ -28,13 +28,16 @@ export class Enemy {
   private hitDone = false;
   private dead = false;
   private tint?: number;
+  /** Render texture: pixel twin in ch9, otherwise type.key. Behavior keys stay flat. */
+  private texKey: SpriteKey;
 
-  constructor(scene: GameScene, type: EnemyType, x: number, y: number, group: Phaser.Physics.Arcade.Group) {
+  constructor(scene: GameScene, type: EnemyType, x: number, y: number, group: Phaser.Physics.Arcade.Group, textureKey: SpriteKey = type.key) {
     this.scene = scene;
     this.type = type;
+    this.texKey = textureKey;
     this.hp = type.hp;
-    this.scale = scaleForHeight(type.key, type.height, "idle");
-    const meta = SPRITES[type.key];
+    this.scale = scaleForHeight(textureKey, type.height, "idle");
+    const meta = SPRITES[textureKey];
     const w = meta.frameWidth * this.scale * type.body[0] * 0.75;
     const h = type.height * type.body[1];
     this.rect = scene.add.rectangle(x, y, w, h, 0xff0000, 0).setVisible(false);
@@ -46,9 +49,9 @@ export class Enemy {
     this.rect.setData("enemy", this);
 
     this.shadow = scene.add.image(x, y, "shadow").setAlpha(0.28).setDepth(30);
-    this.sprite = scene.add.sprite(x, y, type.key).setScale(this.scale).setDepth(40);
-    applyOrigin(this.sprite, type.key);
-    this.sprite.play(`${type.key}:idle`);
+    this.sprite = scene.add.sprite(x, y, textureKey).setScale(this.scale).setDepth(40);
+    applyOrigin(this.sprite, textureKey);
+    this.sprite.play(`${textureKey}:idle`);
     this.tint = scene.chapter.enemyTint;
     this.restoreTint();
     this.warn = scene.add
@@ -85,7 +88,7 @@ export class Enemy {
   }
 
   private play(anim: string, ignoreIfPlaying = true) {
-    this.sprite.play(`${this.type.key}:${anim}`, ignoreIfPlaying);
+    this.sprite.play(`${this.texKey}:${anim}`, ignoreIfPlaying);
   }
 
   update(time: number, frozen: boolean) {
@@ -222,7 +225,7 @@ export class Enemy {
         }
         // Bolt/orb/fireball shots get a fading trail (same system as the boss
         // orbs); slow dust puffs do not — a trail on a puff is noise.
-        const trail = p.sheet === "fx_dust" ? 0 : (p.tint ?? (p.sheet === "fx_bolt" ? 0x9ff5ff : p.sheet === "fx_fireball" ? 0xffb14a : 0xd9a6ff));
+        const trail = p.sheet === "fx_dust" || p.sheet === "fx_dust_pixel" ? 0 : (p.tint ?? (p.sheet === "fx_bolt" ? 0x9ff5ff : p.sheet === "fx_fireball" ? 0xffb14a : 0xd9a6ff));
         scene.spawnProjectile(p.sheet, ox, oy, vx, vy, p.scale, p.tint, this.type.key, false, undefined, trail);
         this.setState("recover", 450);
         break;

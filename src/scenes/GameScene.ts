@@ -352,7 +352,7 @@ export class GameScene extends Phaser.Scene {
 
   private buildGround() {
     const c = this.chapter.id;
-    const key = `ground_${c}`;
+    const key = c === 9 ? "ground_9_pixel" : `ground_${c}`;
     const meta = PROPS[key as keyof typeof PROPS];
     const fill = ({
       1: 0x3b2414, 2: 0x2a2d3c, 3: 0x1d1418, 4: 0x2c3a52, 5: 0x1c1230, 6: 0xd8dcef, 7: 0x1d4a5a,
@@ -401,7 +401,7 @@ export class GameScene extends Phaser.Scene {
   private buildPlatforms() {
     const c = this.chapter.id;
     for (const p of this.level.platforms) {
-      const key = `${PLATFORM_ART[p.prop]}_${c}`;
+      const key = this.chapter.id === 9 ? `${PLATFORM_ART[p.prop]}_9_pixel` : `${PLATFORM_ART[p.prop]}_${c}`;
       const meta = PROPS[key as keyof typeof PROPS];
       this.add
         .image(p.x, p.y - meta.height * meta.surface, key)
@@ -423,20 +423,22 @@ export class GameScene extends Phaser.Scene {
 
   private buildProps() {
     const L = this.level;
-    const spikes = PROPS[`spikes_${this.chapter.id}` as keyof typeof PROPS];
+    const spikesKey = this.chapter.id === 9 ? "spikes_9_pixel" : `spikes_${this.chapter.id}`;
+    const spikes = PROPS[spikesKey as keyof typeof PROPS];
     for (const s of L.spikes) {
       const w = spikes.width * 0.8;
       const h = spikes.height * 0.8;
-      this.add.image(s.x, s.y + 4, `spikes_${this.chapter.id}`).setOrigin(0.5, 1).setDisplaySize(w, h).setDepth(14);
+      this.add.image(s.x, s.y + 4, spikesKey).setOrigin(0.5, 1).setDisplaySize(w, h).setDepth(14);
       const zone = this.add.rectangle(s.x, s.y - Math.min(h, 50) / 2, w * 0.75, Math.min(h, 50)).setVisible(false);
       this.hazards.add(zone);
     }
 
     for (const spot of L.checkpoints) {
-      const spr = this.add.sprite(spot.x, spot.y + 4, "flag").setDepth(15);
-      spr.setScale(scaleForHeight("flag", 92));
-      applyOrigin(spr, "flag");
-      spr.play("flag:down").setTint(0x9a94b0);
+      const flagKey = this.chapter.id === 9 ? "flag_pixel" : "flag";
+      const spr = this.add.sprite(spot.x, spot.y + 4, flagKey).setDepth(15);
+      spr.setScale(scaleForHeight(flagKey, 92));
+      applyOrigin(spr, flagKey);
+      spr.play(`${flagKey}:down`).setTint(0x9a94b0);
       this.checkpoints.push({ spot, sprite: spr, active: false });
     }
 
@@ -444,7 +446,7 @@ export class GameScene extends Phaser.Scene {
     for (const g of L.gems) this.gems.push(this.addBobber("stargem", g.x, g.y, 46));
     for (const s of L.stars) this.stars.push(this.addBobber("starshield", s.x, s.y, 52));
 
-    this.portal = new Portal(this, L.portal.x, !this.info.boss, L.portal.y);
+    this.portal = new Portal(this, L.portal.x, !this.info.boss, L.portal.y, this.info.chapter === 9);
     if (this.info.goal === "reach") this.portal.open(true);
     else this.portal.setRemaining(this.info.goal === "gems" ? L.gems.length : this.info.need, this.info.goal === "gems" ? "gems" : "left");
     this.buildPortalArrow();
@@ -488,7 +490,7 @@ export class GameScene extends Phaser.Scene {
         .setName("swordGlow");
       return;
     }
-    const key = `weapon_${wp.kind}` as SpriteKey;
+    const key = (this.info.chapter === 9 && wp.kind === "ray" ? "weapon_ray_pixel" : `weapon_${wp.kind}`) as SpriteKey;
     const sprite = this.add.sprite(wp.x, wp.y, key).setDepth(50);
     sprite.setScale(scaleForHeight(key, 84));
     applyOrigin(sprite, key);
@@ -513,10 +515,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   private addHeart(x: number, y: number, ttlMs = 0) {
-    const spr = this.add.sprite(x, y, "heart").setDepth(50);
-    spr.setScale(scaleForHeight("heart", 34));
-    applyOrigin(spr, "heart");
-    spr.play("heart:glow");
+    const key = this.info.chapter === 9 ? "heart_pixel" : "heart";
+    const spr = this.add.sprite(x, y, key).setDepth(50);
+    spr.setScale(scaleForHeight(key, 34));
+    applyOrigin(spr, key);
+    spr.play(`${key}:glow`);
     const p: Pickup = { sprite: spr, baseY: y, taken: false };
     this.tweens.add({ targets: spr, y: y - 8, duration: 700, yoyo: true, repeat: -1, ease: "Sine.inOut" });
     this.hearts.push(p);
@@ -845,7 +848,7 @@ export class GameScene extends Phaser.Scene {
       if (!c.active && Math.abs(this.player.x - c.spot.x) < 40 && Math.abs(this.player.body.bottom - c.spot.y) < 30 && this.player.alive) {
         c.active = true;
         this.respawn = { x: c.spot.x, y: c.spot.y - 80 };
-        c.sprite.clearTint().play("flag:up");
+        c.sprite.clearTint().play(`${c.sprite.texture.key}:up`);
         Audio.sfx("checkpoint");
         Barks.play(this, ["bark_rx_checkpoint"], 0.7);
         this.toast("Checkpoint!");
@@ -1158,7 +1161,8 @@ export class GameScene extends Phaser.Scene {
   shootRay(x: number, y: number, dir: 1 | -1) {
     Audio.sfx("ray");
     const variant = "abc"[this.rayVariant++ % 3];
-    this.launch("fx_ray", x, y, dir > 0 ? 0 : Math.PI, 1180, 34, "ray", 650, `fx_ray:fly_${variant}`, 1.5, 0xff7ad9);
+    const rayKey = this.info.chapter === 9 ? "fx_ray_pixel" : "fx_ray";
+    this.launch(rayKey, x, y, dir > 0 ? 0 : Math.PI, 1180, 34, "ray", 650, `${rayKey}:fly_${variant}`, 1.5, 0xff7ad9);
   }
 
   /** The cog saw flies straight and keeps going through armored enemies. */
@@ -1919,7 +1923,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   spawnEnemy(key: string, x: number, y: number) {
-    const e = new Enemy(this, ENEMY_TYPES[key], x, y, this.enemyGroup);
+    // Chapter 9: pixel twins for the slime family; behavior keys stay flat.
+    const PIXEL_ENEMY: Partial<Record<string, SpriteKey>> = { squish: "squish_pixel", blob: "blob_pixel", toxic: "toxic_pixel" };
+    const tex = this.info.chapter === 9 ? PIXEL_ENEMY[key] ?? key : key;
+    const e = new Enemy(this, ENEMY_TYPES[key], x, y, this.enemyGroup, tex as SpriteKey);
     this.enemies.push(e);
     return e;
   }
@@ -1980,12 +1987,15 @@ export class GameScene extends Phaser.Scene {
   // -------------------------------------------------------- projectiles/fx
 
   spawnProjectile(sheet: ProjectileSheet, x: number, y: number, vx: number, vy: number, scale: number, tint?: number, fromKey?: string, seek = false, frame?: number, trail = 0) {
+    // Chapter 9: slime shots use the pixel orb / pixel dust (impact anim follows via data).
+    if (this.info.chapter === 9 && sheet === "fx_orb") sheet = "fx_orb_pixel";
+    if (this.info.chapter === 9 && sheet === "fx_dust") sheet = "fx_dust_pixel";
     const pr = this.physics.add.sprite(x, y, sheet).setDepth(80).setScale(scale);
     if (fromKey) pr.setData("fromKey", fromKey);
     if (seek) pr.setData("seek", 1);
     this.projectiles.add(pr);
     applyOrigin(pr, sheet);
-    if (sheet === "fx_dust") pr.setFrame(SPRITES.fx_dust.anims.puff.start + 2);
+    if (sheet === "fx_dust" || sheet === "fx_dust_pixel") pr.setFrame(SPRITES[sheet].anims.puff.start + 2);
     else if (frame !== undefined) pr.setFrame(frame);
     else pr.play(`${sheet}:fly`);
     if (tint) pr.setTint(tint);
@@ -1995,7 +2005,7 @@ export class GameScene extends Phaser.Scene {
     body.setCircle(r, SPRITES[sheet].frameWidth / 2 - r, SPRITES[sheet].frameHeight / 2 - r);
     body.setVelocity(vx, vy);
     pr.setFlipX(vx < 0);
-    pr.setRotation(sheet === "fx_dust" || sheet === "crystal_shot" || sheet === "umbra_sky" ? 0 : Math.atan2(vy, Math.abs(vx)) * (vx < 0 ? -1 : 1));
+    pr.setRotation(sheet === "fx_dust" || sheet === "fx_dust_pixel" || sheet === "crystal_shot" || sheet === "umbra_sky" ? 0 : Math.atan2(vy, Math.abs(vx)) * (vx < 0 ? -1 : 1));
     pr.setData("born", this.time.now);
     pr.setData("sheet", sheet);
     if (trail) pr.setData("trail", trail);
@@ -2061,7 +2071,7 @@ export class GameScene extends Phaser.Scene {
       const floor = this.surfaceBelow(pr.x, pr.y) ?? pr.y;
       this.vfx.explosionShockwave(pr.x, floor - 3);
     }
-    if (sheet === "fx_dust") this.fx("fx_dust", "puff", pr.x, pr.y + 20, 0.3, 0xc9ff9a);
+    if (sheet === "fx_dust" || sheet === "fx_dust_pixel") this.fx(sheet, "puff", pr.x, pr.y + 20, 0.3, 0xc9ff9a);
     else this.fx(sheet, "impact", pr.x, pr.y, pr.scale);
     if (parried) {
       this.hitStop(40);
@@ -2100,10 +2110,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   private addBobber(sheet: "stargem" | "starshield", x: number, y: number, height: number): Pickup {
-    const spr = this.add.sprite(x, y, sheet).setDepth(50);
-    spr.setScale(scaleForHeight(sheet, height));
-    applyOrigin(spr, sheet);
-    spr.play(`${sheet}:glow`);
+    const key = this.info.chapter === 9 ? (sheet === "stargem" ? "stargem_pixel" : "starshield_pixel") : sheet;
+    const spr = this.add.sprite(x, y, key).setDepth(50);
+    spr.setScale(scaleForHeight(key, height));
+    applyOrigin(spr, key);
+    spr.play(`${key}:glow`);
     this.tweens.add({ targets: spr, y: y - 12, duration: 700, yoyo: true, repeat: -1, ease: "Sine.inOut" });
     return { sprite: spr, baseY: y, taken: false };
   }
@@ -2126,10 +2137,11 @@ export class GameScene extends Phaser.Scene {
       if (d < bestD) { bestD = d; best = g; }
     }
     if (!best) {
-      const spr = this.add.sprite(x, y, "stargem").setDepth(50);
-      spr.setScale(scaleForHeight("stargem", 46));
-      applyOrigin(spr, "stargem");
-      spr.play("stargem:glow");
+      const gemKey = this.info.chapter === 9 ? "stargem_pixel" : "stargem";
+      const spr = this.add.sprite(x, y, gemKey).setDepth(50);
+      spr.setScale(scaleForHeight(gemKey, 46));
+      applyOrigin(spr, gemKey);
+      spr.play(`${gemKey}:glow`);
       this.tweens.add({
         targets: spr,
         x: this.player.x,

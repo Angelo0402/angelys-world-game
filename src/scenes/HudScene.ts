@@ -449,15 +449,22 @@ export class HudScene extends Phaser.Scene {
     this.attackBtn.add(inner);
   }
 
+  // Roblox-style (2026-11-01, pedido de Angelo): SOLO la gráfica —
+  // círculos grises simples como el joystick de Roblox. Comportamiento
+  // sin cambio (visible en home, origen dinámico al tocar).
   private joystick(x: number, y: number) {
     const c = this.add.container(x, y);
-    c.add(hudDisc(this, "hud_joystick", JOY_R));
+    const g = this.add.graphics();
+    g.fillStyle(0x1a1a1a, 0.45).fillCircle(0, 0, JOY_R);
+    c.add(g);
     return c;
   }
 
   private knob(x: number, y: number) {
     const c = this.add.container(x, y);
-    c.add(hudDisc(this, "hud_knob", KNOB_R));
+    const g = this.add.graphics();
+    g.fillStyle(0xd9d9d9, 0.85).fillCircle(0, 0, KNOB_R);
+    c.add(g);
     return c;
   }
 
@@ -620,7 +627,8 @@ export class HudScene extends Phaser.Scene {
   private showPause() {
     if (this.overlay) return;
     // Pause EXACTO (2026-10-30, pedido de Angelo): el arte concepto entero,
-    // ajustado a la pantalla del juego (contain 1280x576, sin recorte) +
+    // a pantalla completa (cover 1280x576; contain dejaba pilares oscuros
+    // porque el arte 16:9 no llena el cuadro 1280x576) +
     // zonas invisibles sobre los 5 botones pintados, como el game-over art.
     // Los toggles MUSIC/SFX son la única excepción visual: cuando están en
     // OFF, un parche pequeño tapa solo la palabra ON con OFF (en ON, la
@@ -631,14 +639,15 @@ export class HudScene extends Phaser.Scene {
     const c = this.add.container(0, 0).setDepth(100);
     // Pilares oscuros + bloqueo de input por debajo.
     c.add(this.add.rectangle(0, 0, GAME_W, GAME_H, 0x0b0716, 1).setOrigin(0).setInteractive());
-    // Arte: contain (nada se recorta) o dim clásico si falta la textura.
+    // Arte: cover (llena la pantalla; recorte simétrico arriba/abajo,
+    // ningún botón) o dim clásico si falta la textura.
     let dispX = 0;
     let dispY = 0;
     let dispW = GAME_W;
     let dispH = GAME_H;
     if (this.textures.exists("pause_menu_art")) {
       const img = this.add.image(GAME_W / 2, GAME_H / 2, "pause_menu_art");
-      const s = Math.min(GAME_W / img.width, GAME_H / img.height);
+      const s = Math.max(GAME_W / img.width, GAME_H / img.height);
       img.setScale(s);
       dispW = img.width * s;
       dispH = img.height * s;
@@ -656,9 +665,28 @@ export class HudScene extends Phaser.Scene {
       const zh = (fy1 - fy0) * dispH;
       const r = this.add.rectangle(zx, zy, zw, zh, 0xffffff, 0).setInteractive({ useHandCursor: true });
       const frame = this.add.rectangle(zx, zy, zw, zh).setStrokeStyle(4, 0xffd36b).setAlpha(0);
-      r.on("pointerup", () => {
+      // Menú táctil (2026-11-02, fix pausa v51): disparar en pointerdown,
+      // no solo pointerup — en el WebView del teléfono el pointerup se
+      // pierde y los botones quedaban muertos. El Set evita doble
+      // disparo cuando down y up llegan los dos (toggles MUSIC/SFX).
+      const fired = new Set<number>();
+      const fire = () => {
         Audio.sfx("button");
         fn();
+      };
+      r.on("pointerdown", (p: Phaser.Input.Pointer) => {
+        fired.add(p.id);
+        fire();
+      });
+      r.on("pointerup", (p: Phaser.Input.Pointer) => {
+        if (fired.has(p.id)) {
+          fired.delete(p.id);
+          return;
+        }
+        fire();
+      });
+      r.on("pointerupoutside", (p: Phaser.Input.Pointer) => {
+        fired.delete(p.id);
       });
       c.add([r, frame]);
       return {
@@ -774,9 +802,27 @@ export class HudScene extends Phaser.Scene {
       const zh = (fy1 - fy0) * dispH;
       const r = this.add.rectangle(zx, zy, zw, zh, 0xffffff, 0).setInteractive({ useHandCursor: true });
       const frame = this.add.rectangle(zx, zy, zw, zh).setStrokeStyle(4, 0xffd36b).setAlpha(0);
-      r.on("pointerup", () => {
+      // Menú táctil (2026-11-02, fix pausa v51): mismo fix que la pausa —
+      // disparar en pointerdown, no solo pointerup. El Set evita doble
+      // disparo cuando down y up llegan los dos.
+      const fired = new Set<number>();
+      const fire = () => {
         Audio.sfx("button");
         fn();
+      };
+      r.on("pointerdown", (p: Phaser.Input.Pointer) => {
+        fired.add(p.id);
+        fire();
+      });
+      r.on("pointerup", (p: Phaser.Input.Pointer) => {
+        if (fired.has(p.id)) {
+          fired.delete(p.id);
+          return;
+        }
+        fire();
+      });
+      r.on("pointerupoutside", (p: Phaser.Input.Pointer) => {
+        fired.delete(p.id);
       });
       c.add([r, frame]);
       return {
@@ -882,7 +928,7 @@ export class HudScene extends Phaser.Scene {
     const art = this.add.image(GAME_W/2,0,"the_end_art").setOrigin(0.5,0).setDisplaySize(GAME_W,720).setInteractive();
     c.add(art);
     const levels = new Button(this,GAME_W/2,520,"BACK TO LEVELS",() => this.toChapterSelect(),{
-      width:360,height:62,fontSize:26,color:0x426eaa
+      width:360,height:62,fontSize:26,color:0x426eaa,fireOnDown:true
     });
     c.add(levels);
     this.overlay = c;

@@ -19,6 +19,23 @@ export class TitleScene extends Phaser.Scene {
     Audio.duck(false);
     this.cameras.main.fadeIn(500, 18, 13, 31);
     if (data?.select) {
+      // Tap-through guard (2026-11-03): taps that open this screen fire on
+      // pointerdown (pause LEVELS zone, victory BACK TO LEVELS). That finger
+      // is still down when this scene creates, and its pointerup would
+      // otherwise land on a chapter pill and auto-start a level. Drop all
+      // input until that pointer lifts (1s failsafe so input never wedges).
+      if (this.input.activePointer.isDown) {
+        this.input.enabled = false;
+        const started = this.time.now;
+        const recheck = () => {
+          if (!this.input.activePointer.isDown || this.time.now - started > 1000) {
+            this.input.enabled = true;
+          } else {
+            this.time.delayedCall(50, recheck);
+          }
+        };
+        this.time.delayedCall(50, recheck);
+      }
       // Solid fallback first: the selector must remain visible if a texture fails.
       this.add.rectangle(0, 0, GAME_W, GAME_H, 0x1b0f2e).setOrigin(0);
       try {
