@@ -24,16 +24,25 @@ export class TitleScene extends Phaser.Scene {
       // is still down when this scene creates, and its pointerup would
       // otherwise land on a chapter pill and auto-start a level. Drop all
       // input until that pointer lifts (1s failsafe so input never wedges).
-      // NOTE: measure elapsed with performance.now(), NOT this.time.now.
+      // NOTE 1: measure elapsed with performance.now(), NOT this.time.now.
       // A freshly created scene's clock reads 0 in create() and jumps to the
       // game-global time on the next step, so `now - started` with the scene
       // clock reads thousands of ms at the first recheck and the guard
       // releases instantly (v53 bug, caught by the PC harness 2026-11-03).
+      // NOTE 2: do NOT release the moment the pointer lifts. The queued
+      // pointerup is dispatched to pills in a later step, and a release
+      // before that dispatch lets the pill fire (the pill fades 300ms, so
+      // the bad Splash shows up ~300ms after the lift). Hold for 3 more
+      // recheck steps after the lift so the up is processed while input
+      // is still disabled. Steps, not ms: on slow hardware a step can be
+      // ~1s, and a wall-clock delay could expire before dispatch.
       if (this.input.activePointer.isDown) {
         this.input.enabled = false;
         const started = performance.now();
+        let upSteps = 0;
         const recheck = () => {
-          if (!this.input.activePointer.isDown || performance.now() - started > 1000) {
+          if (!this.input.activePointer.isDown) upSteps++;
+          if (upSteps >= 3 || performance.now() - started > 1000) {
             this.input.enabled = true;
           } else {
             this.time.delayedCall(50, recheck);
