@@ -20,15 +20,13 @@ export type MusicTrack =
   | "music_game_over"
   | "music_victory";
 
-export type WeaponId = "sword" | "bow" | "hammer" | "boomerang" | "wand" | "cog" | "ray";
-export const WEAPON_ORDER: WeaponId[] = ["sword", "bow", "hammer", "boomerang", "wand", "cog", "ray"];
+export type WeaponId = "sword" | "bow" | "hammer" | "wand" | "ray";
+export const WEAPON_ORDER: WeaponId[] = ["sword", "bow", "hammer", "wand", "ray"];
 export const WEAPON_NAMES: Record<WeaponId, string> = {
   sword: "Crystal Sword",
   bow: "Star Bow",
   hammer: "Ember Hammer",
-  boomerang: "Moon Boomerang",
   wand: "Star Wand",
-  cog: "Cog Saw",
   ray: "Bubble Ray",
 };
 
@@ -61,7 +59,7 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
     spawnEvery: 1.7,
     pitKind: "pit",
     grip: 1,
-    ambient: { color: 0xfff27a, count: 26 },
+    ambient: { color: 0xfff27a, count: 78 },
   },
   2: {
     id: 2,
@@ -74,7 +72,7 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
     spawnEvery: 1.85,
     pitKind: "pit",
     grip: 1,
-    ambient: { color: 0xb9a8ff, count: 30 },
+    ambient: { color: 0xb9a8ff, count: 90 },
   },
   3: {
     id: 3,
@@ -87,7 +85,7 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
     spawnEvery: 1.75,
     pitKind: "lava",
     grip: 1,
-    ambient: { color: 0xff8a3d, count: 40 },
+    ambient: { color: 0xff8a3d, count: 120 },
   },
   4: {
     id: 4,
@@ -95,12 +93,17 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
     splash: "splash4",
     background: "bg4",
     music: "music_frozen",
-    enemies: ["frostwolf", "icewisp", "penguin", "yeti"],
+    // Yeti share (Angelo 2026-11-06: "sale mucho yeti"): spawnTick picks
+    // uniformly from this list, so duplicates ARE the weighting. Yeti was
+    // 1/4 (25%) of ch4 spawns; now 1/10 (10%) — ~60% fewer Yetis. Total
+    // spawn flow unchanged (same spawnEvery/maxAlive), so the 12-kill
+    // goals in 4-1/4-2 stay reachable.
+    enemies: ["frostwolf", "frostwolf", "frostwolf", "icewisp", "icewisp", "icewisp", "penguin", "penguin", "penguin", "yeti"],
     maxAlive: 4,
     spawnEvery: 1.7,
     pitKind: "pit",
     grip: 0.22,
-    ambient: { color: 0xe6f6ff, count: 46 },
+    ambient: { color: 0xe6f6ff, count: 138 },
   },
   5: {
     id: 5,
@@ -113,7 +116,7 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
     spawnEvery: 1.6,
     pitKind: "pit",
     grip: 1,
-    ambient: { color: 0xc59bff, count: 40 },
+    ambient: { color: 0xc59bff, count: 120 },
     enemyTint: 0xd8c4ff,
   },
   6: {
@@ -127,7 +130,7 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
     spawnEvery: 1.6,
     pitKind: "pit",
     grip: 1,
-    ambient: { color: 0xffffff, count: 30 },
+    ambient: { color: 0xffffff, count: 90 },
   },
   7: {
     id: 7,
@@ -140,7 +143,7 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
     spawnEvery: 1.8,
     pitKind: "pit",
     grip: 1,
-    ambient: { color: 0x9ff5ff, count: 34 },
+    ambient: { color: 0x9ff5ff, count: 102 },
   },
   8: {
     id: 8,
@@ -153,20 +156,20 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
     spawnEvery: 1.7,
     pitKind: "pit",
     grip: 1,
-    ambient: { color: 0xffd27a, count: 36 },
+    ambient: { color: 0xffd27a, count: 108 },
   },
   9: {
     id: 9,
     name: "Squishy Valley",
-    splash: "splash9_pixel",
-    background: "bg9_pixel",
+    splash: "splash9",
+    background: "bg9",
     music: "music_squish",
     enemies: ["squish", "blob", "toxic", "squish"],
     maxAlive: 4,
     spawnEvery: 1.7,
     pitKind: "pit",
     grip: 1,
-    ambient: { color: 0xffb7e8, count: 30 },
+    ambient: { color: 0xffb7e8, count: 90 },
   },
   10: {
     id: 10,
@@ -179,7 +182,7 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
     spawnEvery: 1.9,
     pitKind: "pit",
     grip: 1,
-    ambient: { color: 0xb7a6ff, count: 34 },
+    ambient: { color: 0xb7a6ff, count: 102 },
   },
   11: {
     id: 11,
@@ -256,17 +259,17 @@ export const LEVELS: LevelInfo[] = [
   { chapter: 3, stage: 1, name: "Ember Tunnels", mode: "run", goal: "kills", need: 10, terrain: "flat", seed: 37, pieces: ["hops", "target", "movingBridge", "spikes", "target"], weapon: "bow", tip: "Shoot star targets to raise bridges" },
   { chapter: 3, stage: 2, name: "Magma Lift", mode: "run", goal: "gems", need: 6, terrain: "cliffs", seed: 41, pieces: ["lift", "crateWall", "movingBridge", "target", "lift", "steps"], tip: "Ride the lifts and grab every gem" },
   { chapter: 4, stage: 1, name: "Slippery Slopes", mode: "run", goal: "kills", need: 12, terrain: "hills", seed: 53, pieces: ["breakWall", "crateWall", "crumble", "steps", "breakWall"], weapon: "hammer", tip: "Smash cracked walls with the hammer" },
-  { chapter: 4, stage: 2, name: "Avalanche Run", mode: "run", goal: "kills", need: 12, terrain: "hills", seed: 59, pieces: ["hops", "spring", "crumble", "steps", "spikes", "crumble", "hops", "spring"], tip: "Watch for falling snow!" },
-  { chapter: 5, stage: 1, name: "Shadow Bridge", mode: "run", goal: "kills", need: 12, terrain: "cliffs", seed: 67, pieces: ["crateWall", "target", "crumble", "breakWall", "movingBridge", "lift"], tip: "Use everything you have learned" },
+  { chapter: 4, stage: 2, name: "Avalanche Run", mode: "run", goal: "kills", need: 12, terrain: "hills", seed: 59, pieces: ["hops", "spring", "crumble", "steps", "breakWall", "spikes", "crumble", "hops", "spring"], tip: "Watch for falling snow!" },
+  { chapter: 5, stage: 1, name: "Shadow Bridge", mode: "run", goal: "kills", need: 12, terrain: "cliffs", seed: 67, pieces: ["crateWall", "target", "crumble", "breakWall", "movingBridge", "breakWall", "lift"], tip: "Use everything you have learned" },
   { chapter: 5, stage: 2, name: "Umbra's Throne", mode: "run", goal: "boss", need: 0, terrain: "flat", seed: 71, pieces: [], boss: true, splash: "splash_veil52", tip: "Defeat Queen Umbra!" },
-  { chapter: 6, stage: 1, name: "Sky Tower", mode: "climb", goal: "reach", need: 0, terrain: "flat", seed: 79, pieces: [], weapon: "boomerang", tip: "Springs and lifts help you climb" },
+  { chapter: 6, stage: 1, name: "Sky Tower", mode: "climb", goal: "reach", need: 0, terrain: "flat", seed: 79, pieces: [], tip: "Springs and lifts help you climb" },
   { chapter: 6, stage: 2, name: "Storm Spire", mode: "climb", goal: "reach", need: 0, terrain: "flat", seed: 83, pieces: [], flood: true, tip: "The storm is rising. Climb fast!" },
   { chapter: 7, stage: 1, name: "Sunken Temple", mode: "swim", goal: "kills", need: 10, terrain: "hills", seed: 89, pieces: ["hops", "mines", "gate", "spikes", "mines", "gate", "target"], weapon: "wand", tip: "Press JUMP to swim. Watch out for urchins!" },
   { chapter: 7, stage: 2, name: "Coral Palace", mode: "swim", goal: "gems", need: 8, terrain: "cliffs", seed: 97, pieces: ["hops", "mines", "gate", "steps", "mines", "gate", "target", "spikes", "gate", "mines"], tip: "Swim through the palace and find all 8 star gems" },
-  { chapter: 8, stage: 1, name: "Cog Dunes", mode: "run", goal: "kills", need: 12, terrain: "hills", seed: 101, pieces: ["hops", "movingBridge", "crateWall", "spikes", "lift", "crumble"], weapon: "cog", tip: "Grab the Cog Saw. It cuts through gear crabs!" },
+  { chapter: 8, stage: 1, name: "Cog Dunes", mode: "run", goal: "kills", need: 12, terrain: "hills", seed: 101, pieces: ["hops", "breakWall", "movingBridge", "crateWall", "spikes", "lift", "crumble"], tip: "Gear crabs block blades from the front. Hammer them!" },
   { chapter: 8, stage: 2, name: "Dune Worm", mode: "run", goal: "boss", need: 0, terrain: "flat", seed: 109, pieces: [], boss: true, tip: "The sand worm rises from the dune. Hit it while it is up!" },
-  { chapter: 9, stage: 1, name: "Gumdrop Trail", mode: "run", goal: "kills", need: 10, terrain: "hills", seed: 113, pieces: ["hops", "spring", "steps", "spikes", "crateWall"], weapon: "ray", tip: "Grab the Bubble Ray and zap the squishies!" },
-  { chapter: 9, stage: 2, name: "Bubble Falls", mode: "run", goal: "gems", need: 6, terrain: "cliffs", seed: 127, pieces: ["hops", "movingBridge", "crumble", "spring", "spikes", "steps"], tip: "Bounce the springs and find every star gem" },
+  { chapter: 9, stage: 1, name: "Gumdrop Trail", mode: "run", goal: "kills", need: 10, terrain: "hills", seed: 113, pieces: ["hops", "spring", "breakWall", "steps", "spikes", "crateWall"], weapon: "ray", tip: "Grab the Bubble Ray and zap the squishies!" },
+  { chapter: 9, stage: 2, name: "Bubble Falls", mode: "run", goal: "gems", need: 6, terrain: "cliffs", seed: 127, pieces: ["hops", "movingBridge", "breakWall", "crumble", "spring", "spikes", "steps"], tip: "Bounce the springs and find every star gem" },
   { chapter: 10, stage: 1, name: "Shattered Causeway", mode: "run", goal: "kills", need: 12, terrain: "cliffs", seed: 149, pieces: ["hops", "steps", "breakWall", "crumble", "crateWall", "movingBridge", "spring", "target", "lift", "breakWall"], tip: "Smash the cracked crystal walls with your hammer. Clear twelve guardians to reach the crown." },
   { chapter: 10, stage: 2, name: "The Veil Crown", mode: "run", goal: "boss", need: 0, terrain: "flat", seed: 151, pieces: [], boss: true, splash: "splash_veilcrown", tip: "Watch the pink warnings. Two forms, one crown — strike the core after each attack." },
 ].map((l, i) => L(l as Omit<LevelInfo, "index">, i));

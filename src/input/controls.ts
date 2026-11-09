@@ -8,6 +8,7 @@ export const touchState = {
   jumpQueued: false,
   attackQueued: false,
   swapQueued: false,
+  specialQueued: false,
 };
 
 export function resetTouch() {
@@ -16,6 +17,7 @@ export function resetTouch() {
   touchState.jumpQueued = false;
   touchState.attackQueued = false;
   touchState.swapQueued = false;
+  touchState.specialQueued = false;
 }
 
 export interface FrameInput {
@@ -24,17 +26,18 @@ export interface FrameInput {
   jumpHeld: boolean;
   attackPressed: boolean;
   swapPressed: boolean;
+  specialPressed: boolean;
   pausePressed: boolean;
 }
 
-export const NO_INPUT: FrameInput = { axis: 0, jumpPressed: false, jumpHeld: false, attackPressed: false, swapPressed: false, pausePressed: false };
+export const NO_INPUT: FrameInput = { axis: 0, jumpPressed: false, jumpHeld: false, attackPressed: false, swapPressed: false, specialPressed: false, pausePressed: false };
 
 export class KeyboardInput {
   private keys: Record<string, Phaser.Input.Keyboard.Key>;
 
   constructor(scene: Phaser.Scene) {
     const kb = scene.input.keyboard!;
-    this.keys = kb.addKeys("LEFT,RIGHT,UP,A,D,W,SPACE,J,K,ESC,P,Q,L,E") as Record<string, Phaser.Input.Keyboard.Key>;
+    this.keys = kb.addKeys("LEFT,RIGHT,UP,A,D,W,SPACE,J,K,R,ESC,P,Q,L,E") as Record<string, Phaser.Input.Keyboard.Key>;
   }
 
   read(): FrameInput {
@@ -53,11 +56,13 @@ export class KeyboardInput {
       jumpHeld: k.UP.isDown || k.W.isDown || k.SPACE.isDown || Gamepad.jumpHeld || touchState.jumpHeld,
       attackPressed: kbAttack || Gamepad.attackPressed || touchState.attackQueued,
       swapPressed: JD(k.Q) || JD(k.L) || JD(k.E) || Gamepad.swapPressed || touchState.swapQueued,
+      specialPressed: JD(k.R) || touchState.specialQueued,
       pausePressed: JD(k.ESC) || JD(k.P) || Gamepad.pausePressed,
     };
     touchState.jumpQueued = false;
     touchState.attackQueued = false;
     touchState.swapQueued = false;
+    touchState.specialQueued = false;
     return out;
   }
 }

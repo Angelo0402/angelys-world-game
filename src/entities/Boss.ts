@@ -1,6 +1,5 @@
 import Phaser from "phaser";
-import { applyOrigin, scaleForHeight } from "../assets/manifest";
-import { SPRITES } from "../assets/sprites.gen";
+import { applyOrigin } from "../assets/manifest";
 import { Audio } from "../audio/AudioManager";
 import { BossFeel, UMBRA_PALETTE } from "./bossFeel";
 import { GROUND_Y } from "../config";
@@ -12,8 +11,33 @@ type Attack = Exclude<BState, "intro" | "idle" | "tired" | "dead" | "hurt">;
 
 export const BOSS_NAME = "QUEEN UMBRA";
 export const HOVER_Y = GROUND_Y - 255;
-const HEIGHT = 450;
+const HEIGHT = 225;
 const ORB_TINT = 0xd9a6ff;
+
+/**
+ * Per-animation figure fit, measured from the v4 sheet's alpha pixels
+ * (2026-11-06 harness): `h` = the animation's TRUE max figure height in
+ * source px, `off` = how far the figure's vertical center sits below the
+ * frame center (mean over frames), in source px. The `h` values in
+ * sprites.gen understate every attack anim (dash claims 146, the figure is
+ * 173; dead claims 139, the first frame is 190), so the v59 per-anim scale
+ * rendered her 231-308px instead of 225. And the attack figures sit LOW in
+ * their 269px frames (dash +49px), which dragged her feet 74-135px under
+ * the floor in swoop/tired. Calibrating by true height + recentering the
+ * figure on the logical y keeps her exactly 225px with her feet on the
+ * floor in every movement.
+ */
+const UMBRA_FIT: Record<"idle" | "dash" | "cast" | "sky" | "summon" | "slam" | "hurt" | "enrage" | "dead", { h: number; off: number }> = {
+  idle: { h: 252, off: -4.3 },
+  dash: { h: 173, off: 49.0 },
+  cast: { h: 232, off: 22.2 },
+  sky: { h: 221, off: 20.9 },
+  summon: { h: 197, off: 24.7 },
+  slam: { h: 169, off: 48.0 },
+  hurt: { h: 194, off: 29.1 },
+  enrage: { h: 195, off: 27.4 },
+  dead: { h: 190, off: 53.6 },
+};
 
 /**
  * Queen Umbra floats over the arena and cycles through telegraphed attacks:
@@ -43,10 +67,14 @@ export class Boss {
   private targetX = 0;
   private count = 0;
   private baseScale: number;
+  /** Sprite-center correction so the FIGURE (not the frame) sits on this.y. Set by playAnim. */
+  private animYOffset = -UMBRA_FIT.idle.off * (HEIGHT / UMBRA_FIT.idle.h);
   private underSince = 0;
   /** Reusable feel system (BossFeel): squash/stretch, dash FX, reactions. */
   private feel: BossFeel;
   private lowHp = false;
+  /** Set by vanish(): sync() must stop re-asserting the shadow afterwards. */
+  private gone = false;
   /** True while the dive suppresses her aura (restored on tired / interrupt). */
   private auraOff = false;
   /** Dash connected with the player once this dive (impact fires once). */
@@ -62,7 +90,7 @@ export class Boss {
     this.arena = arena;
     this.x = x;
     this.y = y;
-    this.baseScale = scaleForHeight("umbra", HEIGHT, "idle");
+    this.baseScale = HEIGHT / UMBRA_FIT.idle.h;
     this.shadow = scene.add.image(x, GROUND_Y + 2, "shadow").setAlpha(0.35).setDepth(30).setTint(0x2a0f4a);
     this.aura = scene.add
       .particles(0, 0, "dot", {
@@ -105,9 +133,9 @@ export class Boss {
   }
 
   hitbox(): Phaser.Geom.Rectangle {
-    if (this.state === "swoop" && this.sub === 2) return new Phaser.Geom.Rectangle(this.x - 202, this.y - 76, 403, 151);
-    if (this.state === "tired") return new Phaser.Geom.Rectangle(this.x - 155, GROUND_Y - 252, 310, 252);
-    return new Phaser.Geom.Rectangle(this.x - 160, this.y - 225, 320, 450);
+    if (this.state === "swoop" && this.sub === 2) return new Phaser.Geom.Rectangle(this.x - 101, this.y - 38, 202, 76);
+    if (this.state === "tired") return new Phaser.Geom.Rectangle(this.x - 78, GROUND_Y - 126, 155, 126);
+    return new Phaser.Geom.Rectangle(this.x - 80, this.y - 113, 160, 225);
   }
 
   private get speed() {
@@ -118,6 +146,27 @@ export class Boss {
     this.enterIdle(this.scene.time.now, 900);
   }
 
+  /**
+   * Play an Umbra animation at a constant 225px rendered height (v59 fix,
+   * corrected v61). The v4 sheet packs all movements at one global scale
+   * calibrated to idle, but the attack art was drawn smaller in its strips
+   * AND sits low in its frames, so one fixed scale per anim was not enough:
+   * the sprites.gen `h` values understate the true figure heights (dash
+   * 146 vs 173, dead 139 vs 190) and the figures hang up to 54px below
+   * frame center. UMBRA_FIT calibrates by the measured max figure height
+   * and recenters the figure on the logical y, so every movement renders
+   * exactly 225px with its feet on the floor. Also retargets BossFeel so
+   * its squash/restore tweens return to THIS anim's scale.
+   */
+  private playAnim(anim: "idle" | "dash" | "cast" | "sky" | "summon" | "slam" | "hurt" | "enrage" | "dead"): void {
+    const fit = UMBRA_FIT[anim];
+    const s = HEIGHT / fit.h;
+    this.animYOffset = -fit.off * s;
+    this.feel.setBaseScale(s);
+    this.sprite.setScale(s);
+    this.sprite.play(`umbra:${anim}`, true);
+  }
+
   private enterIdle(time: number, ms = 800) {
     this.state = "idle";
     this.sub = 0;
@@ -125,7 +174,8 @@ export class Boss {
     const mid = (this.arena.x0 + this.arena.x1) / 2;
     const px = this.scene.player.x;
     this.targetX = px < mid ? this.arena.x1 - 230 - Math.random() * 160 : this.arena.x0 + 230 + Math.random() * 160;
-    this.sprite.setAngle(0).play("umbra:idle", true);
+    this.sprite.setAngle(0);
+    this.playAnim("idle");
   }
 
   update(time: number, delta: number) {
@@ -143,7 +193,7 @@ export class Boss {
         this.x += (this.targetX - this.x) * Math.min(1, dt * 2.2);
         this.y += (HOVER_Y + Math.sin(time / 600) * 14 - this.y) * Math.min(1, dt * 4);
         // A foreign one-shot (phase-change enrage) must not freeze idle.
-        if (!this.sprite.anims.isPlaying) this.sprite.play("umbra:idle", true);
+        if (!this.sprite.anims.isPlaying) this.playAnim("idle");
         if (Math.abs(dx) < 130 && player.alive) {
           if (!this.underSince) {
             this.underSince = time;
@@ -169,9 +219,9 @@ export class Boss {
         this.updateSwoop(time, dt);
         break;
       case "tired":
-        if (!this.sprite.anims.isPlaying) this.sprite.play("umbra:hurt", true);
+        if (!this.sprite.anims.isPlaying) this.playAnim("hurt");
         if (time > this.until) {
-          this.sprite.play("umbra:idle", true);
+          this.playAnim("idle");
           this.scene.tweens.add({ targets: this, y: HOVER_Y, duration: 500, ease: "Sine.out" });
           // Recovery settle: hair/gown catch up after the kneel.
           this.feel.settle();
@@ -225,21 +275,23 @@ export class Boss {
     this.state = pick;
     this.sub = 0;
     this.stepAt = time;
-    // Anticipation beat for every attack: brief compression before the move.
-    this.feel.anticipate();
     // Swoop only: energy gathers on her body during the telegraph.
     if (pick === "swoop") this.feel.gatherBurst();
     if (pick === "volley" || pick === "rain" || pick === "summon") {
       // HD attack anims (2026-10-27): rain calls crystals from the sky, summon
       // plays its own motion; volley keeps cast. Summon is NOT paused — its
       // 650ms window shows most of the 8-frame motion unpaused.
-      const anim = pick === "rain" ? "umbra:sky" : pick === "summon" ? "umbra:summon" : "umbra:cast";
-      this.sprite.play(anim, true);
+      const anim = pick === "rain" ? "sky" : pick === "summon" ? "summon" : "cast";
+      this.playAnim(anim);
       if (pick !== "summon") this.sprite.anims.pause(this.sprite.anims.currentAnim!.frames[0]);
       Audio.sfx("boss_cast");
       this.until = time + (pick === "rain" ? 500 : pick === "summon" ? 850 : 650) / this.speed;
       if (pick === "summon") this.summon(time);
     }
+    // Anticipation beat for every attack: brief compression before the move.
+    // Runs AFTER playAnim so its squash targets the new animation's scale
+    // and its restore returns to that scale, not the idle scale.
+    this.feel.anticipate();
   }
 
   private staffTip() {
@@ -265,7 +317,7 @@ export class Boss {
       this.until = time + 850;
     } else {
       if (time > this.until) this.enterIdle(time);
-      else if (!this.sprite.anims.isPlaying) this.sprite.play("umbra:cast", true);
+      else if (!this.sprite.anims.isPlaying) this.playAnim("cast");
     }
   }
 
@@ -293,7 +345,7 @@ export class Boss {
       this.until = time + 1400;
     } else {
       if (time > this.until) this.enterIdle(time, 1100);
-      else if (!this.sprite.anims.isPlaying) this.sprite.play("umbra:sky", true);
+      else if (!this.sprite.anims.isPlaying) this.playAnim("sky");
     }
   }
 
@@ -304,14 +356,14 @@ export class Boss {
       const edge = this.x < (x0 + x1) / 2 ? x0 + 120 : x1 - 120;
       this.targetX = edge;
       this.sub = 1;
-      this.sprite.play("umbra:idle", true);
+      this.playAnim("idle");
       this.until = time + 900 / this.speed;
       this.warn.setVisible(true);
       Audio.sfx("enemy_telegraph");
     }
     if (this.sub === 1) {
       this.x += (this.targetX - this.x) * Math.min(1, dt * 4);
-      this.y += (GROUND_Y - 52 - this.y) * Math.min(1, dt * 3);
+      this.y += (GROUND_Y - 111 - this.y) * Math.min(1, dt * 3);
       this.dir = this.x < (x0 + x1) / 2 ? 1 : -1;
       this.sprite.setAngle(this.dir * 78 * Math.min(1, 1 - (this.until - time) / 900));
       this.sprite.setTint(Math.floor(time / 90) % 2 ? 0xff9ae6 : 0xffffff);
@@ -319,7 +371,7 @@ export class Boss {
         this.sub = 2;
         this.warn.setVisible(false);
         this.sprite.clearTint();
-        this.sprite.play("umbra:dash", true);
+        this.playAnim("dash");
         this.feel.dashStart(this.dir);
         // The round aura dots read as floating orbs during a fast dive, so
         // they stop for the dive and return when she lands or is interrupted.
@@ -332,10 +384,10 @@ export class Boss {
     }
     if (this.sub === 3) return; // overshoot slide: the tween drives x.
     if (this.sub === 2) {
-      if (!this.sprite.anims.isPlaying) this.sprite.play("umbra:dash", true);
+      if (!this.sprite.anims.isPlaying) this.playAnim("dash");
       this.feel.dashTick(time, this.dir);
       this.x += this.dir * 860 * this.speed * dt;
-      this.y = GROUND_Y - 52;
+      this.y = GROUND_Y - 111;
       // Dash connect (once per dive): hit-stop + burst here; the game's
       // contact check already gives flash, shake and knockback via hurt.
       if (
@@ -372,13 +424,16 @@ export class Boss {
       this.auraOff = false;
     }
     this.feel.react("leapLand");
-    this.sprite.play("umbra:hurt", true);
-    this.y = GROUND_Y - 74;
+    this.playAnim("hurt");
+    // v61: kneel with her feet ON the floor (figure is 225 tall, centered
+    // on y after the playAnim recentering, so y = floor - 112). The old
+    // -74 sank her ~74px under the floor line.
+    this.y = GROUND_Y - 112;
     this.until = time + (this.phase === 2 ? 1500 : 2000);
     this.scene.cameras.main.shake(160, 0.006);
     this.scene.toast("She's tired: attack now!");
     for (let i = 0; i < 5; i++) {
-      this.scene.time.delayedCall(i * 300, () => this.state === "tired" && this.scene.fx("fx_spark", "hit", this.x + Phaser.Math.Between(-30, 30), GROUND_Y - 150, 0.22, 0xffe27a));
+      this.scene.time.delayedCall(i * 300, () => this.state === "tired" && this.scene.fx("fx_spark", "hit", this.x + Phaser.Math.Between(-30, 30), GROUND_Y - 75, 0.22, 0xffe27a));
     }
   }
 
@@ -397,7 +452,7 @@ export class Boss {
         this.sub = 2;
         this.warn.setVisible(false);
         this.sprite.clearTint();
-        this.sprite.play("umbra:slam", true);
+        this.playAnim("slam");
         this.scene.tweens.add({
           targets: this,
           y: GROUND_Y - 112,
@@ -475,7 +530,8 @@ export class Boss {
         this.phase = 2;
         Audio.sfx("boss_roar");
         // Phase-change reaction: enrage pose + crystal burst (flash/shake kept).
-        this.sprite.setAngle(0).play("umbra:enrage", true);
+        this.sprite.setAngle(0);
+        this.playAnim("enrage");
         this.feel.react("phaseChange");
         this.scene.cameras.main.flash(300, 150, 90, 220);
         this.scene.cameras.main.shake(500, .008);
@@ -504,7 +560,8 @@ export class Boss {
       this.until = now + 600;
       this.warn.setVisible(false);
       this.scene.tweens.killTweensOf(this);
-      this.sprite.setAngle(0).play("umbra:enrage", true);
+      this.sprite.setAngle(0);
+      this.playAnim("enrage");
       this.feel.react("phaseChange");
     }
     // Hurt response (Angelo, 2026-10-24): a hit interrupts her and she visibly
@@ -520,7 +577,8 @@ export class Boss {
       this.until = now + 500;
       this.warn.setVisible(false);
       this.scene.tweens.killTweensOf(this);
-      this.sprite.setAngle(0).play("umbra:hurt", true);
+      this.sprite.setAngle(0);
+      this.playAnim("hurt");
       const away = this.x < fromX ? -1 : 1;
       const targetX = Phaser.Math.Clamp(this.x + away * 90, this.arena.x0 + 110, this.arena.x1 - 110);
       this.scene.tweens.add({ targets: this, x: targetX, duration: 280, ease: "Quad.out" });
@@ -535,11 +593,11 @@ export class Boss {
     this.warn.setVisible(false);
     this.scene.tweens.killTweensOf(this);
     this.sprite.setAngle(0).clearTint();
-    this.sprite.play("umbra:hurt", true);
+    this.playAnim("hurt");
     Audio.sfx("boss_defeat");
     this.feel.react("defeat");
     this.scene.cameras.main.shake(700, 0.01);
-    this.scene.tweens.add({ targets: this, y: GROUND_Y - 100, duration: 900, ease: "Quad.out" });
+    this.scene.tweens.add({ targets: this, y: GROUND_Y - 112, duration: 900, ease: "Quad.out" });
     for (let i = 0; i < 6; i++) {
       this.scene.time.delayedCall(i * 160, () =>
         this.scene.fx("fx_explode", "boom", this.x + Phaser.Math.Between(-70, 70), this.y + Phaser.Math.Between(-90, 60), 0.35, i % 2 ? 0xffe27a : 0xb08cff),
@@ -562,7 +620,8 @@ export class Boss {
   async playDeath() {
     this.warn.setVisible(false);
     this.aura.stop();
-    this.sprite.setAlpha(1).play("umbra:dead", true);
+    this.sprite.setAlpha(1);
+    this.playAnim("dead");
     const ashes = this.scene.add
       .particles(this.x, this.y, "dot", {
         x: { min: -80, max: 80 },
@@ -582,28 +641,38 @@ export class Boss {
       });
     }
     this.scene.tweens.add({ targets: this.shadow, alpha: 0, scaleX: 3.1, scaleY: 0.35, duration: 1250, ease: "Sine.easeOut" });
-    await this.scene.wait(1050);
-    this.scene.tweens.add({ targets: this, y: this.y - 26, duration: 850, ease: "Sine.easeIn" });
-    this.scene.tweens.add({ targets: this.sprite, alpha: 0, duration: 850, ease: "Sine.easeIn" });
-    await this.scene.wait(850);
+    // Umbra death fix (Angelo, 2026-11-08): the dead figure is drawn with
+    // its bottom pinned at cell row 255, so at die()'s y (GROUND_Y - 112)
+    // its feet sit 32px above the floor (measured on the v4 sheet) — that
+    // is the "floating in the air" he saw. Drop her to GROUND_Y - 80 so
+    // the collapsed body lands ON the floor as she falls. NO fade here:
+    // she stays fully visible until the umbra_falls video ends; bossOutro
+    // calls vanish() after the video.
+    this.scene.tweens.add({ targets: this, y: GROUND_Y - 80, duration: 600, ease: "Quad.in" });
+    await this.scene.wait(1900);
     ashes.stop();
     this.scene.time.delayedCall(1800, () => ashes.destroy());
   }
 
   /** Fade out entirely (after the farewell lines). */
   vanish() {
+    // sync() re-asserts the shadow alpha every frame, so without this flag
+    // the shadow would linger on the floor after the sprite fades.
+    this.gone = true;
     this.scene.tweens.add({ targets: [this.sprite, this.shadow], alpha: 0, duration: 900 });
     this.aura.stop();
   }
 
   private sync() {
     const s = this.sprite;
-    s.setPosition(this.x, this.y);
+    // The figure (not the frame) sits on the logical y: playAnim's
+    // animYOffset recenters each animation's low-hanging figure.
+    s.setPosition(this.x, this.y + this.animYOffset);
     s.setFlipX(this.dir < 0);
-    this.aura.setPosition(this.x, this.y);
-    this.warn.setPosition(this.x, this.y - (SPRITES.umbra.anims.idle.h * this.baseScale) / 2 - 10);
-    const gap = Math.max(0, GROUND_Y - (this.y + 95));
+    this.aura.setPosition(this.x, this.y + this.animYOffset);
+    this.warn.setPosition(this.x, this.y - this.sprite.displayHeight / 2 - 10);
+    const gap = Math.max(0, GROUND_Y - (this.y + 48));
     const k = Phaser.Math.Clamp(1 - gap / 320, 0.4, 1);
-    this.shadow.setPosition(this.x, GROUND_Y + 2).setScale(2.2 * k, 1 * k).setAlpha(0.4 * k);
+    this.shadow.setPosition(this.x, GROUND_Y + 2).setScale(2.2 * k, 1 * k).setAlpha(this.gone ? 0 : 0.4 * k);
   }
 }

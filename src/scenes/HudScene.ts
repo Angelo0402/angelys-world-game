@@ -12,6 +12,7 @@ import { useTouchUi } from "../ui/screen";
 import type { DialogueLine } from "../story/umbra";
 import { drawLock } from "./TitleScene";
 import { fitCamera } from "../render";
+import { PERF_OVERLAY_ENABLED, PerfOverlay } from "../debug/PerfOverlay";
 import { ensureHudArt, hudDisc, WEAPON_LABELS } from "../ui/gameHudArt";
 
 const JOY_R = 74;
@@ -20,7 +21,7 @@ const DEAD_ZONE = 0.08;
 const JOY_HOME = { x: 140, y: GAME_H - 126 };
 const JUMP = { x: GAME_W - 104, y: GAME_H - 108, r: 68 };
 const ATTACK = { x: GAME_W - 238, y: GAME_H - 82, r: 50 };
-const SWAP = { x: GAME_W - 202, y: GAME_H - 180, r: 36 };
+const SPECIAL_BAR = { x: GAME_W / 2, y: 100, w: 340, h: 20 };
 
 interface GoalState {
   kind: "kills" | "gems" | "reach" | "boss";
@@ -68,7 +69,16 @@ export class HudScene extends Phaser.Scene {
   private joyKnob!: Phaser.GameObjects.Container;
   private jumpBtn!: Phaser.GameObjects.Container;
   private attackBtn!: Phaser.GameObjects.Container;
-  private swapBtn!: Phaser.GameObjects.Container;
+  /** SPECIAL meter bar (v60, Angelo 2026-11-06): horizontal fill bar, top-center.
+   * Replaces the old right-side circular button, which blocked incoming enemies. */
+  private specialBar!: Phaser.GameObjects.Container;
+  private specialFill!: Phaser.GameObjects.Rectangle;
+  private specialGlow!: Phaser.GameObjects.Graphics;
+  private specialStars: Phaser.GameObjects.Text[] = [];
+  private specialLabel!: Phaser.GameObjects.Text;
+  private specialPulse?: Phaser.Tweens.Tween;
+  private specialGlowTween?: Phaser.Tweens.Tween;
+  private specialCharge = 0;
   private joyId = -1;
   private joyOrigin = new Phaser.Math.Vector2();
   private jumpId = -1;
@@ -76,6 +86,8 @@ export class HudScene extends Phaser.Scene {
   private showTouch = false;
   private lowPulse?: Phaser.Tweens.Tween;
   private cinemaTop: (Phaser.GameObjects.GameObject & Phaser.GameObjects.Components.Visible)[] = [];
+  /** Perf overlay (v63 test build, DEBUG-ONLY): null when the flag in src/debug/PerfOverlay.ts is off. */
+  private perfOverlay: PerfOverlay | null = null;
 
   constructor() {
     super("Hud");
@@ -97,6 +109,10 @@ export class HudScene extends Phaser.Scene {
     this.buildTopBar();
     this.buildBossBar();
     this.cinemaTop = this.children.list.slice() as typeof this.cinemaTop;
+    // Perf overlay AFTER the cinemaTop snapshot on purpose -- setCinema
+    // must never hide it (stays visible during cutscenes too). DEBUG-ONLY:
+    // gated on the single PERF_OVERLAY_ENABLED flag in src/debug/PerfOverlay.ts.
+    if (PERF_OVERLAY_ENABLED) this.perfOverlay = new PerfOverlay(this);
     this.buildWeaponSlot();
     this.buildTouchControls();
     this.dialogue = new Dialogue(this);
@@ -115,6 +131,7 @@ export class HudScene extends Phaser.Scene {
       if (key === "weapon" || key === "weapons") this.refreshWeapon();
       if (key === "boss") this.setBoss(value as { name: string; hp: number; max: number; veilPhase?: number } | null);
       if (key === "shield") this.setShield(value as number);
+      if (key === "special") this.setSpecial(value as number);
     };
     reg.on("changedata", onData);
     const ge = this.game.events;
@@ -149,24 +166,41 @@ export class HudScene extends Phaser.Scene {
     this.setGoal(this.registry.get("goal") ?? { kind: "kills", have: 0, need: 0 });
     this.setBoss(this.registry.get("boss") ?? null);
     this.refreshWeapon();
+    this.setSpecial(this.registry.get("special") ?? 0);
   }
 
   update(time: number) {
     this.dialogue.update(time);
+    // Perf overlay (v63 test build, DEBUG-ONLY): the module owns all state.
+    this.perfOverlay?.update(time);
+    // Stuck-touch guard: the phone WebView can swallow a pointerup entirely
+    // (no up, no upoutside, no gameout), leaving joyId/jumpId/attackId
+    // latched and Angely running on her own. If a tracked pointer is no
+    // longer down, release it exactly as onUp would — same defensive pattern
+    // as the TitleScene guard v2. onUp only reads p.id, so a synthetic
+    // { id } is enough. The ids are snapshotted first so onUp's mutations
+    // cannot disturb the loop. Double-release is harmless: onUp with a
+    // non-matching id does nothing. (pointers lives on the InputManager,
+    // not the scene InputPlugin, hence manager.pointers.)
+    for (const id of [this.joyId, this.jumpId, this.attackId]) {
+      if (id >= 0 && !this.input.manager.pointers.some((p) => p.id === id && p.isDown)) {
+        this.onUp({ id } as Phaser.Input.Pointer);
+      }
+    }
   }
 
   // ---------------------------------------------------------------- top bar
 
   private buildTopBar() {
-    this.add.image(129, 42, "hud_hearts_panel").setDisplaySize(222, 52);
+    this.add.image(129, 100, "hud_hearts_panel").setDisplaySize(222, 52);
     for (let i = 0; i < MAX_HEARTS; i++) {
-      const h = this.add.sprite(46 + i * 42, 44, "heart", SPRITES.heart.anims.glow.start);
+      const h = this.add.sprite(46 + i * 42, 102, "heart", SPRITES.heart.anims.glow.start);
       h.setScale(scaleForHeight("heart", 30));
       applyOrigin(h, "heart");
       this.hearts.push(h);
     }
     this.shieldText = this.add
-      .text(254, 44, "", { fontFamily: FONT, fontSize: "15px", fontStyle: "bold", color: "#fff27a", stroke: "#2a1640", strokeThickness: 4 })
+      .text(254, 102, "", { fontFamily: FONT, fontSize: "15px", fontStyle: "bold", color: "#fff27a", stroke: "#2a1640", strokeThickness: 4 })
       .setOrigin(0, 0.5)
       .setVisible(false);
 
@@ -205,6 +239,39 @@ export class HudScene extends Phaser.Scene {
       Audio.sfx("button");
       drawMute();
     });
+
+    this.buildSpecialBar();
+  }
+
+  /**
+   * SPECIAL meter bar (v60, Angelo 2026-11-06): horizontal fill bar, top-center,
+   * just under the goal panel (y 90..110 -- clear of the panel, the level label
+   * and the toast, and far above the enemies at ground level). Violet fill with
+   * a little gold star pinned at each end; when FULL the whole bar glows bright
+   * and the stars twinkle. Tapping the bar fires the SPECIAL when full.
+   * Built here (not in touchUi) so the meter is visible on desktop too, and so
+   * it joins cinemaTop and hides during cutscenes like the rest of the top bar.
+   */
+  private buildSpecialBar() {
+    const { x, y, w, h } = SPECIAL_BAR;
+    const pad = 3;
+    const g = this.add.graphics();
+    g.fillStyle(0x1b0f2e, 0.85).fillRoundedRect(-w / 2, -h / 2, w, h, 10);
+    g.lineStyle(2, 0x8b5cf6, 1).strokeRoundedRect(-w / 2, -h / 2, w, h, 10);
+    this.specialFill = this.add.rectangle(-w / 2 + pad, 0, 0, h - pad * 2, 0x8b5cf6).setOrigin(0, 0.5);
+    this.specialGlow = this.add.graphics();
+    this.specialGlow.fillStyle(0xc9a8ff, 1).fillRoundedRect(-w / 2, -h / 2, w, h, 10);
+    this.specialGlow.setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
+    // Two gold stars, one at each end -- the "SPECIAL" label sits in the middle.
+    this.specialStars = [-1, 1].map((k) =>
+      this.add
+        .text(k * (w / 2 - 16), 0, "★", { fontFamily: FONT, fontSize: "15px", color: "#ffd75a", stroke: "#2a1640", strokeThickness: 3 })
+        .setOrigin(0.5),
+    );
+    this.specialLabel = this.add
+      .text(0, 0, "SPECIAL", { fontFamily: FONT, fontSize: "12px", fontStyle: "bold", color: "#fff4d6", stroke: "#2a1640", strokeThickness: 3 })
+      .setOrigin(0.5);
+    this.specialBar = this.add.container(x, y, [g, this.specialFill, this.specialGlow, ...this.specialStars, this.specialLabel]);
   }
 
   private buildBossBar() {
@@ -329,13 +396,13 @@ export class HudScene extends Phaser.Scene {
   }
 
   private buildWeaponSlot() {
-    const g = hudDisc(this, "hud_weapon_slot", 34);
+    const g = hudDisc(this, "hud_weapon_slot", 42);
     this.weaponIcon = this.add.image(0, -4, "hud_weapon_sword");
     this.weaponKey = this.add
-      .text(29, 29, "", { fontFamily: FONT, fontSize: "14px", fontStyle: "bold", color: "#ffffff", backgroundColor: "#7a5aa8", padding: { x: 5, y: 1 } })
+      .text(36, 36, "", { fontFamily: FONT, fontSize: "16px", fontStyle: "bold", color: "#ffffff", backgroundColor: "#7a5aa8", padding: { x: 5, y: 1 } })
       .setOrigin(1, 1);
-    this.weaponSlot = this.add.container(52, 120, [g, this.weaponIcon, this.weaponKey]).setVisible(false);
-    this.weaponSlot.setSize(76, 76).setInteractive({ useHandCursor: true });
+    this.weaponSlot = this.add.container(52, 172, [g, this.weaponIcon, this.weaponKey]).setVisible(false);
+    this.weaponSlot.setSize(92, 92).setInteractive({ useHandCursor: true });
     this.weaponSlot.on("pointerup", () => {
       if (!this.overlay && !this.cinema) touchState.swapQueued = true;
     });
@@ -346,7 +413,7 @@ export class HudScene extends Phaser.Scene {
     const list = (this.registry.get("weapons") as WeaponId[] | undefined) ?? [];
     this.weaponSlot.setVisible(!!w);
     if (w) {
-      this.weaponIcon.setTexture(`hud_weapon_${w}`).setDisplaySize(52, 52);
+      this.weaponIcon.setTexture(`hud_weapon_${w}`).setDisplaySize(60, 60);
       this.weaponKey.setText(list.length > 1 ? (Gamepad.connected ? "Y" : this.showTouch ? "TAP" : "Q") : "").setVisible(list.length > 1);
       this.tweens.add({ targets: this.weaponSlot, scale: { from: 1.25, to: 1 }, duration: 220, ease: "Back.out" });
       this.drawAttackButton(w);
@@ -415,8 +482,8 @@ export class HudScene extends Phaser.Scene {
     this.joyKnob = this.knob(JOY_HOME.x, JOY_HOME.y);
     this.jumpBtn = this.makeRoundButton(JUMP.x, JUMP.y, JUMP.r, "JUMP", "hud_jump");
     this.attackBtn = this.add.container(ATTACK.x, ATTACK.y);
-    this.swapBtn = this.makeRoundButton(SWAP.x, SWAP.y, SWAP.r, "SWAP", "hud_swap");
-    this.touchUi.add([this.joyBase, this.joyKnob, this.jumpBtn, this.attackBtn, this.swapBtn]);
+    // v60: no SPECIAL circle here anymore -- the meter lives in the top-center bar.
+    this.touchUi.add([this.joyBase, this.joyKnob, this.jumpBtn, this.attackBtn]);
 
     this.input.on("pointerdown", (p: Phaser.Input.Pointer) => this.onDown(p));
     this.input.on("pointermove", (p: Phaser.Input.Pointer) => this.onMove(p));
@@ -433,10 +500,38 @@ export class HudScene extends Phaser.Scene {
   private syncTouchVisibility() {
     if (!this.touchUi) return;
     const w = this.registry.get("weapon") as WeaponId | null;
-    const list = (this.registry.get("weapons") as WeaponId[] | undefined) ?? [];
     this.touchUi.setVisible(this.showTouch && !this.overlay && !this.cinema);
     this.attackBtn.setVisible(!!w);
-    this.swapBtn.setVisible(list.length > 1);
+  }
+
+  /** SPECIAL meter bar: violet fill grows with charge; when FULL the whole bar
+   * glows bright and the two gold stars twinkle (v60, Angelo 2026-11-06). */
+  private setSpecial(charge: number) {
+    this.specialCharge = charge;
+    const full = charge >= 8;
+    const { w } = SPECIAL_BAR;
+    const pad = 3;
+    const inner = w - pad * 2;
+    this.specialFill.width = Math.max(0, inner * Phaser.Math.Clamp(charge / 8, 0, 1));
+    this.specialLabel.setColor(full ? "#ffe27a" : "#fff4d6");
+    if (full && !this.specialPulse) {
+      this.specialPulse = this.tweens.add({ targets: this.specialBar, scale: { from: 1, to: 1.05 }, duration: 320, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+      this.specialGlowTween = this.tweens.add({ targets: this.specialGlow, alpha: { from: 0.25, to: 0.65 }, duration: 420, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+      this.specialStars.forEach((s, i) =>
+        this.tweens.add({ targets: s, scale: { from: 1, to: 1.45 }, duration: 300, yoyo: true, repeat: -1, delay: i * 110, ease: "Sine.inOut" }),
+      );
+    } else if (!full && this.specialPulse) {
+      this.specialPulse.remove();
+      this.specialPulse = undefined;
+      this.specialGlowTween?.remove();
+      this.specialGlowTween = undefined;
+      this.specialStars.forEach((s) => {
+        this.tweens.killTweensOf(s);
+        s.setScale(1);
+      });
+      this.specialGlow.setAlpha(0);
+      this.specialBar.setScale(1);
+    }
   }
 
   private drawAttackButton(w: WeaponId) {
@@ -495,7 +590,7 @@ export class HudScene extends Phaser.Scene {
     if (this.overlay || this.cinema || !this.showTouch) return;
     const p = this.logical(ptr);
     if (p.y < 80 && (p.x > GAME_W - 182 || p.x < 260)) return;
-    if (p.x < 100 && p.y < 160) return;
+    if (p.x < 260 && p.y < 225) return;
     const d = (b: { x: number; y: number }) => Phaser.Math.Distance.Between(p.x, p.y, b.x, b.y);
     if (d(JUMP) < JUMP.r + 18 && this.jumpId < 0) {
       this.jumpId = p.id;
@@ -504,16 +599,17 @@ export class HudScene extends Phaser.Scene {
       this.jumpBtn.setScale(0.9);
       return;
     }
-    if (this.swapBtn.visible && d(SWAP) < SWAP.r + 10) {
-      touchState.swapQueued = true;
-      this.swapBtn.setScale(0.88);
-      this.time.delayedCall(120, () => this.swapBtn.setScale(1));
-      return;
-    }
     if (this.attackBtn.visible && d(ATTACK) < ATTACK.r + 14 && this.attackId < 0) {
       this.attackId = p.id;
       touchState.attackQueued = true;
       this.attackBtn.setScale(0.9);
+      return;
+    }
+    // v60: tap the top-center SPECIAL bar to fire it when full. The bar sits
+    // above the playfield, so unlike the old right-side circle it never covers
+    // incoming enemies. Tapping it early does nothing (no queue).
+    if (Math.abs(p.x - SPECIAL_BAR.x) < SPECIAL_BAR.w / 2 + 12 && Math.abs(p.y - SPECIAL_BAR.y) < SPECIAL_BAR.h / 2 + 14) {
+      if (this.specialCharge >= 8) touchState.specialQueued = true;
       return;
     }
     if (p.x < GAME_W * 0.5 && this.joyId < 0) {
@@ -563,7 +659,6 @@ export class HudScene extends Phaser.Scene {
     this.joyKnob.setPosition(JOY_HOME.x, JOY_HOME.y);
     if (this.jumpId < 0) this.jumpBtn.setScale(1);
     if (this.attackId < 0) this.attackBtn.setScale(1);
-    this.swapBtn.setScale(1);
   }
 
   // -------------------------------------------------------------- messages

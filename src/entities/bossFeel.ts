@@ -168,24 +168,40 @@ export class BossFeel {
     this.bodyTo(1, 1, ms, ease);
   }
 
-  /** Anticipation: brief compression before an attack, then release. */
+  /**
+   * Boss changed animation: body-motion tweens retarget to the new scale.
+   * Any in-flight squash is stopped first — otherwise it would drag the
+   * sprite back to the previous animation's size when it completes.
+   */
+  setBaseScale(s: number): void {
+    this.baseScale = s;
+    this.bodyTween?.stop();
+    this.bodyTween = null;
+  }
+
+  /**
+   * Anticipation: brief compression before an attack, then release.
+   * v63: halved the squash amplitude (was 1.07/0.92) — at 225px the old
+   * pulse swung her ~18px, which read as "different size per attack"
+   * on the phone. The feel survives; the size now reads near-constant.
+   */
   anticipate(): void {
-    this.bodyTo(1.07, 0.92, 130, "Quad.out", () => this.restore(170));
+    this.bodyTo(1.035, 0.96, 130, "Quad.out", () => this.restore(170));
   }
 
-  /** Landing compression: squash on impact, then recover. */
+  /** Landing compression: squash on impact, then recover. (v63: halved, was 1.08/0.9.) */
   squash(): void {
-    this.bodyTo(1.08, 0.9, 120, "Quad.out", () => this.restore(190));
+    this.bodyTo(1.04, 0.95, 120, "Quad.out", () => this.restore(190));
   }
 
-  /** Overshoot after a fast move: stretch past neutral, then settle. */
+  /** Overshoot after a fast move: stretch past neutral, then settle. (v63: halved, was 0.94/1.08.) */
   overshoot(): void {
-    this.bodyTo(0.94, 1.08, 120, "Quad.out", () => this.settle());
+    this.bodyTo(0.97, 1.04, 120, "Quad.out", () => this.settle());
   }
 
-  /** Damped settle: the "secondary elements catch up" beat after an action. */
+  /** Damped settle: the "secondary elements catch up" beat after an action. (v63: halved, was 1.03/0.97.) */
   settle(): void {
-    this.bodyTo(1.03, 0.97, 90, "Sine.out", () => this.restore(150, "Sine.out"));
+    this.bodyTo(1.015, 0.985, 90, "Sine.out", () => this.restore(150, "Sine.out"));
   }
 
   /** Small lean away from the attacker on a hit. Resets via the boss's idle. */

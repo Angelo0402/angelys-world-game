@@ -2310,6 +2310,10 @@ export class GameScene extends Phaser.Scene {
       else pr.play(`${sheet}:fly`);
     }
     if (tint) pr.setTint(tint);
+    // v74: keep the attack's tint on the projectile so the impact burst
+    // in impactProjectile can inherit it (volley magenta, aimed red,
+    // rain violet).
+    if (tint) pr.setData("shotTint", tint);
     const body = pr.body as Phaser.Physics.Arcade.Body;
     body.setAllowGravity(false);
     // Body circle radius is in SOURCE pixels and scales with the sprite
@@ -2322,6 +2326,10 @@ export class GameScene extends Phaser.Scene {
     // tuned for the old 67px orb content (22 @ 30/67 ≈ 9.9px world). The
     // new shard content fills the 256 cell, so the generic formula
     // (256*0.3=76.8 @ 30/256 ≈ 9.0px world) keeps the same hitbox size.
+    // v74: same generic formula, but the spawn height is now per-attack
+    // (volley 60, aimed 72, rain 48), so the world hitbox is volley
+    // ≈18px, aimed ≈21.6px, rain ≈14.4px — each slightly smaller than
+    // its visual, player-friendly.
     const r = isSnow ? 90 : sheet === "umbra_sky" ? 90 : SPRITES[sheet].frameHeight * 0.3;
     const fw = isSnow ? pr.frame.width : SPRITES[sheet].frameWidth;
     const fh = isSnow ? pr.frame.height : SPRITES[sheet].frameHeight;
@@ -2347,7 +2355,9 @@ export class GameScene extends Phaser.Scene {
         speed: 0,
         scale: { start: 0.55, end: 0 },
         alpha: { start: 0.85, end: 0 },
-        tint: [0xff78cf, 0xffffff],
+        // v74: the trail follows the ATTACK's color (trail param), not
+        // always magenta — volley magenta, aimed red, rain violet.
+        tint: [trail || 0xff78cf, 0xffffff],
         blendMode: Phaser.BlendModes.ADD,
         frequency: 40,
       });
@@ -2461,11 +2471,14 @@ export class GameScene extends Phaser.Scene {
       const floor = this.surfaceBelow(pr.x, pr.y) ?? pr.y;
       this.vfx.explosionShockwave(pr.x, floor - 3);
     }
+    // v74: the impact burst inherits the attack's tint (shotTint stored
+    // at spawn) so each attack's explosion matches its shot.
+    const shotTint = sheet === "crystal_shot" ? (pr.getData("shotTint") as number | undefined) : undefined;
     if (sheet === "fx_dust") this.fx(sheet, "puff", pr.x, pr.y + 20, 0.3, 0xc9ff9a);
     // v73: crystal_shot impact renders x1.8 so the burst keeps the old
     // impact presence (old: 120h @ 30/67 ≈ 54px; new cells are 256h @
     // 30/256 ≈ 30px without the multiplier).
-    else this.fx(sheet, "impact", pr.x, pr.y, sheet === "crystal_shot" ? pr.scale * 1.8 : pr.scale);
+    else this.fx(sheet, "impact", pr.x, pr.y, sheet === "crystal_shot" ? pr.scale * 1.8 : pr.scale, shotTint);
     if (parried) {
       this.hitStop(40);
       this.cameraKick("parry");

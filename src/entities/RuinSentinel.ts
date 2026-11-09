@@ -1,11 +1,41 @@
 import Phaser from "phaser";
-import { applyOrigin, scaleForHeight } from "../assets/manifest";
+import { applyOrigin } from "../assets/manifest";
 import { Audio } from "../audio/AudioManager";
 import { GROUND_Y } from "../config";
 import type { GameScene } from "../scenes/GameScene";
 import type { DamageKind } from "./Enemy";
 
 const HEIGHT = 220;
+const FRAME_H = 256;
+/** Sprite origin row in frame px (originY 0.98): 250.88. Feet sit at the frame centre + off + h/2. */
+const ORIGIN_ROW = 0.98 * FRAME_H;
+const FRAME_CENTRE = FRAME_H / 2;
+
+/**
+ * Per-animation figure fit, measured from the sentinel sheet's alpha pixels
+ * (2026-11-06 harness, same pattern as UMBRA_FIT): `h` = the animation's
+ * TRUE max figure height in source px, `off` = how far the figure's vertical
+ * centre sits below the frame centre (mean over frames), in source px. The
+ * manifest claims h: 200 for every anim, so the old fixed scale 220/200 =
+ * 1.10 rendered her 265-282px instead of 220 — 24-28% too tall, overflowing
+ * her 120x220 hitbox by ~50-60px. Calibrating by true height keeps every
+ * movement exactly 220px.
+ * `off` uses the VISIBLE prefix for attack/dead: the slam/throw state lasts
+ * only 600ms (~7 frames, f33-39) and the dead sprite hides 900ms after
+ * death (~7 frames, f66-72), so the means cover what the player ever sees
+ * (full-anim means: attack +14.5, dead +38.0).
+ * NOTE: the red on her body is baked into the sheet art (glowing red/orange
+ * chest cracks/core, ~6% of opaque pixels in every anim) — no red tint or
+ * glow exists in code (hit flash is white). Recolouring the cracks needs an
+ * art change; nothing in code can remove it.
+ */
+const SENTINEL_FIT: Record<"idle" | "walk" | "attack" | "hurt" | "dead", { h: number; off: number }> = {
+  idle: { h: 248, off: 4.3 },
+  walk: { h: 255, off: 0.8 },
+  attack: { h: 256, off: 10.4 },
+  hurt: { h: 241, off: 9.0 },
+  dead: { h: 202, off: 26.5 },
+};
 
 /**
  * Ruin Sentinel - the Chapter 2-2 boss.
@@ -26,18 +56,18 @@ export class RuinSentinel {
   private until = 0;
   private nextAttack = 0;
   private hitUntil = 0;
-  private baseScale: number;
+  /** Sprite-Y correction so the FIGURE's feet (not the frame) sit on GROUND_Y. Set by playAnim. */
+  private animYShift = 0;
 
   constructor(scene: GameScene, x: number, arena: { x0: number; x1: number }) {
     this.scene = scene;
     this.arena = arena;
     this.x = x;
     this.y = GROUND_Y;
-    this.baseScale = scaleForHeight("sentinel", HEIGHT, "idle");
     this.shadow = scene.add.image(x, GROUND_Y + 2, "shadow").setAlpha(0.35).setDepth(30);
-    this.sprite = scene.add.sprite(x, this.y, "sentinel").setDepth(45).setScale(this.baseScale);
+    this.sprite = scene.add.sprite(x, this.y, "sentinel").setDepth(45);
     applyOrigin(this.sprite, "sentinel");
-    this.sprite.play("sentinel:idle");
+    this.playAnim("idle");
     this.sync();
   }
 
@@ -60,6 +90,23 @@ export class RuinSentinel {
   begin() {
     this.state = "move";
     this.nextAttack = this.scene.time.now + 1200;
+  }
+
+  /**
+   * Play a Sentinel animation at a constant 220px rendered height (v63).
+   * The sheet packs all movements at one global scale calibrated to a
+   * placeholder h: 200, but the true figures are 202-256px tall, so one
+   * fixed scale rendered her 265-282px. SENTINEL_FIT calibrates by the
+   * measured max figure height, and animYShift puts the figure's FEET (not
+   * the frame) on GROUND_Y: the origin row sits ORIGIN_ROW - FRAME_CENTRE
+   * below the frame centre, the feet sit off + h/2 below it.
+   */
+  private playAnim(anim: "idle" | "walk" | "attack" | "hurt" | "dead"): void {
+    const fit = SENTINEL_FIT[anim];
+    const s = HEIGHT / fit.h;
+    this.animYShift = -(fit.off + fit.h / 2 - (ORIGIN_ROW - FRAME_CENTRE)) * s;
+    this.sprite.setScale(s);
+    this.sprite.play(`sentinel:${anim}`, true);
   }
 
   update(time: number, delta: number) {
@@ -85,9 +132,9 @@ export class RuinSentinel {
         if (Math.abs(dx) > 80) {
           this.x += Math.sign(dx) * Math.min(Math.abs(dx), speed * dt);
           this.dir = dx > 0 ? 1 : -1;
-          this.sprite.play("sentinel:walk", true);
+          this.playAnim("walk");
         } else {
-          this.sprite.play("sentinel:idle", true);
+          this.playAnim("idle");
         }
         this.sprite.setFlipX(this.dir < 0);
 
@@ -102,7 +149,7 @@ export class RuinSentinel {
         break;
       }
       case "slam": {
-        this.sprite.play("sentinel:attack", true);
+        this.playAnim("attack");
         if (time > this.until) {
           this.state = "move";
           this.nextAttack = time + 1400 + Math.random() * 600;
@@ -110,7 +157,7 @@ export class RuinSentinel {
         break;
       }
       case "throw": {
-        this.sprite.play("sentinel:attack", true);
+        this.playAnim("attack");
         if (time > this.until) {
           this.state = "move";
           this.nextAttack = time + 1400 + Math.random() * 600;
@@ -167,7 +214,7 @@ export class RuinSentinel {
     }
 
     this.state = "hurt";
-    this.sprite.play("sentinel:hurt", true);
+    this.playAnim("hurt");
     Audio.sfx("enemy_hit");
     this.until = time + 350;
     return true;
@@ -175,7 +222,7 @@ export class RuinSentinel {
 
   private die() {
     this.state = "dead";
-    this.sprite.play("sentinel:dead", true);
+    this.playAnim("dead");
     Audio.sfx("boss_defeat");
     this.scene.cameras.main.shake(500, 0.01);
     for (let i = 0; i < 8; i++) {
@@ -191,7 +238,7 @@ export class RuinSentinel {
   }
 
   private sync() {
-    this.sprite.setPosition(this.x, this.y);
+    this.sprite.setPosition(this.x, this.y + this.animYShift);
     this.sprite.setFlipX(this.dir < 0);
     this.shadow.setPosition(this.x, GROUND_Y + 4).setScale(1.2, 0.4);
   }

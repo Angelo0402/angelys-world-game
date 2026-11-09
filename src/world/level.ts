@@ -223,17 +223,22 @@ function buildSide(info: LevelInfo, r: () => number): LevelDef {
       return run(a + pit, 700);
     },
     lift: (x, dy = 0) => {
+      // Angelo (2026-11-06): 5-1's final lift wall (index 8) sat 5 blocks high
+      // with its top at y=0 — the run-mode camera is bounds-clamped at
+      // scrollY 0, so Angely standing on it was cut off entirely (visual
+      // top -117). 5-1 only: 4 blocks. Every other lift keeps 5.
+      const blocks = info.index === 8 ? 4 : 5;
       const wx = x + 640;
-      L.walls.push({ x: wx, y: Y + dy, blocks: 5 });
+      L.walls.push({ x: wx, y: Y + dy, blocks });
       const lx = wx - BLOCK_W / 2 - 74;
-      L.movers.push({ x0: lx, y0: Y - 24, x1: lx, y1: Y - 5 * BLOCK_H - 4, period: 4.6 });
-      L.hearts.push({ x: wx, y: Y + dy - 5 * BLOCK_H - 50 });
+      L.movers.push({ x0: lx, y0: Y - 24, x1: lx, y1: Y - blocks * BLOCK_H - 4, period: 4.6 });
+      L.hearts.push({ x: wx, y: Y + dy - blocks * BLOCK_H - 50 });
       // Normally the gem rewards the lift ride at the mover's x. For the
       // dropped 3-2 stack (dy > 0) it sits over the stack top instead: at
       // the mover it floated at y = -80 — off-screen and unreachable, and
       // the level needs all 6 gems (Angelo, 2026-10-23).
-      if (dy > 0) gemSpots.push({ x: wx, y: Y + dy - 5 * BLOCK_H - 55 });
-      else gemSpots.push({ x: lx, y: Y - 5 * BLOCK_H - 90 });
+      if (dy > 0) gemSpots.push({ x: wx, y: Y + dy - blocks * BLOCK_H - 55 });
+      else gemSpots.push({ x: lx, y: Y - blocks * BLOCK_H - 90 });
       return run(x, 1000);
     },
     crumble: (x) => {

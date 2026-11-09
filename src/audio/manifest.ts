@@ -53,7 +53,6 @@ export type SfxName =
   | "voice_angelo"
   | "gem"
   | "swim"
-  | "boomerang"
   | "cog"
   | "ray"
   | "wand_charge"

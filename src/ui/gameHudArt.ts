@@ -2,8 +2,8 @@ import Phaser from "phaser";
 import type { WeaponId } from "../config";
 
 export const WEAPON_LABELS: Record<WeaponId, string> = {
-  sword: "SWORD", bow: "BOW", hammer: "HAMMER", boomerang: "BOOMERANG",
-  wand: "WAND", cog: "COG", ray: "RAY",
+  sword: "SWORD", bow: "BOW", hammer: "HAMMER",
+  wand: "WAND", ray: "RAY",
 };
 
 export function queueHudIcons(load: Phaser.Loader.LoaderPlugin) {

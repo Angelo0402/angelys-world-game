@@ -16,16 +16,14 @@ export class BootScene extends Phaser.Scene {
     this.add
       .text(cx, cy - 50, "ANGELY'S WORLD", { fontFamily: FONT, fontSize: "44px", fontStyle: "bold", color: "#fff4d6", stroke: "#2a1640", strokeThickness: 8 })
       .setOrigin(0.5).setDepth(10);
-    const barBg = this.add.rectangle(cx, cy + 20, 420, 22, 0x2a1640).setStrokeStyle(3, 0xffd36b).setDepth(10);
-    const bar = this.add.rectangle(cx - 206, cy + 20, 0, 12, 0xff8a3d).setOrigin(0, 0.5).setDepth(10);
-    const label = this.add.text(cx, cy + 58, "Loading 0%", { fontFamily: FONT, fontSize: "18px", color: "#fff4d6" }).setOrigin(0.5).setDepth(10);
-    this.load.on("progress", (p: number) => {
-      bar.width = 412 * p;
-      label.setText(`Loading ${Math.round(p * 100)}%`);
-    });
+    // Loading star (Angelo, 2026-11-06): no 0-100% bar anymore -- a small
+    // spinning gold star in the bottom-left while the game loads.
+    const star = this.add.star(48, GAME_H - 48, 5, 10, 22, 0xffd94d).setDepth(10).setName("v65-boot-loading-star");
+    this.tweens.add({ targets: star, angle: 360, duration: 1400, repeat: -1 });
+    this.tweens.add({ targets: star, scale: 0.85, duration: 700, yoyo: true, repeat: -1 });
     // Boot art (ChatGPT, 2026-10-25): queued first so it appears early,
-    // behind the title/bar (depth 10). If it fails to load, the bare
-    // title + bar screen remains — the loaderror handler below logs it.
+    // behind the title/star (depth 10). If it fails to load, the bare
+    // title + star screen remains — the loaderror handler below logs it.
     this.load.image("boot_bg", "assets/runtime/backdrops/boot_bg.jpg");
     // Pause menu art (2026-10-30, diseño de Angelo): fondo del pause nuevo.
     this.load.image("pause_menu_art", "assets/runtime/backdrops/pause_menu.png");
@@ -35,7 +33,6 @@ export class BootScene extends Phaser.Scene {
     this.load.on("loaderror", (file: Phaser.Loader.File) => {
       console.warn(`[assets] failed to load ${file.key} (${file.src})`);
     });
-    void barBg;
     queueAssets(this.load);
     // Story cutscene videos. The third load.video arg is noAudio: it MUST be
     // false — passing true mutes every clip in-game (found 2026-10-24: that

@@ -19,7 +19,7 @@ interface SaveData {
   sfx: boolean;
 }
 
-const DEFAULTS: SaveData = { level: LAST_LEVEL, chapterLayoutVersion: CHAPTER_LAYOUT_VERSION, weapons: ["sword", "bow", "hammer", "boomerang", "wand", "cog", "ray"], cleared: false, finaleSeen: false, introSeen: false, music: true, sfx: true };
+const DEFAULTS: SaveData = { level: LAST_LEVEL, chapterLayoutVersion: CHAPTER_LAYOUT_VERSION, weapons: ["sword", "bow", "hammer", "wand", "ray"], cleared: false, finaleSeen: false, introSeen: false, music: true, sfx: true };
 
 let cache: SaveData | null = null;
 

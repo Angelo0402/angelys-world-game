@@ -69,7 +69,10 @@ export class TitleScene extends Phaser.Scene {
     } else {
       this.showTitle();
     }
-    this.padStatus(data?.select ? 22 : GAME_H - 4, !!data?.select);
+    // No status line in the chapter select: the old y=22 sat on top of the
+    // header banner, and the bottom row sits over the scrolling cards.
+    // The title screen still shows it. (Touch devices never see this line.)
+    if (!data?.select) this.padStatus(GAME_H - 4, false);
   }
 
   private padStatus(y: number, top = false) {
@@ -136,20 +139,8 @@ export class TitleScene extends Phaser.Scene {
         this.cameras.main.fadeOut(260, 18, 13, 31);
         this.cameras.main.once("camerafadeoutcomplete", () => this.scene.restart({ select: true }));
       };
-      // Opening cutscene (Angelo, 2026-10-22): pressing PLAY runs the intro
-      // video FIRST, then the chapter select appears — the intro never waits
-      // until a level has been picked, and never replays once seen.
-      if (!loadSave().introSeen) {
-        Audio.duck(false);
-        this.scene.launch("Cutscene", { clips: ["intro"] });
-        this.scene.pause();
-        this.game.events.once("cutscene:done", () => {
-          updateSave({ introSeen: true });
-          this.scene.resume();
-          toSelect();
-        });
-        return;
-      }
+      // v60 (Angelo, 2026-11-05 playtest): the intro video on PLAY is gone --
+      // pressing PLAY goes straight to the chapter select.
       toSelect();
     }, { width: 260, height: 62, fontSize: 32 });
     play.setAlpha(0).setScale(0.6);
@@ -178,7 +169,21 @@ export class TitleScene extends Phaser.Scene {
 
   private showChapterSelect() {
     const save = loadSave();
-    titleText(this, GAME_W / 2, 18, "CHOOSE A LEVEL", 28);
+    // Header banner (v64, Angelo 2026-11-06): the old bare title now sits on a
+    // gold-framed banner, like the reference menu — code-drawn, no new art.
+    const banner = this.add.graphics();
+    banner.fillStyle(0x2a1640, 0.95).fillRoundedRect(GAME_W / 2 - 270, 6, 540, 44, 18);
+    banner.lineStyle(3, 0xffd36b, 1).strokeRoundedRect(GAME_W / 2 - 270, 6, 540, 44, 18);
+    banner.lineStyle(1, 0xffd36b, 0.4).strokeRoundedRect(GAME_W / 2 - 262, 12, 524, 32, 12);
+    const sparkL = this.add.star(GAME_W / 2 - 296, 28, 4, 4, 11, 0xffd36b);
+    const sparkR = this.add.star(GAME_W / 2 + 296, 28, 4, 4, 11, 0xffd36b);
+    this.tweens.add({ targets: [sparkL, sparkR], angle: 180, duration: 2400, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+    // Depth above the scrolling list: scrolled cards must slide UNDER the
+    // header, not over it.
+    banner.setDepth(5);
+    sparkL.setDepth(5);
+    sparkR.setDepth(5);
+    titleText(this, GAME_W / 2, 18, "CHOOSE A LEVEL", 28).setDepth(5);
     const ids = (Object.keys(CHAPTERS).map(Number) as ChapterId[])
       .filter((id) => levelsOf(id).length > 0)
       .sort((a, b) => a - b);
@@ -200,6 +205,14 @@ export class TitleScene extends Phaser.Scene {
     const CW = 1100;
     const CH = 200;
     const GAP = 16;
+    // Accidental-touch guard (Angelo 2026-11-06): a drag that scrolls the
+    // list must NOT launch a level when the finger lifts over a pill. Only
+    // a clean tap (finger moved <= 12px) opens a level. The flag resets on
+    // pointerdown only — never on pointerup — because Phaser fires the
+    // pill's pointerup BEFORE the scene-level pointerup.
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let dragged = false;
     const list = this.add.container(GAME_W / 2, LIST_TOP);
     const cards: Phaser.GameObjects.Container[] = [];
     const cullCards = () => {
@@ -217,8 +230,19 @@ export class TitleScene extends Phaser.Scene {
       const card = this.add.container(x, y);
       const frame = this.add.graphics();
       const gold = id === 5 ? 0xd2a4ff : 0xffd36b;
-      frame.fillStyle(0x1b0f2e, 0.88).fillRoundedRect(-CW / 2, -CH / 2, CW, CH, 24);
-      frame.lineStyle(4, locked ? 0x5a5470 : gold, 1).strokeRoundedRect(-CW / 2, -CH / 2, CW, CH, 24);
+      const border = locked ? 0x5a5470 : gold;
+      frame.fillStyle(0x241640, 0.92).fillRoundedRect(-CW / 2, -CH / 2, CW, CH, 24);
+      frame.lineStyle(4, border, 1).strokeRoundedRect(-CW / 2, -CH / 2, CW, CH, 24);
+      frame.lineStyle(1, border, 0.4).strokeRoundedRect(-CW / 2 + 7, -CH / 2 + 7, CW - 14, CH - 14, 18);
+      // Corner studs, like the reference's gold-trimmed frames.
+      const stud = (sx: number, sy: number) => {
+        frame.fillStyle(border, 1).fillCircle(sx, sy, 5);
+        frame.fillStyle(0x241640, 1).fillCircle(sx, sy, 2);
+      };
+      stud(-CW / 2 + 14, -CH / 2 + 14);
+      stud(CW / 2 - 14, -CH / 2 + 14);
+      stud(-CW / 2 + 14, CH / 2 - 14);
+      stud(CW / 2 - 14, CH / 2 - 14);
       card.add(frame);
       // Thumbnail failures must not take down the entire chapter selector.
       const TW = 360, TH = 168;
@@ -248,6 +272,22 @@ export class TitleScene extends Phaser.Scene {
       const thumbFrame = this.add.graphics();
       thumbFrame.lineStyle(3, locked ? 0x5a5470 : gold, 0.9).strokeRoundedRect(tx - TW / 2, -TH / 2, TW, TH, 12);
       card.add(thumbFrame);
+      // Cleared-level progress (real save data: a level is cleared when its
+      // index is below save.level). The save tracks NO per-chapter gem
+      // counts, so there is no "24 / 30" here — never invent one.
+      // Progress pill at the card's TOP-RIGHT (reference style). It used
+      // to sit on the thumbnail's bottom-right, where it covered the
+      // splash art's baked-in CONTINUE/START button text ("CONT" + star).
+      const cleared = stages.filter((s) => s.index < save.level).length;
+      const prog = this.add.graphics();
+      const progX = CW / 2 - 16 - 84, progY = -CH / 2 + 16;
+      prog.fillStyle(0x1b0f2e, 0.9).fillRoundedRect(progX, progY, 84, 26, 10);
+      prog.lineStyle(2, locked ? 0x5a5470 : gold, 0.9).strokeRoundedRect(progX, progY, 84, 26, 10);
+      const progText = this.add.text(progX + 42, progY + 13, `★ ${cleared}/${stages.length}`, {
+        fontFamily: FONT, fontSize: "15px", fontStyle: "bold",
+        color: locked ? "#aaa2c0" : "#ffe08a", stroke: "#120c28", strokeThickness: 3,
+      }).setOrigin(0.5);
+      card.add([prog, progText]);
       if (locked) {
         const lock = this.add.graphics();
         drawLock(lock, tx, 0, 1.1);
@@ -263,7 +303,9 @@ export class TitleScene extends Phaser.Scene {
         fontFamily: FONT, fontSize: "28px", fontStyle: "bold",
         color: locked ? "#bbb4d0" : "#ffffff", stroke: "#120c28", strokeThickness: 5,
       }).setOrigin(0, 0.5);
-      card.add([num, name]);
+      const rule = this.add.graphics();
+      rule.lineStyle(2, locked ? 0x5a5470 : gold, 0.8).lineBetween(infoX, -CH / 2 + 88, infoX + Math.min(name.width, 320), -CH / 2 + 88);
+      card.add([num, name, rule]);
       stages.forEach((l, k) => {
         const pw = 280, ph = 56;
         const px = infoX + k * (pw + 16);
@@ -278,7 +320,7 @@ export class TitleScene extends Phaser.Scene {
         };
         draw(false);
         const kind = l.boss ? "BOSS" : l.mode === "climb" ? "VERTICAL" : l.mode === "swim" ? "SWIM" : l.goal === "gems" ? "GEMS" : "";
-        const label = this.add.text(0, -12, kind ? `${levelLabel(l)} • ${kind}` : levelLabel(l), {
+        const label = this.add.text(0, -12, levelLabel(l), {
           fontFamily: FONT, fontSize: "18px", fontStyle: "bold",
           color: open ? (l.boss ? "#e0b8ff" : "#ffe08a") : "#aaa2c0", stroke: "#241a36", strokeThickness: 3,
         }).setOrigin(0.5);
@@ -286,9 +328,22 @@ export class TitleScene extends Phaser.Scene {
           fontFamily: FONT, fontSize: "15px", fontStyle: "bold",
           color: open ? "#ffffff" : "#aaa2c0", stroke: "#241a36", strokeThickness: 2,
         }).setOrigin(0.5);
-        pill.add([g, label, nm]);
+        // Kind tag as a small corner chip (reference style), not inline text.
+        const chipParts: Phaser.GameObjects.GameObject[] = [];
+        if (kind) {
+          const chipColor = l.boss ? 0x8a3fd1 : l.goal === "gems" ? 0xc79a1d : 0x1d7a8a;
+          const chipW = kind.length * 9 + 14;
+          const chip = this.add.graphics();
+          chip.fillStyle(chipColor, 1).fillRoundedRect(pw / 2 - chipW - 6, -ph / 2 + 5, chipW, 18, 8);
+          const chipText = this.add.text(pw / 2 - 6 - chipW / 2, -ph / 2 + 14, kind, {
+            fontFamily: FONT, fontSize: "11px", fontStyle: "bold", color: "#ffffff", stroke: "#241a36", strokeThickness: 2,
+          }).setOrigin(0.5);
+          chipParts.push(chip, chipText);
+        }
+        pill.add([g, label, nm, ...chipParts]);
         if (open && l.index < save.level) {
-          const star = this.add.text(pw / 2 - 14, -ph / 2 + 13, "★", { fontFamily: FONT, fontSize: "22px", color: "#ffd36b" }).setOrigin(0.5);
+          // Bottom-right: the top-right corner now belongs to the kind chip.
+          const star = this.add.text(pw / 2 - 16, ph / 2 - 15, "★", { fontFamily: FONT, fontSize: "22px", color: "#ffd36b" }).setOrigin(0.5);
           pill.add(star);
         }
         if (!open) {
@@ -301,7 +356,7 @@ export class TitleScene extends Phaser.Scene {
         pill.setSize(pw, ph).setInteractive({ useHandCursor: true });
         pill.on("pointerover", () => draw(true));
         pill.on("pointerout", () => draw(false));
-        pill.on("pointerup", () => start(l.index));
+        pill.on("pointerup", () => { if (!dragged) start(l.index); });
         if (l.index === save.level) initial = nav.length;
         nav.push({ x: GAME_W / 2 + px + pw / 2, y: LIST_TOP + y + py, focus: (on) => draw(on), activate: () => start(l.index) });
       });
@@ -313,9 +368,10 @@ export class TitleScene extends Phaser.Scene {
     // Drag to scroll; culling avoids the Android geometry-mask bug.
     let dragY = 0;
     let scrolling = false;
-    this.input.on("pointerdown", (p: Phaser.Input.Pointer) => { dragY = p.y; scrolling = true; });
+    this.input.on("pointerdown", (p: Phaser.Input.Pointer) => { dragY = p.y; dragStartX = p.x; dragStartY = p.y; dragged = false; scrolling = true; });
     this.input.on("pointermove", (p: Phaser.Input.Pointer) => {
       if (!scrolling || !p.isDown) return;
+      if (Math.hypot(p.x - dragStartX, p.y - dragStartY) > 12) dragged = true;
       const dy = p.y - dragY;
       dragY = p.y;
       if (Math.abs(dy) > 2) {
@@ -325,6 +381,13 @@ export class TitleScene extends Phaser.Scene {
     });
     this.input.on("pointerup", () => { scrolling = false; });
     cullCards();
+    // HOME (top-left): visible way back to the title. The PadMenu back action
+    // already did this — it just had no button. No new screen.
+    const home = new Button(this, 56, 28, "HOME", () => {
+      Audio.sfx("button");
+      this.scene.restart({ select: false });
+    }, { width: 96, height: 40, fontSize: 16, color: 0x5a3a8a });
+    nav.push(home);
     if (save.level > 0 || save.weapons.length) {
       const reset = new Button(this, 78, GAME_H - 28, "RESET", () => {
         if (window.confirm("Reset all progress? Unlocked levels and weapons will be lost.")) {

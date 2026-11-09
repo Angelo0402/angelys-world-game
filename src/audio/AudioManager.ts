@@ -75,6 +75,26 @@ const SONGS: Record<MusicTrack, SongDef> = {
 
 const midi = (n: number) => 440 * Math.pow(2, (n - 69) / 12);
 
+// Repeated gameplay SFX that get a random pitch (0.9–1.1) on every play,
+// so the same jump/hit/pickup never sounds identical twice (Roadside Games
+// reel trick, 2026-11-03). Deliberately EXCLUDED: "button" (UI must sound
+// identical), confirmation/unique stings (checkpoint, portal_unlock,
+// portal_enter, chapter_transition, bridge_rise, boss_roar, boss_defeat,
+// player_defeat), and voice blips (already randomized internally).
+// Music never passes through here (see music()/schedule()).
+const VARIED_SFX: ReadonlySet<SfxName> = new Set([
+  "jump", "stomp", "sword_swing", "sword_hit", "sword_clink",
+  "enemy_hit", "enemy_defeat", "enemy_telegraph",
+  "puff_attack", "bat_dive", "ghost_orb", "lantern_bolt", "skeleton_swing",
+  "fire_spit", "fire_impact", "lava_burst", "ground_slam", "player_hurt",
+  "heart_pickup", "sword_pickup", "weapon_pickup", "weapon_swap",
+  "fall", "low_health", "bow_shoot", "arrow_hit",
+  "hammer_swing", "hammer_smash", "wall_break",
+  "tok", "crunch", "crate_push", "spring", "crumble", "target_hit",
+  "gem", "swim", "cog", "ray", "wand_charge", "wand_cast",
+  "boss_cast", "boss_hit", "boss_swoop",
+]);
+
 class AudioManagerImpl {
   private game?: Phaser.Game;
   private ctx?: AudioContext;
@@ -89,6 +109,10 @@ class AudioManagerImpl {
   private nextTime = 0;
   private ducked = false;
   private lastPlayed = new Map<string, number>();
+  // Pitch factor for the current sfx() call (1 = unchanged). Read synchronously
+  // by tone()/noise() while building that call's oscillators, so overlapping
+  // SFX never interfere: frequencies are baked in at creation time.
+  private sfxPitch = 1;
 
   init(game: Phaser.Game) {
     this.game = game;
@@ -142,12 +166,9 @@ class AudioManagerImpl {
       if (this.musicOn && this.fileMusic && this.current) {
         this.fileMusic.resume();
       } else if (this.musicOn && this.current && !this.fileMusic) {
-        // Restart procedural music if needed
-        this.step = 0;
-        if (this.ctx) {
-          this.nextTime = this.ctx.currentTime + 0.1;
-          this.timer = window.setInterval(() => this.schedule(), 30);
-        }
+        // Restart procedural music if needed (startProcedural is a no-op
+        // when a scheduler is already running -- no double timer).
+        this.startProcedural();
       }
     }
   }
@@ -199,6 +220,10 @@ class AudioManagerImpl {
     this.noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
     const d = this.noiseBuf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    // v65: the context can be created outside a user gesture (sfx() calls
+    // ensureCtx from game code). Resume it so it is running, not suspended,
+    // whenever the browser allows it; a later gesture resumes it otherwise.
+    void this.ctx.resume?.();
     if (this.current) {
       const t = this.current;
       this.current = undefined;
@@ -255,8 +280,10 @@ class AudioManagerImpl {
     const now = performance.now();
     if (now - (this.lastPlayed.get(name) ?? 0) < 45) return;
     this.lastPlayed.set(name, now);
+    // Random pitch for repeated gameplay SFX only; everything else plays at 1.
+    this.sfxPitch = VARIED_SFX.has(name) ? 0.9 + Math.random() * 0.2 : 1;
     if (AUDIO_FILES[name] && this.game?.cache.audio.exists(name)) {
-      this.game.sound.play(name);
+      this.game.sound.play(name, { rate: this.sfxPitch });
       return;
     }
     this.ensureCtx();
@@ -313,7 +340,6 @@ class AudioManagerImpl {
       case "voice_angely": this.tone(t, 620 + Math.random() * 120, 0.06, "triangle", 0.06, 700); break;
       case "gem": [0, 7, 12].forEach((n, i) => this.tone(t + i * 0.05, midi(84 + n), 0.18, "triangle", 0.18)); break;
       case "swim": this.noise(t, 0.18, 0.12, 900, "bandpass", 2400); this.tone(t, 500, 0.08, "sine", 0.06, 900); break;
-      case "boomerang": this.noise(t, 0.4, 0.2, 1200, "bandpass", 3000); this.tone(t, 700, 0.3, "triangle", 0.08, 1100); break;
       case "cog": this.tone(t, 180, 0.12, "square", 0.16, 90); this.noise(t, 0.16, 0.22, 1400, "bandpass", 2200); break;
       case "ray": this.tone(t, 880, 0.08, "square", 0.12, 1400); this.tone(t, 1320, 0.1, "sine", 0.08, 600); break;
       case "wand_charge": this.tone(t, 900, 0.2, "sine", 0.1, 1800); break;
@@ -328,8 +354,11 @@ class AudioManagerImpl {
     const o = ctx.createOscillator();
     const g = ctx.createGain();
     o.type = type;
-    o.frequency.setValueAtTime(f, t);
-    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+    // Pitch variation applies only to the SFX path (bus omitted). Music calls
+    // pass musicBus explicitly and must keep exact song frequencies.
+    const pitch = bus ? 1 : this.sfxPitch;
+    o.frequency.setValueAtTime(f * pitch, t);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo * pitch, t + dur);
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
@@ -344,8 +373,11 @@ class AudioManagerImpl {
     src.buffer = this.noiseBuf!;
     const f = ctx.createBiquadFilter();
     f.type = type;
-    f.frequency.setValueAtTime(freq, t);
-    if (slideTo) f.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+    // noise() is only used by SFX (music uses tone() with musicBus), so the
+    // current sfxPitch always applies here; filter-frequency scaling shifts
+    // the noise spectrum the same way a rate change would.
+    f.frequency.setValueAtTime(freq * this.sfxPitch, t);
+    if (slideTo) f.frequency.exponentialRampToValueAtTime(slideTo * this.sfxPitch, t + dur);
     const g = ctx.createGain();
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
@@ -357,7 +389,18 @@ class AudioManagerImpl {
   // -------------------------------------------------------------- Music
 
   music(track: MusicTrack) {
-    if (this.current === track) return;
+    if (this.current === track) {
+      // v65 (Angelo 2026-11-06: no music in 1-1, later chapters fine): the
+      // track can be recorded as current while nothing is actually sounding
+      // -- the background handler clears the scheduler, and if the resume
+      // event never fires (some Android WebViews) the timer stays dead
+      // while every later music(same-track) call no-ops on this early
+      // return. A chapter that reuses the track (1-2 reuses 1-1's forest)
+      // then stays silent for the rest of the session. Never leave a
+      // current track silent: restart the scheduler when it is dead.
+      if (!this.timer && !this.fileMusic) this.startProcedural();
+      return;
+    }
     this.stopMusic();
     this.current = track;
     if (AUDIO_FILES[track] && this.game?.cache.audio.exists(track)) {
@@ -366,7 +409,14 @@ class AudioManagerImpl {
       this.fileMusic.play();
       return;
     }
-    if (!this.ctx) return;
+    this.startProcedural();
+  }
+
+  /** (Re)start the procedural scheduler for the current track. No-op when
+   * there is no AudioContext yet (ensureCtx replays the track on unlock)
+   * or a scheduler is already running. */
+  private startProcedural() {
+    if (!this.ctx || !this.current || this.timer) return;
     this.step = 0;
     this.nextTime = this.ctx.currentTime + 0.1;
     this.musicBus!.gain.cancelScheduledValues(this.ctx.currentTime);

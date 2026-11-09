@@ -1,0 +1,257 @@
+{
+ "treatment": "NEAREST downscale 1/8 then upscale to original dims; heart sheet pixelated per-frame (3x117x97) to preserve frame seams",
+ "files": [
+  {
+   "src": "public/assets/runtime/hud/sword.webp",
+   "dst": "art/pixel-pack/ui/hud/sword_pixel.webp",
+   "size": [
+    128,
+    128
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/runtime/hud/bow.webp",
+   "dst": "art/pixel-pack/ui/hud/bow_pixel.webp",
+   "size": [
+    128,
+    128
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/runtime/hud/hammer.webp",
+   "dst": "art/pixel-pack/ui/hud/hammer_pixel.webp",
+   "size": [
+    128,
+    128
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/runtime/hud/boomerang.webp",
+   "dst": "art/pixel-pack/ui/hud/boomerang_pixel.webp",
+   "size": [
+    128,
+    128
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/runtime/hud/wand.webp",
+   "dst": "art/pixel-pack/ui/hud/wand_pixel.webp",
+   "size": [
+    128,
+    128
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/runtime/hud/cog.webp",
+   "dst": "art/pixel-pack/ui/hud/cog_pixel.webp",
+   "size": [
+    128,
+    128
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/runtime/hud/ray.webp",
+   "dst": "art/pixel-pack/ui/hud/ray_pixel.webp",
+   "size": [
+    128,
+    128
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/runtime/heart.webp",
+   "dst": "art/pixel-pack/ui/heart_pixel.webp",
+   "size": [
+    351,
+    97
+   ],
+   "kind": "sheet3x117"
+  },
+  {
+   "src": "public/assets/runtime/backdrops/pause_menu.png",
+   "dst": "art/pixel-pack/ui/backdrops/pause_menu_pixel.png",
+   "size": [
+    1672,
+    941
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/runtime/backdrops/boot_bg.jpg",
+   "dst": "art/pixel-pack/ui/backdrops/boot_bg_pixel.png",
+   "size": [
+    1672,
+    941
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/runtime/backdrops/title_splash.jpg",
+   "dst": "art/pixel-pack/ui/backdrops/title_splash_pixel.png",
+   "size": [
+    1916,
+    821
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/runtime/backdrops/title_bg.jpg",
+   "dst": "art/pixel-pack/ui/backdrops/title_bg_pixel.png",
+   "size": [
+    1421,
+    800
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/runtime/backdrops/portrait_angely.webp",
+   "dst": "art/pixel-pack/ui/backdrops/portrait_angely_pixel.webp",
+   "size": [
+    160,
+    160
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/runtime/backdrops/portrait_angely_happy.webp",
+   "dst": "art/pixel-pack/ui/backdrops/portrait_angely_happy_pixel.webp",
+   "size": [
+    160,
+    160
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/runtime/backdrops/portrait_angely_wow.webp",
+   "dst": "art/pixel-pack/ui/backdrops/portrait_angely_wow_pixel.webp",
+   "size": [
+    160,
+    160
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/runtime/backdrops/portrait_umbra.webp",
+   "dst": "art/pixel-pack/ui/backdrops/portrait_umbra_pixel.webp",
+   "size": [
+    160,
+    160
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/runtime/backdrops/portrait_angelo.webp",
+   "dst": "art/pixel-pack/ui/backdrops/portrait_angelo_pixel.webp",
+   "size": [
+    160,
+    160
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/the_end_art.png",
+   "dst": "art/pixel-pack/ui/the_end_art_pixel.png",
+   "size": [
+    1672,
+    941
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/gameover/gameover_ch1.png",
+   "dst": "art/pixel-pack/ui/gameover/gameover_ch1_pixel.png",
+   "size": [
+    1870,
+    841
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/gameover/gameover_ch2.png",
+   "dst": "art/pixel-pack/ui/gameover/gameover_ch2_pixel.png",
+   "size": [
+    1870,
+    841
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/gameover/gameover_ch3.png",
+   "dst": "art/pixel-pack/ui/gameover/gameover_ch3_pixel.png",
+   "size": [
+    1870,
+    841
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/gameover/gameover_ch4.png",
+   "dst": "art/pixel-pack/ui/gameover/gameover_ch4_pixel.png",
+   "size": [
+    1870,
+    841
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/gameover/gameover_ch5.png",
+   "dst": "art/pixel-pack/ui/gameover/gameover_ch5_pixel.png",
+   "size": [
+    1870,
+    841
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/gameover/gameover_ch6.png",
+   "dst": "art/pixel-pack/ui/gameover/gameover_ch6_pixel.png",
+   "size": [
+    1870,
+    841
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/gameover/gameover_ch7.png",
+   "dst": "art/pixel-pack/ui/gameover/gameover_ch7_pixel.png",
+   "size": [
+    1870,
+    841
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/gameover/gameover_ch8.png",
+   "dst": "art/pixel-pack/ui/gameover/gameover_ch8_pixel.png",
+   "size": [
+    1870,
+    841
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/gameover/gameover_ch9.png",
+   "dst": "art/pixel-pack/ui/gameover/gameover_ch9_pixel.png",
+   "size": [
+    1870,
+    841
+   ],
+   "kind": "single"
+  },
+  {
+   "src": "public/assets/gameover/gameover_ch10.png",
+   "dst": "art/pixel-pack/ui/gameover/gameover_ch10_pixel.png",
+   "size": [
+    1870,
+    841
+   ],
+   "kind": "single"
+  }
+ ]
+}

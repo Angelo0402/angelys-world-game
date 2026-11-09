@@ -3227,8 +3227,11 @@ export const SPRITES = {
       // v73 (Angelo 2026-11-09): approved 12-frame spinning shard replaces
       // the old blue 4-frame fly. New sheet is a 4x4 grid: fly 0-11 (spin
       // loop @12fps), form 0-2 (spin-in), impact 12-15 (synthesized magenta
-      // burst, expanding glow). Content fills the 256 cell (h=256) so the
-      // 30px spawn scale in CrystalVeilBoss stays the same world size.
+      // burst, expanding glow). NOTE (measured v74): the shard content
+      // does NOT fill the 256 cell — fly frames measure max 174x156 — so
+      // at the v73 spawn height of 30 the shard rendered only ~18px max
+      // on screen (that's why it looked tiny). v74 spawn heights are
+      // per-attack in CrystalVeilBoss (volley 60, aimed 72, rain 48).
       "form": {
         "start": 0,
         "end": 2,

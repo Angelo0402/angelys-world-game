@@ -33,20 +33,17 @@ interface AttackTiming {
 }
 
 const ATTACK_TIMING: Record<WeaponId, AttackTiming> & { sword_air: AttackTiming } = {
-  // Slash 11f @34fps: ready, raise, overhead | swing, contact, follow | recover x5.
+  // Slash — ORIGINAL v65 timing (11f @34fps values; 2x strip is 22f, plays cut short).
   sword: { windupEnd: 2, strikeEnd: 5, windupScale: 0.55, strikeScale: 1.5, recoveryScale: 0.8, stateMs: 410 },
-  // Air slash 4f @14fps: high, tuck | slash arc, follow.
+  // Air slash — ORIGINAL v65 timing (4f @14fps values; 2x strip is 8f).
   sword_air: { windupEnd: 1, strikeEnd: 3, windupScale: 0.8, strikeScale: 1.4, recoveryScale: 0.9, stateMs: 360 },
-  // Smash 12f @27fps: lift x6 | ground impact (dust baked) | recover x5.
-  hammer: { windupEnd: 5, strikeEnd: 6, release: 6, windupScale: 0.7, strikeScale: 0.5, recoveryScale: 0.85, stateMs: 615 },
-  // Shoot 12f @40fps: raise x2, draw x4 | release | lower x5.
-  bow: { windupEnd: 5, strikeEnd: 6, release: 6, windupScale: 0.65, strikeScale: 1.6, recoveryScale: 0.8, stateMs: 410 },
-  // Cast 9f @29fps: raise, charge x2 | release | recover x5.
+  // Smash 24f @27fps (2x strips, v66 — KEPT per Angelo 2026-11-07: he likes the smash).
+  hammer: { windupEnd: 11, strikeEnd: 13, release: 12, windupScale: 0.7, strikeScale: 0.5, recoveryScale: 0.85, stateMs: 1220 },
+  // Shoot 24f @40fps (2x strips, v66 — KEPT per Angelo 2026-11-07: he likes the shoot).
+  bow: { windupEnd: 11, strikeEnd: 13, release: 12, windupScale: 0.65, strikeScale: 1.3, recoveryScale: 0.8, stateMs: 815 },
+  // Cast — ORIGINAL v65 timing (9f @29fps values; 2x strip is 18f).
   wand: { windupEnd: 2, strikeEnd: 3, release: 3, windupScale: 0.7, strikeScale: 1.5, recoveryScale: 0.85, stateMs: 380 },
-  // Throw 6f @30fps: wind-up x2 | throw, release | follow x2. Shared by cog.
-  boomerang: { windupEnd: 1, strikeEnd: 3, release: 3, windupScale: 0.7, strikeScale: 1.4, recoveryScale: 0.8, stateMs: 300 },
-  cog: { windupEnd: 1, strikeEnd: 3, release: 3, windupScale: 0.7, strikeScale: 1.4, recoveryScale: 0.8, stateMs: 280 },
-  // Shoot 10f @25fps: raise, aim x2 | muzzle burst x3 | lower x4.
+  // Shoot — ORIGINAL v65 timing (10f @25fps values; 2x strip is 20f).
   ray: { windupEnd: 2, strikeEnd: 5, release: 3, windupScale: 0.75, strikeScale: 1.3, recoveryScale: 0.85, stateMs: 445 },
 };
 
@@ -86,8 +83,6 @@ export class Player {
   private shadow: Phaser.GameObjects.Image;
   private scene: GameScene;
   private sheet?: SpriteKey;
-  /** True in chapter 9: pixel sheets replace the flat ones. */
-  private pixel = false;
   private scales: Record<string, number>;
   hearts = MAX_HEARTS;
   facing: 1 | -1 = 1;
@@ -153,21 +148,16 @@ export class Player {
       // Per-sheet factors measured 2026-10-21 (full sprite audit): the rebuilt weapon
       // sheets do NOT share one character scale. Factors = base body height (bow->feet,
       // 250px) / each sheet's measured body height, so Angely renders the SAME size
-      // with every weapon: sword 310px, bow 198px, boomerang 209px, wand 220px,
+      // with every weapon: sword 310px, bow 198px, wand 220px,
       // hammer 241px, ray 235px.
       angely_sword: scaleForHeight("angely", HEIGHT, "idle"), // ChatGPT take 2026-10-21: body canonical 250
       angely_bow: scaleForHeight("angely", HEIGHT, "idle"),
       angely_hammer: scaleForHeight("angely", HEIGHT, "idle"),
-      angely_boomerang: scaleForHeight("angely", HEIGHT, "idle"),
+      angely_throw: scaleForHeight("angely", HEIGHT, "idle"),
       angely_wand: scaleForHeight("angely", HEIGHT, "idle"),
       angely_ray: scaleForHeight("angely", HEIGHT, "idle"),
       angely_swim: scaleForHeight("angely", HEIGHT, "idle"),
       angely_got: scaleForHeight("angely", HEIGHT, "idle"),
-      // Chapter 9 pixel variants (same heights as the flat sheets, so the
-      // same base scale applies — pixel sheets keep the original dims).
-      angely_pixel: scaleForHeight("angely_pixel", HEIGHT, "idle"),
-      angely_ray_pixel: scaleForHeight("angely_pixel", HEIGHT, "idle"),
-      angely_got_pixel: scaleForHeight("angely_pixel", HEIGHT, "idle"),
     };
     this.bubbles = scene.add
       .particles(0, 0, "bubble", {
@@ -181,8 +171,7 @@ export class Player {
       })
       .setDepth(61);
     this.shadow = scene.add.image(x, y, "shadow").setAlpha(0.3).setDepth(30);
-    this.pixel = scene.info.chapter === 9;
-    this.sprite = scene.add.sprite(x, y, this.pixel ? "angely_pixel" : "angely").setDepth(60);
+    this.sprite = scene.add.sprite(x, y, "angely").setDepth(60);
     this.setAnim("angely", "idle");
   }
 
@@ -241,13 +230,6 @@ export class Player {
   }
 
   private setAnim(sheet: SpriteKey, anim: string, restart = false) {
-    // Chapter 9: every angely sheet (base, ray pickup, got poses) has a
-    // pixel twin; other weapon sheets never appear in ch9 (ray only).
-    if (this.pixel) {
-      if (sheet === "angely") sheet = "angely_pixel";
-      else if (sheet === "angely_ray") sheet = "angely_ray_pixel";
-      else if (sheet === "angely_got") sheet = "angely_got_pixel";
-    }
     if (sheet !== this.sheet) {
       this.sheet = sheet;
       this.sprite.setScale(this.scales[sheet]);
@@ -419,20 +401,6 @@ export class Player {
       }
       return;
     }
-    if (this.attackWeapon === "cog") {
-      if (!this.shotFired && local >= (cfg.release ?? 0)) {
-        this.shotFired = true;
-        this.scene.throwCog(this.x + this.facing * 46, body.top + body.height * 0.32, this.facing);
-      }
-      return;
-    }
-    if (this.attackWeapon === "boomerang") {
-      if (!this.shotFired && local >= (cfg.release ?? 0)) {
-        this.shotFired = true;
-        this.scene.throwBoomerang(this.x + this.facing * 40, body.top + body.height * 0.3, this.facing);
-      }
-      return;
-    }
     if (this.attackWeapon === "wand") {
       if (!this.shotFired && local >= (cfg.release ?? 0)) {
         this.shotFired = true;
@@ -473,7 +441,6 @@ export class Player {
 
   private startAttack(time: number) {
     const w = this.weapon!;
-    if (w === "boomerang" && this.scene.boomerangOut) return;
     this.state = "attack";
     this.attackWeapon = w;
     this.attackHits.clear();
@@ -485,12 +452,6 @@ export class Player {
       this.stateUntil = time + ATTACK_TIMING.ray.stateMs;
       this.setAnim("angely_ray", "shoot", true);
       Audio.sfx("ray");
-    } else if (w === "cog") {
-      this.stateUntil = time + ATTACK_TIMING.cog.stateMs;
-      this.setAnim("angely_boomerang", "throw", true);
-    } else if (w === "boomerang") {
-      this.stateUntil = time + ATTACK_TIMING.boomerang.stateMs;
-      this.setAnim("angely_boomerang", "throw", true);
     } else if (w === "wand") {
       this.stateUntil = time + ATTACK_TIMING.wand.stateMs;
       this.setAnim("angely_wand", "cast", true);
@@ -509,6 +470,25 @@ export class Player {
       Audio.sfx("sword_swing");
       Barks.play(this.scene, ["angely_bark_09"], 0.22);
     }
+  }
+
+  /** SPECIAL (v69, Angelo 2026-11-07): raise the Star Wand and hold it
+   *  overhead for `ms` — the player HERSELF performs the raise, so she
+   *  renders exactly once and stays visible through the whole special.
+   *  Reuses the attack state machine (pickAnim keeps the cast anim, speed
+   *  plants to 0.25x) but shotFired is preset so the wand's castStars
+   *  projectile NEVER fires — the special's stars come from the scene.
+   *  The cast anim (18f @29fps) finishes in ~620ms; the sprite then
+   *  holds its last frame (arms up) until stateUntil frees the state. */
+  playSpecialRaise(time: number, ms: number) {
+    if (!this.alive || this.state === "dead") return;
+    this.state = "attack";
+    this.attackWeapon = "wand";
+    this.attackHits.clear();
+    this.shotFired = true;
+    this.airAttack = false;
+    this.stateUntil = time + ms;
+    this.setAnim("angely_wand", "cast", true);
   }
 
   private pickAnim(time: number, axis: number) {
@@ -591,7 +571,7 @@ export class Player {
       return true;
     }
     const away = this.x < fromX ? -1 : 1;
-    this.body.setVelocity(away * 280, -320);
+    this.body.setVelocity(away * 140, -160);
     this.state = "hurt";
     this.stateUntil = this.scene.time.now + 360;
     this.sprite.setTintFill(0xffffff);
@@ -648,22 +628,11 @@ export class Player {
     this.state = "pickup";
     this.body.setVelocity(0, this.body.velocity.y);
     if (sword) this.setAnim("angely_sword", "pickup", true);
-    else if (kind && kind !== "cog") this.setAnim("angely_got", `got_${kind}`, true);
+    else if (kind) this.setAnim("angely_got", `got_${kind}`, true);
     else this.setAnim("angely", "celebrate", true);
     this.scene.time.delayedCall(sword ? 1400 : 1100, () => {
       if (this.state === "pickup") this.state = "normal";
       onDone();
-    });
-  }
-
-  /** Boomerang returned: a quick catch flourish when she is standing free. */
-  playCatch() {
-    if (this.state !== "normal" || !this.grounded || this.swim) return;
-    if (Math.abs(this.body.velocity.x) > 60) return;
-    this.state = "catch";
-    this.setAnim("angely_boomerang", "catch", true);
-    this.scene.time.delayedCall(280, () => {
-      if (this.state === "catch") this.state = "normal";
     });
   }
 

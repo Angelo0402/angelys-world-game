@@ -348,6 +348,15 @@ export class CrystalVeilBoss {
     this.mark(this.x+(slam ? 0 : this.dir*90),slam ? 250 : 170);
   }
 
+  // v74 (Angelo 2026-11-09, v73 feedback: shots too small, all three
+  // attacks looked identical): each attack now has its own size + tint,
+  // code-only, same spinning shard sheet:
+  //   volley      = 60px magenta (standard — 2x v73)
+  //   aimedVolley = 72px red (biggest — the aimed one)
+  //   crystalRain = 48px violet, falls faster (smallest of the three,
+  //   still 1.6x v73 — five at once)
+  // Hitbox scales with the visual via the generic formula in
+  // GameScene.spawnProjectile (r = 76.8 source px * scale).
   private volley(time: number, burst: boolean) {
     this.windup(burst ? "burst" : "shoot",burst ? "double" : "shoot",time,650*[0,1,.9][this.phase],280,this.recovery(),() => {
       Audio.sfx("ghost_orb");
@@ -356,8 +365,8 @@ export class CrystalVeilBoss {
         const angle = count === 1 ? 0 : Phaser.Math.DegToRad(-24+48*i/(count-1));
         const speed = 245+this.phase*30;
         this.scene.spawnProjectile("crystal_shot",this.x+this.dir*74,GROUND_Y-108,
-          this.dir*Math.cos(angle)*speed,Math.sin(angle)*speed,scaleForHeight("crystal_shot",30,"fly"),
-          undefined,undefined,false,undefined,0xff78cf);
+          this.dir*Math.cos(angle)*speed,Math.sin(angle)*speed,scaleForHeight("crystal_shot",60,"fly"),
+          0xff78cf,undefined,false,undefined,0xff78cf);
       }
     });
     this.mark(this.x+this.dir*85,85);
@@ -376,8 +385,8 @@ export class CrystalVeilBoss {
       for (const off of [-0.12, 0, 0.12]) {
         const a = base + off;
         this.scene.spawnProjectile("crystal_shot", muzzleX, muzzleY,
-          Math.cos(a) * speed, Math.sin(a) * speed, scaleForHeight("crystal_shot", 30, "fly"),
-          undefined, undefined, false, undefined, 0xff78cf);
+          Math.cos(a) * speed, Math.sin(a) * speed, scaleForHeight("crystal_shot", 72, "fly"),
+          0xff2e4d, undefined, false, undefined, 0xff2e4d);
       }
     });
     this.mark(this.x + this.dir * 85, 85);
@@ -393,8 +402,8 @@ export class CrystalVeilBoss {
       Audio.sfx("ghost_orb");
       for (const x of spots) {
         this.scene.spawnProjectile("crystal_shot", x, GROUND_Y - 440,
-          0, 305, scaleForHeight("crystal_shot", 30, "fly"),
-          undefined, undefined, false, undefined, 0xff78cf);
+          0, 350, scaleForHeight("crystal_shot", 48, "fly"),
+          0xa55cff, undefined, false, undefined, 0xa55cff);
       }
     });
     spots.forEach(x => this.mark(x, 60));

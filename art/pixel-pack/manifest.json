@@ -1,0 +1,572 @@
+{
+  "treatment": "PIL NEAREST downscale (Angely ~40px tall, slime ~30px tall) then NEAREST upscale x6; frames cropped to anim union alpha bbox. STAGING ONLY - not wired to the game.",
+  "source_sheets": {
+    "angely": {
+      "file": "public/assets/runtime/angely.webp",
+      "sheet_size": [
+        4069,
+        1578
+      ],
+      "frame_cell": [
+        313,
+        263
+      ],
+      "columns": 13
+    },
+    "slime": {
+      "file": "public/assets/runtime/squish.webp",
+      "sheet_size": [
+        4240,
+        210
+      ],
+      "frame_cell": [
+        212,
+        210
+      ],
+      "frames": 20
+    }
+  },
+  "anims": {
+    "angely/idle": {
+      "frames": 8,
+      "files": [
+        "frame_00.png",
+        "frame_01.png",
+        "frame_02.png",
+        "frame_03.png",
+        "frame_04.png",
+        "frame_05.png",
+        "frame_06.png",
+        "frame_07.png"
+      ],
+      "contact": "contact.png",
+      "union_bbox": [
+        102,
+        10,
+        216,
+        260
+      ],
+      "pixel_base_dims": [
+        18,
+        40
+      ],
+      "pack_dims": [
+        108,
+        240
+      ],
+      "source": "angely.webp",
+      "source_frames": [
+        0,
+        7
+      ],
+      "fps": 10,
+      "repeat": -1
+    },
+    "angely/walk": {
+      "frames": 15,
+      "files": [
+        "frame_00.png",
+        "frame_01.png",
+        "frame_02.png",
+        "frame_03.png",
+        "frame_04.png",
+        "frame_05.png",
+        "frame_06.png",
+        "frame_07.png",
+        "frame_08.png",
+        "frame_09.png",
+        "frame_10.png",
+        "frame_11.png",
+        "frame_12.png",
+        "frame_13.png",
+        "frame_14.png"
+      ],
+      "contact": "contact.png",
+      "union_bbox": [
+        100,
+        9,
+        251,
+        260
+      ],
+      "pixel_base_dims": [
+        24,
+        40
+      ],
+      "pack_dims": [
+        144,
+        240
+      ],
+      "source": "angely.webp",
+      "source_frames": [
+        8,
+        22
+      ],
+      "fps": 24,
+      "repeat": -1
+    },
+    "angely/run": {
+      "frames": 8,
+      "files": [
+        "frame_00.png",
+        "frame_01.png",
+        "frame_02.png",
+        "frame_03.png",
+        "frame_04.png",
+        "frame_05.png",
+        "frame_06.png",
+        "frame_07.png"
+      ],
+      "contact": "contact.png",
+      "union_bbox": [
+        88,
+        9,
+        284,
+        259
+      ],
+      "pixel_base_dims": [
+        31,
+        40
+      ],
+      "pack_dims": [
+        186,
+        240
+      ],
+      "source": "angely.webp",
+      "source_frames": [
+        23,
+        30
+      ],
+      "fps": 15,
+      "repeat": -1
+    },
+    "angely/hurt": {
+      "frames": 2,
+      "files": [
+        "frame_00.png",
+        "frame_01.png"
+      ],
+      "contact": "contact.png",
+      "union_bbox": [
+        96,
+        10,
+        266,
+        260
+      ],
+      "pixel_base_dims": [
+        27,
+        40
+      ],
+      "pack_dims": [
+        162,
+        240
+      ],
+      "source": "angely.webp",
+      "source_frames": [
+        31,
+        32
+      ],
+      "fps": 10,
+      "repeat": 0
+    },
+    "angely/celebrate": {
+      "frames": 4,
+      "files": [
+        "frame_00.png",
+        "frame_01.png",
+        "frame_02.png",
+        "frame_03.png"
+      ],
+      "contact": "contact.png",
+      "union_bbox": [
+        75,
+        10,
+        287,
+        260
+      ],
+      "pixel_base_dims": [
+        34,
+        40
+      ],
+      "pack_dims": [
+        204,
+        240
+      ],
+      "source": "angely.webp",
+      "source_frames": [
+        33,
+        36
+      ],
+      "fps": 7,
+      "repeat": -1
+    },
+    "angely/defeat": {
+      "frames": 3,
+      "files": [
+        "frame_00.png",
+        "frame_01.png",
+        "frame_02.png"
+      ],
+      "contact": "contact.png",
+      "union_bbox": [
+        15,
+        10,
+        310,
+        260
+      ],
+      "pixel_base_dims": [
+        47,
+        40
+      ],
+      "pack_dims": [
+        282,
+        240
+      ],
+      "source": "angely.webp",
+      "source_frames": [
+        37,
+        39
+      ],
+      "fps": 5,
+      "repeat": 0
+    },
+    "angely/push": {
+      "frames": 12,
+      "files": [
+        "frame_00.png",
+        "frame_01.png",
+        "frame_02.png",
+        "frame_03.png",
+        "frame_04.png",
+        "frame_05.png",
+        "frame_06.png",
+        "frame_07.png",
+        "frame_08.png",
+        "frame_09.png",
+        "frame_10.png",
+        "frame_11.png"
+      ],
+      "contact": "contact.png",
+      "union_bbox": [
+        77,
+        6,
+        275,
+        258
+      ],
+      "pixel_base_dims": [
+        31,
+        40
+      ],
+      "pack_dims": [
+        186,
+        240
+      ],
+      "source": "angely.webp",
+      "source_frames": [
+        40,
+        51
+      ],
+      "fps": 9,
+      "repeat": -1
+    },
+    "angely/crouch": {
+      "frames": 1,
+      "files": [
+        "frame_00.png"
+      ],
+      "contact": "contact.png",
+      "union_bbox": [
+        118,
+        79,
+        247,
+        258
+      ],
+      "pixel_base_dims": [
+        29,
+        40
+      ],
+      "pack_dims": [
+        174,
+        240
+      ],
+      "source": "angely.webp",
+      "source_frames": [
+        52,
+        52
+      ],
+      "fps": 10,
+      "repeat": -1
+    },
+    "angely/takeoff": {
+      "frames": 1,
+      "files": [
+        "frame_00.png"
+      ],
+      "contact": "contact.png",
+      "union_bbox": [
+        123,
+        16,
+        247,
+        263
+      ],
+      "pixel_base_dims": [
+        20,
+        40
+      ],
+      "pack_dims": [
+        120,
+        240
+      ],
+      "source": "angely.webp",
+      "source_frames": [
+        53,
+        53
+      ],
+      "fps": 10,
+      "repeat": -1
+    },
+    "angely/rise": {
+      "frames": 1,
+      "files": [
+        "frame_00.png"
+      ],
+      "contact": "contact.png",
+      "union_bbox": [
+        123,
+        5,
+        248,
+        263
+      ],
+      "pixel_base_dims": [
+        19,
+        40
+      ],
+      "pack_dims": [
+        114,
+        240
+      ],
+      "source": "angely.webp",
+      "source_frames": [
+        54,
+        54
+      ],
+      "fps": 10,
+      "repeat": -1
+    },
+    "angely/midrise": {
+      "frames": 1,
+      "files": [
+        "frame_00.png"
+      ],
+      "contact": "contact.png",
+      "union_bbox": [
+        108,
+        29,
+        267,
+        229
+      ],
+      "pixel_base_dims": [
+        32,
+        40
+      ],
+      "pack_dims": [
+        192,
+        240
+      ],
+      "source": "angely.webp",
+      "source_frames": [
+        55,
+        55
+      ],
+      "fps": 10,
+      "repeat": -1
+    },
+    "angely/apex": {
+      "frames": 1,
+      "files": [
+        "frame_00.png"
+      ],
+      "contact": "contact.png",
+      "union_bbox": [
+        107,
+        18,
+        267,
+        218
+      ],
+      "pixel_base_dims": [
+        32,
+        40
+      ],
+      "pack_dims": [
+        192,
+        240
+      ],
+      "source": "angely.webp",
+      "source_frames": [
+        56,
+        56
+      ],
+      "fps": 10,
+      "repeat": -1
+    },
+    "angely/earlyfall": {
+      "frames": 1,
+      "files": [
+        "frame_00.png"
+      ],
+      "contact": "contact.png",
+      "union_bbox": [
+        111,
+        10,
+        258,
+        263
+      ],
+      "pixel_base_dims": [
+        23,
+        40
+      ],
+      "pack_dims": [
+        138,
+        240
+      ],
+      "source": "angely.webp",
+      "source_frames": [
+        57,
+        57
+      ],
+      "fps": 10,
+      "repeat": -1
+    },
+    "angely/fall": {
+      "frames": 1,
+      "files": [
+        "frame_00.png"
+      ],
+      "contact": "contact.png",
+      "union_bbox": [
+        104,
+        5,
+        261,
+        263
+      ],
+      "pixel_base_dims": [
+        24,
+        40
+      ],
+      "pack_dims": [
+        144,
+        240
+      ],
+      "source": "angely.webp",
+      "source_frames": [
+        58,
+        58
+      ],
+      "fps": 10,
+      "repeat": -1
+    },
+    "angely/land": {
+      "frames": 1,
+      "files": [
+        "frame_00.png"
+      ],
+      "contact": "contact.png",
+      "union_bbox": [
+        112,
+        79,
+        270,
+        258
+      ],
+      "pixel_base_dims": [
+        35,
+        40
+      ],
+      "pack_dims": [
+        210,
+        240
+      ],
+      "source": "angely.webp",
+      "source_frames": [
+        59,
+        59
+      ],
+      "fps": 10,
+      "repeat": -1
+    },
+    "angely/recover": {
+      "frames": 1,
+      "files": [
+        "frame_00.png"
+      ],
+      "contact": "contact.png",
+      "union_bbox": [
+        112,
+        10,
+        239,
+        258
+      ],
+      "pixel_base_dims": [
+        20,
+        40
+      ],
+      "pack_dims": [
+        120,
+        240
+      ],
+      "source": "angely.webp",
+      "source_frames": [
+        60,
+        60
+      ],
+      "fps": 10,
+      "repeat": -1
+    },
+    "slime": {
+      "frames": 20,
+      "files": [
+        "frame_00.png",
+        "frame_01.png",
+        "frame_02.png",
+        "frame_03.png",
+        "frame_04.png",
+        "frame_05.png",
+        "frame_06.png",
+        "frame_07.png",
+        "frame_08.png",
+        "frame_09.png",
+        "frame_10.png",
+        "frame_11.png",
+        "frame_12.png",
+        "frame_13.png",
+        "frame_14.png",
+        "frame_15.png",
+        "frame_16.png",
+        "frame_17.png",
+        "frame_18.png",
+        "frame_19.png"
+      ],
+      "contact": "contact.png",
+      "union_bbox": [
+        4,
+        4,
+        208,
+        206
+      ],
+      "pixel_base_dims": [
+        30,
+        30
+      ],
+      "pack_dims": [
+        180,
+        180
+      ],
+      "source": "squish.webp",
+      "source_frames": [
+        0,
+        19
+      ],
+      "fps": null,
+      "repeat": null,
+      "note": "chapter 9 enemy/boss; no fps in scope of this pack (game drives timing)"
+    }
+  }
+}

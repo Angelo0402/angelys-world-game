@@ -32,6 +32,8 @@ interface Crate {
   img: Phaser.GameObjects.Image;
   home: Spot;
   lastSfx: number;
+  /** Last push-dust burst (own timer — dust runs ~200ms, sfx stays 260ms). */
+  lastDust: number;
 }
 
 interface Mine {
@@ -104,6 +106,11 @@ export class Mechanics {
   private hints: Hint[] = [];
   private swordWarned = false;
   private moverClock = 0;
+  /** Landing-on-crate detection. Player has no public landed hook (its
+   *  grounded transition — wasGrounded / lastFallSpeed — is private), so
+   *  Mechanics tracks the grounded transition + fall speed itself. */
+  private prevGrounded = true;
+  private prevFallVy = 0;
 
   constructor(scene: GameScene, level: LevelDef, chapter: ChapterDef) {
     this.scene = scene;
@@ -131,7 +138,6 @@ export class Mechanics {
   }
 
   private prop(name: string) {
-    if (this.chapter.id === 9) return `${name}_9_pixel`;
     return `${name}_${this.chapter.id}`;
   }
 
@@ -151,6 +157,11 @@ export class Mechanics {
       const tex = def.breakable ? WALLBLOCK_STAGE[0] : this.prop("block");
       const img = this.scene.add.image(def.x, y, tex).setDisplaySize(BLOCK_W + 6, BLOCK_H + 8).setDepth(13 + i * 0.01);
       if (i % 2) img.setFlipX(true);
+      // v63: ch4 has NO snow-designed wallblock set — WALLBLOCK_STAGE is one
+      // shared texture for all chapters — so breakable walls get the same
+      // cool ice-blue tint as ch4 crumbles (0xdfe9ff) to read as ice with
+      // the existing art. A true snow-designed set still needs Angelo's art.
+      if (def.breakable && this.chapter.id === 4) img.setTint(0xdfe9ff);
       parts.push(img);
       if (def.breakable) {
         const cx = def.x + (i % 2 ? 8 : -6);
@@ -201,11 +212,17 @@ export class Mechanics {
     body.setCollideWorldBounds(true);
     body.setMaxVelocity(400, 1100);
     const img = this.scene.add.image(x, rect.y, this.prop("crate")).setDisplaySize(CRATE_SIZE + 6, CRATE_SIZE + 6).setDepth(14);
-    this.crates.push({ rect, body, img, home, lastSfx: 0 });
+    // v61: one crate texture per chapter reads as identical boxes, so vary
+    // each crate (mirror + cool/warm tint) to break the repetition without new art.
+    const ci = this.crates.length;
+    if (ci % 2) img.setFlipX(true);
+    if (ci % 3 === 1) img.setTint(0xdfe9ff);
+    else if (ci % 3 === 2) img.setTint(0xfff2d9);
+    this.crates.push({ rect, body, img, home, lastSfx: 0, lastDust: 0 });
   }
 
   private addSpring({ x, y }: Spot) {
-    const springKey = this.chapter.id === 9 ? "spring_pixel" : "spring";
+    const springKey = "spring";
     const sprite = this.scene.add.sprite(x, y + 4, springKey).setDepth(15);
     sprite.setScale(scaleForHeight(springKey, 60));
     applyOrigin(sprite, springKey);
@@ -256,7 +273,9 @@ export class Mechanics {
     const { rect, body } = this.oneWayBody(x, y, 88, this.moverGroup);
     body.setAllowGravity(false);
     body.setImmovable(true);
-    img.setTint(0xd9c3a5);
+    // v61: ch4's new ice platforms are already saturated blue; the old warm
+    // beige tint turns them green. Cool tint for ch4, beige elsewhere.
+    img.setTint(this.chapter.id === 4 ? 0xdfe9ff : 0xd9c3a5);
     this.crumbles.push({ x, y, rect, body, img, state: "solid", until: 0 });
     if (this.crumbles.length === 1 || Math.abs(this.crumbles[this.crumbles.length - 2].x - x) > 800) {
       this.hints.push({ x: x - 420, y, text: "Crumbling ledges! Don't stand still", shown: false });
@@ -264,7 +283,7 @@ export class Mechanics {
   }
 
   private addTarget(def: TargetDef) {
-    const img = this.scene.add.image(def.x, def.y, "target").setDepth(20).setScale(0.9);
+    const img = this.scene.add.image(def.x, def.y, "target").setDepth(20).setScale(0.45); // v63: 192px texture, same ~86px display
     this.scene.tweens.add({ targets: img, y: def.y - 10, duration: 900, yoyo: true, repeat: -1, ease: "Sine.inOut" });
     this.scene.tweens.add({ targets: img, angle: 8, duration: 1400, yoyo: true, repeat: -1, ease: "Sine.inOut" });
     const bridge = def.bridge.map((p) => {
@@ -316,10 +335,20 @@ export class Mechanics {
         pushing = true;
         cb.setVelocityX(push * PUSH_SPEED * Math.abs(axis));
         const now = this.scene.time.now;
-        if (Math.abs(cb.velocity.x) > 20 && now - c.lastSfx > 260) {
+        const moving = Math.abs(cb.velocity.x) > 20;
+        // SFX cadence unchanged: crate_push every 260ms while moving.
+        if (moving && now - c.lastSfx > 260) {
           c.lastSfx = now;
           Audio.sfx("crate_push");
-          this.scene.fx("fx_dust", "puff", cb.center.x - push * CRATE_SIZE * 0.45, cb.bottom, 0.16);
+        }
+        // v63: heavier push feel — bigger dust at BOTH bottom corners of
+        // the crate plus at the player's feet, every ~200ms (own timer,
+        // so dust is denser than the 260ms sfx).
+        if (moving && now - c.lastDust > 200) {
+          c.lastDust = now;
+          this.scene.fx("fx_dust", "puff", cb.left + 4, cb.bottom, 0.3);
+          this.scene.fx("fx_dust", "puff", cb.right - 4, cb.bottom, 0.3);
+          this.scene.fx("fx_dust", "puff", pb.center.x, pb.bottom, 0.25);
         }
       } else {
         const grip = this.chapter.grip;
@@ -360,6 +389,33 @@ export class Mechanics {
 
   update(time: number, _delta: number) {
     const player = this.scene.player;
+
+    // v63: landing on top of a crate — squash + dust burst + soft knock.
+    // Player.update runs before this (GameScene.update), so grounded state
+    // and fall speed are fresh. Landing = grounded transition after falling
+    // faster than 200px/s, with the player's feet within 6px of a crate top
+    // and horizontal overlap. Fires once per landing, never while standing.
+    const grounded = player.grounded;
+    if (!grounded) this.prevFallVy = player.body.velocity.y;
+    if (grounded && !this.prevGrounded && this.prevFallVy > 200) {
+      for (const c of this.crates) {
+        const cb = c.body;
+        const onTop =
+          Math.abs(player.body.bottom - cb.top) < 6 && player.body.right > cb.left + 4 && player.body.left < cb.right - 4;
+        if (!onTop) continue;
+        const baseSX = c.img.scaleX;
+        const baseSY = c.img.scaleY;
+        this.scene.tweens.killTweensOf(c.img);
+        c.img.setScale(baseSX, baseSY * 0.92);
+        this.scene.tweens.add({ targets: c.img, scaleY: baseSY, duration: 150, ease: "Quad.out" });
+        this.scene.fx("fx_dust", "puff", cb.center.x, cb.top, 0.35);
+        this.scene.fx("fx_dust", "puff", cb.left + 6, cb.top, 0.25);
+        this.scene.fx("fx_dust", "puff", cb.right - 6, cb.top, 0.25);
+        // Soft impact knock, existing sfx (AudioManager "tok") — no new audio.
+        Audio.sfx("tok");
+      }
+    }
+    this.prevGrounded = grounded;
 
     for (const c of this.crates) {
       c.img.setPosition(c.rect.x, c.rect.y);
@@ -533,6 +589,10 @@ export class Mechanics {
     this.scene.fx("fx_dust", "puff", w.def.x - 40, w.def.y, 0.4);
     this.scene.fx("fx_dust", "puff", w.def.x + 40, w.def.y, 0.4);
     const dir = this.scene.player.x < w.def.x ? 1 : -1;
+    // v63: debris gets a beat on the ground first. The fly/land tween runs
+    // on its own (~450ms); the alpha fade is a separate tween that starts
+    // after a 350ms delay and takes 650ms, so pieces stay visible ~1.0s
+    // before destroy (was: fading from the first frame over 700+i*40ms).
     w.parts.forEach((p, i) => {
       const o = p as Phaser.GameObjects.Image;
       this.scene.tweens.add({
@@ -540,9 +600,14 @@ export class Mechanics {
         x: o.x + dir * Phaser.Math.Between(80, 260),
         y: w.def.y + 40 + Phaser.Math.Between(0, 60),
         angle: dir * Phaser.Math.Between(90, 300),
-        alpha: 0,
-        duration: 700 + i * 40,
+        duration: 450 + i * 40,
         ease: "Quad.in",
+      });
+      this.scene.tweens.add({
+        targets: o,
+        alpha: 0,
+        delay: 350,
+        duration: 650,
         onComplete: () => o.destroy(),
       });
     });
@@ -554,16 +619,25 @@ export class Mechanics {
         if (!this.scene.textures.exists(key)) continue;
         const by = w.def.y - i * BLOCK_H;
         const c = this.scene.add.image(w.def.x + Phaser.Math.Between(-20, 20), by, key).setDepth(13.2);
+        // v63: ch4 rubble reads as ice too (same 0xdfe9ff tint as the wall parts).
+        if (this.chapter.id === 4) c.setTint(0xdfe9ff);
         const srcImg = this.scene.textures.get(key).getSourceImage() as HTMLImageElement;
         c.setScale(54 / Math.max(srcImg.width, srcImg.height));
+        // v63: same beat-on-the-ground treatment as the wall parts — fly
+        // first, fade after a 350ms delay over 650ms (~1.0s visible).
         this.scene.tweens.add({
           targets: c,
           x: c.x + dir2 * Phaser.Math.Between(40, 200),
           y: by + 50 + Phaser.Math.Between(0, 70),
           angle: dir2 * Phaser.Math.Between(90, 300),
-          alpha: 0,
-          duration: 700 + i * 40 + k * 60,
+          duration: 450 + i * 40 + k * 60,
           ease: "Quad.in",
+        });
+        this.scene.tweens.add({
+          targets: c,
+          alpha: 0,
+          delay: 350,
+          duration: 650,
           onComplete: () => c.destroy(),
         });
       }
@@ -627,20 +701,33 @@ function ensureUrchinTexture(scene: Phaser.Scene) {
 
 function ensureTargetTexture(scene: Phaser.Scene) {
   if (scene.textures.exists("target")) return;
+  // v63: redrawn at 192x192 (was 96) with real volume — the old flat
+  // concentric circles read as a flat sticker on the phone. Linear-gradient
+  // disc (light top-left -> dark bottom-right), a bevelled star (dark offset
+  // copy behind the bright star), and a gloss dot. Display scale in
+  // addTarget is 0.45 so it still renders ~86px, just sharper + deeper.
+  const S = 192;
+  const c = S / 2;
   const g = scene.make.graphics({}, false);
-  const c = 48;
-  g.fillStyle(0x2a1640, 1).fillCircle(c, c, 46);
-  g.fillStyle(0xffd36b, 1).fillCircle(c, c, 42);
-  g.fillStyle(0xff6f91, 1).fillCircle(c, c, 32);
-  g.fillStyle(0xfff4d6, 1).fillCircle(c, c, 22);
-  const pts: Phaser.Math.Vector2[] = [];
-  for (let i = 0; i < 10; i++) {
-    const r = i % 2 ? 7 : 17;
-    const a = -Math.PI / 2 + (i * Math.PI) / 5;
-    pts.push(new Phaser.Math.Vector2(c + Math.cos(a) * r, c + Math.sin(a) * r));
-  }
-  g.fillStyle(0xffb000, 1).fillPoints(pts, true);
-  g.lineStyle(3, 0x2a1640, 1).strokeCircle(c, c, 42);
-  g.generateTexture("target", 96, 96);
+  g.fillStyle(0x2a1640, 1).fillCircle(c, c, 94);
+  g.fillGradientStyle(0xffe9a8, 0xffd36b, 0xffb347, 0xcc7a1a, 1).fillCircle(c, c, 88);
+  g.fillStyle(0xff6f91, 1).fillCircle(c, c, 64);
+  g.fillStyle(0xfff4d6, 1).fillCircle(c, c, 44);
+  // Bevelled star: dark-gold offset copy, then the bright star on top.
+  const star = (dx: number, dy: number, color: number) => {
+    const pts: Phaser.Math.Vector2[] = [];
+    for (let i = 0; i < 10; i++) {
+      const r = i % 2 ? 14 : 34;
+      const a = -Math.PI / 2 + (i * Math.PI) / 5;
+      pts.push(new Phaser.Math.Vector2(c + dx + Math.cos(a) * r, c + dy + Math.sin(a) * r));
+    }
+    g.fillStyle(color, 1).fillPoints(pts, true);
+  };
+  star(5, 7, 0xb97a00);
+  star(0, 0, 0xffb000);
+  // Gloss dot, upper-left, for the rounded-volume read.
+  g.fillStyle(0xffffff, 0.35).fillCircle(c - 52, c - 56, 12);
+  g.lineStyle(4, 0x2a1640, 1).strokeCircle(c, c, 88);
+  g.generateTexture("target", S, S);
   g.destroy();
 }

@@ -2,7 +2,7 @@ import type { SpriteKey } from "../assets/sprites.gen";
 import type { SfxName } from "../audio/manifest";
 
 type AttackKind = "melee" | "lunge" | "roll" | "dive" | "shoot" | "slam" | "lava";
-export type ProjectileSheet = "fx_orb" | "fx_orb_pixel" | "fx_dust" | "fx_dust_pixel" | "fx_bolt" | "fx_fireball" | "crystal_shot" | "umbra_bolt" | "umbra_aim" | "umbra_double" | "umbra_shard" | "umbra_sky" | "dragon_fire";
+export type ProjectileSheet = "fx_orb" | "fx_dust" | "fx_bolt" | "fx_fireball" | "crystal_shot" | "umbra_bolt" | "umbra_aim" | "umbra_double" | "umbra_shard" | "umbra_sky" | "dragon_fire" | "snowball";
 
 export interface EnemyType {
   key: SpriteKey;
@@ -97,8 +97,14 @@ export const ENEMY_TYPES: Record<string, EnemyType> = {
     attackSfx: "bat_dive", body: [0.55, 0.8],
   },
   yeti: {
-    key: "yeti", height: 116, hp: 4, speed: 46, attack: "slam", range: 155, cooldown: 2400, windup: 760,
-    attackSfx: "ground_slam", body: [0.25, 0.85], heartDrop: 0.35, weight: 0.4,
+    // v62 (Angelo 2026-11-06): no more overhead slam -- the Yeti scoops a
+    // BIG snowball and HURLS it at the player (ranged). Holds ~200px and
+    // throws from 400px; the ball leaves on the throw frame (~700ms into
+    // the attack anim, see Enemy.execute "shoot").
+    key: "yeti", height: 225, hp: 4, speed: 46, attack: "shoot", range: 400, cooldown: 2400, windup: 760,
+    projectile: { sheet: "snowball", speed: 300, aimed: true, scale: 0.3 },
+    attackSfx: "skeleton_swing", body: [0.25, 0.85], heartDrop: 0.35, weight: 0.4,
+    keepDistance: 200,
   },
   // Chapter 6: The Sky Tower (30-frame sheets)
   stormbird: {

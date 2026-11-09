@@ -13,6 +13,13 @@ const WALLBLOCK_FILES: Record<string, string> = {
 };
 for (let i = 0; i < 12; i++) WALLBLOCK_FILES[`wallblock_chunk${i}`] = `assets/runtime/props/wallblock_chunk${i}.webp`;
 
+// v61: ch1 ambient butterflies cut from Angelo's forest sheet (not a
+// spritesheet prop -- loaded explicitly, same pattern as WALLBLOCK_FILES).
+const BUTTERFLY_FILES: Record<string, string> = {
+  atmo_butterfly_yellow: "assets/runtime/atmo_butterfly_yellow.webp",
+  atmo_butterfly_pink: "assets/runtime/atmo_butterfly_pink.webp",
+};
+
 export function queueAssets(load: Phaser.Loader.LoaderPlugin) {
   queueHudIcons(load);
   for (const [key, url] of Object.entries(BACKDROPS)) load.image(key, url);
@@ -21,6 +28,7 @@ export function queueAssets(load: Phaser.Loader.LoaderPlugin) {
   }
   for (const [key, meta] of Object.entries(PROPS)) load.image(key, meta.file);
   for (const [key, file] of Object.entries(WALLBLOCK_FILES)) load.image(key, file);
+  for (const [key, file] of Object.entries(BUTTERFLY_FILES)) load.image(key, file);
   for (const [key, file] of Object.entries(AUDIO_FILES)) load.audio(key, `assets/audio/${file}`);
 }
 

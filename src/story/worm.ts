@@ -17,7 +17,7 @@ export const ANGELO_AFTER_WORM: DialogueLine[] = [
   { who: "angelo", text: "You didn't hide, Angely. That thing popped out of the sand,", voice: "angelo_10" },
   { who: "angelo", text: "and you faced it head on." },
   { who: "angely", face: "determined", text: "It kept diving. I had to watch the floor.", voice: "angely_19" },
-  { who: "angelo", text: "And the Cog Saw! You used it right when the sword would've bounced off.", voice: "angelo_11" },
+  { who: "angelo", text: "And the hammer! You used it right when the sword would've bounced off.", voice: "angelo_11" },
   { who: "angely", face: "happy", text: "I figured out the brass part myself.", voice: "angely_20" },
   { who: "angelo", text: "That's what I came to see. Not a speech. Just you, thinking it through.", voice: "angelo_12" },
 ];
