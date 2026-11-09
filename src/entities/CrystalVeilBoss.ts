@@ -356,7 +356,8 @@ export class CrystalVeilBoss {
         const angle = count === 1 ? 0 : Phaser.Math.DegToRad(-24+48*i/(count-1));
         const speed = 245+this.phase*30;
         this.scene.spawnProjectile("crystal_shot",this.x+this.dir*74,GROUND_Y-108,
-          this.dir*Math.cos(angle)*speed,Math.sin(angle)*speed,scaleForHeight("crystal_shot",30,"fly"));
+          this.dir*Math.cos(angle)*speed,Math.sin(angle)*speed,scaleForHeight("crystal_shot",30,"fly"),
+          undefined,undefined,false,undefined,0xff78cf);
       }
     });
     this.mark(this.x+this.dir*85,85);
@@ -375,7 +376,8 @@ export class CrystalVeilBoss {
       for (const off of [-0.12, 0, 0.12]) {
         const a = base + off;
         this.scene.spawnProjectile("crystal_shot", muzzleX, muzzleY,
-          Math.cos(a) * speed, Math.sin(a) * speed, scaleForHeight("crystal_shot", 30, "fly"));
+          Math.cos(a) * speed, Math.sin(a) * speed, scaleForHeight("crystal_shot", 30, "fly"),
+          undefined, undefined, false, undefined, 0xff78cf);
       }
     });
     this.mark(this.x + this.dir * 85, 85);
@@ -391,7 +393,8 @@ export class CrystalVeilBoss {
       Audio.sfx("ghost_orb");
       for (const x of spots) {
         this.scene.spawnProjectile("crystal_shot", x, GROUND_Y - 440,
-          0, 305, scaleForHeight("crystal_shot", 30, "fly"));
+          0, 305, scaleForHeight("crystal_shot", 30, "fly"),
+          undefined, undefined, false, undefined, 0xff78cf);
       }
     });
     spots.forEach(x => this.mark(x, 60));

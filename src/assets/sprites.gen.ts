@@ -3224,26 +3224,31 @@ export const SPRITES = {
     "originY": 0.5,
     "bodyHeight": 128,
     "anims": {
+      // v73 (Angelo 2026-11-09): approved 12-frame spinning shard replaces
+      // the old blue 4-frame fly. New sheet is a 4x4 grid: fly 0-11 (spin
+      // loop @12fps), form 0-2 (spin-in), impact 12-15 (synthesized magenta
+      // burst, expanding glow). Content fills the 256 cell (h=256) so the
+      // 30px spawn scale in CrystalVeilBoss stays the same world size.
       "form": {
         "start": 0,
-        "end": 3,
+        "end": 2,
         "fps": 12,
         "repeat": 0,
-        "h": 67
+        "h": 256
       },
       "fly": {
-        "start": 4,
-        "end": 7,
+        "start": 0,
+        "end": 11,
         "fps": 12,
         "repeat": -1,
-        "h": 67
+        "h": 256
       },
       "impact": {
-        "start": 8,
-        "end": 11,
+        "start": 12,
+        "end": 15,
         "fps": 16,
         "repeat": 0,
-        "h": 120
+        "h": 256
       }
     }
   },

@@ -20,6 +20,7 @@ import { CrystalVeilBoss } from "../entities/CrystalVeilBoss";
 import { Sandworm } from "../entities/Sandworm";
 import { VEIL_NAME, VEIL_PHASE2 } from "../story/crystalveil";
 import { VisualFX } from "../effects/VisualFX";
+import { SnowFx } from "../effects/SnowFx";
 import { AtmosphereManager } from "../effects/AtmosphereManager";
 import { WORM_NAME } from "../story/worm";
 import { UMBRA_PHASE2, type DialogueLine } from "../story/umbra";
@@ -32,6 +33,25 @@ import { Portal } from "../world/Portal";
 import { fitCamera } from "../render";
 
 const BG_ZOOM = 1.25;
+
+/** SPECIAL meter tuning: kills to fill, star damage per hit, star hunt radius, boss damage per charge. */
+const SPECIAL_MAX = 8;
+const SPECIAL_DAMAGE = 5;
+const SPECIAL_RADIUS = 340;
+const SPECIAL_BOSS_DAMAGE_PER_CHARGE = 10;
+/** Homing stars (v60, Angelo 2026-11-06; damage-on-touch since 2026-11-06;
+ * wand look since v70, 2026-11-08): stars that fly from the wand tip and
+ * hunt nearby enemies. Each star deals SPECIAL_DAMAGE to the first enemy
+ * it touches, then bursts into a spark; the burst itself deals NO damage.
+ * Tuned so a star crosses the 340px radius in ~0.7s. */
+const STAR_SPEED = 540;
+const STAR_HOMING = 5;
+const STAR_LIFE_MS = 1500;
+/** Height of a SPECIAL star — SAME as the stars the Wand shoots
+ * (castStars: launch("fx_star", ..., h = 20, ..., tint 0xffe27a)).
+ * v70 (Angelo, 2026-11-08): the special's stars must look exactly like
+ * the Wand's shot stars — same texture, same gold, same spin. */
+const SPECIAL_STAR_SIZE = 20;
 const ARROW_SPEED = 980;
 const DESPAWN_X = 1500;
 const DESPAWN_Y = 950;
@@ -56,6 +76,20 @@ interface Goal {
   need: number;
 }
 
+/** A homing star's quarry: one enemy, the boss, or nothing (falls and fades). */
+type StarTarget = { kind: "enemy"; e: Enemy } | { kind: "boss" } | null;
+
+interface HomingStar {
+  sprite: Phaser.GameObjects.Sprite;
+  /** Gold trail following the star (same gold as the wand's stars);
+   * destroyed with it (no leaks). */
+  trail: Phaser.GameObjects.Particles.ParticleEmitter;
+  vx: number;
+  vy: number;
+  target: StarTarget;
+  life: number;
+}
+
 export class GameScene extends Phaser.Scene {
   info!: LevelInfo;
   chapter!: ChapterDef;
@@ -63,6 +97,13 @@ export class GameScene extends Phaser.Scene {
   player!: Player;
   enemies: Enemy[] = [];
   kills = 0;
+  /** SPECIAL meter charge (0..SPECIAL_MAX). Resets every level; kills and boss damage feed it. */
+  specialCharge = 0;
+  private bossDamageAcc = 0;
+  /** Stars from the latest SPECIAL burst, still hunting their quarry. */
+  private homingStars: HomingStar[] = [];
+  /** True while a SPECIAL burst is playing; blocks a re-trigger. */
+  private specialBurstActive = false;
   boss?: Boss | Sandworm | CrystalVeilBoss | RuinSentinel;
   /** Veil fight summons: Astra's design — capped mixed waves while she fights. */
   nextVeilWave = Infinity;
@@ -75,7 +116,6 @@ export class GameScene extends Phaser.Scene {
   portal!: Portal;
   cutscene = false;
   scriptX: number | null = null;
-  boomerangOut = false;
   private goal!: Goal;
   private keyboard!: KeyboardInput;
   private groundGroup!: Phaser.Physics.Arcade.StaticGroup;
@@ -98,6 +138,8 @@ export class GameScene extends Phaser.Scene {
   /** Per-chapter atmosphere (particles, fog/cloud layers, glows). Public so harness QA can read debugCounts(). */
   public atmosphere?: AtmosphereManager;
   public vfx!: VisualFX;
+  /** Snow-shed effect for the Yeti's snowball (code only, no sprites). */
+  public snowFx!: SnowFx;
   private hitStopActive = false;
   private swordStone?: Phaser.GameObjects.Sprite;
   private weaponPickup?: { sprite: Phaser.GameObjects.Sprite; kind: WeaponId; glow: Phaser.GameObjects.Particles.ParticleEmitter };
@@ -122,7 +164,14 @@ export class GameScene extends Phaser.Scene {
   private chaseStartAt = 0;
   // climb flood
   private floodY = 0;
-  private floodStartAt = 0;
+  // Flood grace: ms of PLAYABLE updates left before the flood rises (6-2).
+  // Counted from per-update delta (capped), NOT from the scene clock: the
+  // clock jumps on restart (measured 2026-11-03: first post-restart update
+  // ran with a stale clock, then the clock caught up ~2.5s), so a clock-armed
+  // timer loses most of the grace on retry. Delta counting survives clock
+  // jumps, loop stalls (no updates = no counting) and pauses (paused scenes
+  // don't update). Reset to 4000 in init() on every start.
+  private floodGrace = 4000;
   private flood?: Phaser.GameObjects.Container;
   // swim
   private water?: Phaser.GameObjects.Rectangle;
@@ -136,6 +185,9 @@ export class GameScene extends Phaser.Scene {
     this.chapter = CHAPTERS[this.info.chapter];
     this.enemies = [];
     this.kills = 0;
+    this.specialCharge = 0;
+    this.bossDamageAcc = 0;
+    this.registry.set("special", 0);
     this.hearts = [];
     this.gems = [];
     this.stars = [];
@@ -151,7 +203,6 @@ export class GameScene extends Phaser.Scene {
     this.ending = false;
     this.cutscene = false;
     this.scriptX = null;
-    this.boomerangOut = false;
     this.bossStarted = false;
     this.bossShade = undefined;
     this.bossDamage = 0;
@@ -164,6 +215,7 @@ export class GameScene extends Phaser.Scene {
     this.chaseWall = undefined;
     this.chaseDust = undefined;
     this.flood = undefined;
+    this.floodGrace = 4000;
     this.water = undefined;
     this.atmosphere = undefined;
   }
@@ -171,6 +223,7 @@ export class GameScene extends Phaser.Scene {
   create() {
     fitCamera(this, true);
     this.vfx = new VisualFX(this);
+    this.snowFx = new SnowFx(this);
     const info = this.info;
     const L = (this.level = buildLevel(info));
     const W = L.width;
@@ -286,7 +339,11 @@ export class GameScene extends Phaser.Scene {
       this.time.delayedCall(900, () => this.toast(info.tip));
     }
     this.chaseStartAt = this.time.now + 2600;
-    this.floodStartAt = this.time.now + 4000;
+    // Flood grace is NOT armed here: it is counted in updateFlood from
+    // per-update delta (see the floodGrace field). A create()-armed clock
+    // timer expired before the player could act (boot ate the grace), and a
+    // first-update-armed clock timer still loses most of it on restart
+    // (measured 2026-11-03: stale clock + ~2.5s first-frame stall).
 
     // The opening story video plays from SplashScene BEFORE this scene
     // starts (Angelo, 2026-10-22: the intro is an opening cutscene, never
@@ -323,12 +380,15 @@ export class GameScene extends Phaser.Scene {
     // whole level for parallax and is re-placed in world space every frame (see update).
     const key = this.chapter.background;
     // Solid backdrop behind the image so no black bars ever show through
-    const bgColor = this.chapter.id === 5 ? 0x1a0f2e : 0x0d0a1a;
+    const bgColor = this.chapter.id === 5 ? 0x1a0f2e : this.chapter.id === 6 ? 0x2b6cd2 : 0x0d0a1a;
     this.add.rectangle(0, 0, GAME_W + 400, GAME_H + 400, bgColor).setOrigin(0).setDepth(-101).setScrollFactor(0);
     this.far = this.add.image(0, 0, key).setOrigin(0).setDepth(-100);
     const zoom = Math.max(GAME_W / this.far.width, GAME_H / this.far.height) * BG_ZOOM;
     this.far.setScale(zoom);
-    // The sky tower's bright sky would wash out its white platforms.
+    // ch6 tint RESTORED 2026-11-07 (Angelo playtest: Sky Tower sky too strong,
+    // can't see the game well — lower intensity, slight fade). Tint multiplies
+    // the bg image ONLY; the cloud platforms are separate sprites and are NOT
+    // tinted, so they keep full brightness against the dimmed sky.
     if (this.chapter.id === 6) this.far.setTint(0xaebbe0);
         // DioramaLook disabled: it was causing a black horizontal bar across the screen.
     // this.look = new DioramaLook(this, this.far, this.chapter);
@@ -352,7 +412,7 @@ export class GameScene extends Phaser.Scene {
 
   private buildGround() {
     const c = this.chapter.id;
-    const key = c === 9 ? "ground_9_pixel" : `ground_${c}`;
+    const key = `ground_${c}`;
     const meta = PROPS[key as keyof typeof PROPS];
     const fill = ({
       1: 0x3b2414, 2: 0x2a2d3c, 3: 0x1d1418, 4: 0x2c3a52, 5: 0x1c1230, 6: 0xd8dcef, 7: 0x1d4a5a,
@@ -366,15 +426,38 @@ export class GameScene extends Phaser.Scene {
       const body = this.add.rectangle(seg.x0 + len / 2, seg.y + 400, len, 800).setVisible(false);
       this.groundGroup.add(body);
       this.add.rectangle(seg.x0 + len / 2, top + meta.height * 0.5, len - 6, GAME_H + 200, fill).setOrigin(0.5, 0).setDepth(9);
-      const n = Math.max(1, Math.round(len / meta.width));
-      const w = len / n;
-      for (let i = 0; i < n; i++) {
-        this.add
-          .image(seg.x0 + w * i + w / 2, top, key)
+      // v60 (Angelo, 2026-11-05 playtest): ch4's terrace faces were flat
+      // untextured navy slabs. Tile the ground's own ice texture down the
+      // face; the flat fill stays behind it as the solid backing. The face
+      // starts at the SAME y as the top strip (depth 9, behind the strip's
+      // depth 10) so the tile phase continues the strip's pattern with no
+      // seam. Tint is a mid slate blue -- the old fill navy (0x2c3a52)
+      // crushed the texture to flat (verified in harness probe 2026-11-06).
+      if (c === 4) {
+        const face = this.add
+          .tileSprite(seg.x0 + len / 2, top, len - 6, GAME_H + 200, key)
           .setOrigin(0.5, 0)
-          .setDisplaySize(w + 2, meta.height)
-          .setDepth(10 + (i % 2) * 0.01 + (seg.y < GROUND_Y ? 0.02 : 0));
+          .setDepth(9)
+          .setTint(0x6f87b0);
+        face.tileScaleX = meta.width / 1280;
+        face.tileScaleY = meta.height / 120;
       }
+      // v64 (Angelo, 2026-11-06 playtest): the 4-2 blurry block. The old
+      // strip squeezed ONE full 1280px texture into every segment -- a
+      // 260px terrace squashed it 4.9x and smeared the ice detail into a
+      // blurry band. Render the strip as a tileSprite cropped to the
+      // segment (same pattern as the ch4 terrace face above): a 260px
+      // segment shows a 260px CROP of the texture, sharp, and long
+      // segments tile seamlessly. tileScaleY reads the texture's real
+      // frame height so every chapter shows its full strip height once.
+      const srcImg = this.textures.get(key).getSourceImage() as HTMLImageElement | null;
+      const frameH = srcImg?.height ?? 120;
+      const strip = this.add
+        .tileSprite(seg.x0 + len / 2, top, len, meta.height, key)
+        .setOrigin(0.5, 0)
+        .setDepth(10 + (seg.y < GROUND_Y ? 0.02 : 0));
+      strip.tileScaleX = meta.width / 1280;
+      strip.tileScaleY = meta.height / frameH;
     }
     this.groundGroup.refresh();
     if (this.chapter.pitKind === "lava") {
@@ -401,7 +484,7 @@ export class GameScene extends Phaser.Scene {
   private buildPlatforms() {
     const c = this.chapter.id;
     for (const p of this.level.platforms) {
-      const key = this.chapter.id === 9 ? `${PLATFORM_ART[p.prop]}_9_pixel` : `${PLATFORM_ART[p.prop]}_${c}`;
+      const key = `${PLATFORM_ART[p.prop]}_${c}`;
       const meta = PROPS[key as keyof typeof PROPS];
       this.add
         .image(p.x, p.y - meta.height * meta.surface, key)
@@ -423,7 +506,7 @@ export class GameScene extends Phaser.Scene {
 
   private buildProps() {
     const L = this.level;
-    const spikesKey = this.chapter.id === 9 ? "spikes_9_pixel" : `spikes_${this.chapter.id}`;
+    const spikesKey = `spikes_${this.chapter.id}`;
     const spikes = PROPS[spikesKey as keyof typeof PROPS];
     for (const s of L.spikes) {
       const w = spikes.width * 0.8;
@@ -434,7 +517,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     for (const spot of L.checkpoints) {
-      const flagKey = this.chapter.id === 9 ? "flag_pixel" : "flag";
+      const flagKey = "flag";
       const spr = this.add.sprite(spot.x, spot.y + 4, flagKey).setDepth(15);
       spr.setScale(scaleForHeight(flagKey, 92));
       applyOrigin(spr, flagKey);
@@ -446,7 +529,7 @@ export class GameScene extends Phaser.Scene {
     for (const g of L.gems) this.gems.push(this.addBobber("stargem", g.x, g.y, 46));
     for (const s of L.stars) this.stars.push(this.addBobber("starshield", s.x, s.y, 52));
 
-    this.portal = new Portal(this, L.portal.x, !this.info.boss, L.portal.y, this.info.chapter === 9);
+    this.portal = new Portal(this, L.portal.x, !this.info.boss, L.portal.y);
     if (this.info.goal === "reach") this.portal.open(true);
     else this.portal.setRemaining(this.info.goal === "gems" ? L.gems.length : this.info.need, this.info.goal === "gems" ? "gems" : "left");
     this.buildPortalArrow();
@@ -490,12 +573,12 @@ export class GameScene extends Phaser.Scene {
         .setName("swordGlow");
       return;
     }
-    const key = (this.info.chapter === 9 && wp.kind === "ray" ? "weapon_ray_pixel" : `weapon_${wp.kind}`) as SpriteKey;
+    const key = `weapon_${wp.kind}` as SpriteKey;
     const sprite = this.add.sprite(wp.x, wp.y, key).setDepth(50);
     sprite.setScale(scaleForHeight(key, 84));
     applyOrigin(sprite, key);
     this.tweens.add({ targets: sprite, y: wp.y - 12, angle: 6, duration: 900, yoyo: true, repeat: -1, ease: "Sine.inOut" });
-    const tints: Record<string, number[]> = { bow: [0x9ff5ff, 0xff8fd8], hammer: [0xffc35a, 0xffe7a3], boomerang: [0xbfe6ff, 0xffffff], wand: [0xffe27a, 0xff8fd8], cog: [0xffc35a, 0xfff1c2], ray: [0xff7ad9, 0x9ef6ff] };
+    const tints: Record<string, number[]> = { bow: [0x9ff5ff, 0xff8fd8], hammer: [0xffc35a, 0xffe7a3], wand: [0xffe27a, 0xff8fd8], ray: [0xff7ad9, 0x9ef6ff] };
     const glow = this.add
       .particles(wp.x, wp.y, "dot", {
         speed: { min: 10, max: 50 },
@@ -515,7 +598,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private addHeart(x: number, y: number, ttlMs = 0) {
-    const key = this.info.chapter === 9 ? "heart_pixel" : "heart";
+    const key = "heart";
     const spr = this.add.sprite(x, y, key).setDepth(50);
     spr.setScale(scaleForHeight(key, 34));
     applyOrigin(spr, key);
@@ -623,8 +706,14 @@ export class GameScene extends Phaser.Scene {
   private updateFlood(time: number, delta: number) {
     if (!this.flood) return;
     const p = this.player;
-    if (time > this.floodStartAt && !this.ending && !this.cutscene && p.alive) {
-      if (this.floodStartAt && time - delta <= this.floodStartAt) this.toast("The storm is rising! CLIMB!");
+    // Grace countdown: only playable updates count (not ending, not cutscene,
+    // player alive). Delta is capped so a loop stall cannot eat the grace in
+    // one step. Toast fires once, on the crossing update, same as before.
+    if (this.floodGrace > 0 && !this.ending && !this.cutscene && p.alive) {
+      this.floodGrace -= Math.min(delta, 100);
+      if (this.floodGrace <= 0) this.toast("The storm is rising! CLIMB!");
+    }
+    if (this.floodGrace <= 0 && !this.ending && !this.cutscene && p.alive) {
       const climbed = Phaser.Math.Clamp((GROUND_Y - this.floodY) / (GROUND_Y - this.level.top), 0, 1);
       // Never fall too far behind Angely, never rush her.
       const lag = this.floodY - p.body.bottom;
@@ -667,6 +756,7 @@ export class GameScene extends Phaser.Scene {
     }
     if (this.cutscene) input = this.scriptedInput();
     if (input.swapPressed) this.swapWeapon();
+    if (input.specialPressed) this.triggerSpecial();
 
     this.player.pushing = this.mech.pushCheck(this.player, input.axis);
     this.player.update(time, delta, input);
@@ -700,6 +790,7 @@ export class GameScene extends Phaser.Scene {
     this.checkFall();
     this.checkPickups(time);
     this.updateProjectiles();
+    this.updateHomingStars(delta);
     this.updateArrows();
     this.checkBoss();
     if (time > this.nextDespawn) this.despawnFar(time);
@@ -848,10 +939,12 @@ export class GameScene extends Phaser.Scene {
       if (!c.active && Math.abs(this.player.x - c.spot.x) < 40 && Math.abs(this.player.body.bottom - c.spot.y) < 30 && this.player.alive) {
         c.active = true;
         this.respawn = { x: c.spot.x, y: c.spot.y - 80 };
+        // v61 (Angelo, 2026-11-06): reaching a checkpoint restores all hearts.
+        while (this.player.heal()) { /* heal() returns false at MAX_HEARTS */ }
         c.sprite.clearTint().play(`${c.sprite.texture.key}:up`);
         Audio.sfx("checkpoint");
         Barks.play(this, ["bark_rx_checkpoint"], 0.7);
-        this.toast("Checkpoint!");
+        this.toast("Checkpoint! Hearts restored!");
         this.fx("fx_spark", "hit", c.spot.x, c.spot.y - 70, 0.3, 0xffe27a);
         this.vfx.checkpointSparkle(c.spot.x, c.spot.y - 70);
       }
@@ -880,8 +973,8 @@ export class GameScene extends Phaser.Scene {
     const pad = Gamepad.connected;
     const touch = useTouchUi(this) && !pad;
     const attack = touch ? `tap ${w.toUpperCase()}` : pad ? "press X" : "press J";
-    const swap = this.player.weapons.length > 1 ? (touch ? " • SWAP to change" : pad ? " • Y to swap" : " • Q to swap") : "";
-    const what: Record<WeaponId, string> = { sword: "attack", bow: "shoot arrows", hammer: "smash", boomerang: "throw it (it comes back!)", wand: "cast homing stars", cog: "throw the saw (it cuts through armor)", ray: "zap a pink bolt" };
+    const swap = this.player.weapons.length > 1 ? (touch ? " • TAP the weapon icon to change" : pad ? " • Y to swap" : " • Q to swap") : "";
+    const what: Record<WeaponId, string> = { sword: "attack", bow: "shoot arrows", hammer: "smash", wand: "cast homing stars", ray: "zap a pink bolt" };
     this.toast(`${WEAPON_NAMES[w]} found! ${attack[0].toUpperCase()}${attack.slice(1)} to ${what[w]}${swap}`);
   }
 
@@ -965,6 +1058,7 @@ export class GameScene extends Phaser.Scene {
     if (this.boss?.vulnerable && !hits.has(this.boss) && Phaser.Geom.Rectangle.Overlaps(r, this.boss.hitbox())) {
       hits.add(this.boss);
       this.boss.takeDamage(dmg, kind, fromX);
+      this.chargeBossDamage(dmg);
       any = true;
     }
     return any;
@@ -1102,6 +1196,7 @@ export class GameScene extends Phaser.Scene {
     if (this.boss && !hits.has(this.boss) && Phaser.Geom.Rectangle.Overlaps(r, this.boss.hitbox())) {
       hits.add(this.boss);
       this.boss.takeDamage(2, "hammer", this.player.x);
+      this.chargeBossDamage(2);
     }
     this.mech.hammerAt(r);
   }
@@ -1156,27 +1251,12 @@ export class GameScene extends Phaser.Scene {
     return a;
   }
 
-  /** The moon boomerang flies out, then curves back to Angely, hitting everything on the way. */
   /** A fast pink bolt. It pops on the first thing it hits. */
   shootRay(x: number, y: number, dir: 1 | -1) {
     Audio.sfx("ray");
     const variant = "abc"[this.rayVariant++ % 3];
-    const rayKey = this.info.chapter === 9 ? "fx_ray_pixel" : "fx_ray";
+    const rayKey = "fx_ray";
     this.launch(rayKey, x, y, dir > 0 ? 0 : Math.PI, 1180, 34, "ray", 650, `${rayKey}:fly_${variant}`, 1.5, 0xff7ad9);
-  }
-
-  /** The cog saw flies straight and keeps going through armored enemies. */
-  throwCog(x: number, y: number, dir: 1 | -1) {
-    Audio.sfx("cog");
-    this.launch("weapon_cog", x, y, dir > 0 ? 0 : Math.PI, 920, 42, "cog", 780);
-  }
-
-  throwBoomerang(x: number, y: number, dir: 1 | -1) {
-    if (this.boomerangOut) return;
-    this.boomerangOut = true;
-    Audio.sfx("boomerang");
-    const b = this.launch("weapon_boomerang", x, y, dir > 0 ? 0 : Math.PI, 760, 46, "boomerang", 2600);
-    b.setData("dir", dir);
   }
 
   /** The star wand releases three stars that home in on the nearest enemies. */
@@ -1196,7 +1276,7 @@ export class GameScene extends Phaser.Scene {
       const a = obj as Phaser.Physics.Arcade.Sprite;
       if (!a.active) return;
       // Player projectile trail (same fading-ghost pattern as enemy
-      // projectiles). Cog and boomerang skip it: their spin already reads.
+      // projectiles).
       const trail = a.getData("trail") as number | undefined;
       if (trail) {
         const last = (a.getData("trailT") as number | undefined) ?? 0;
@@ -1214,26 +1294,7 @@ export class GameScene extends Phaser.Scene {
         this.breakArrow(a);
         return;
       }
-      if (kind === "cog") a.rotation += 0.62;
-      if (kind === "boomerang") {
-        a.rotation += 0.45;
-        const p = this.player;
-        if (age > 420) {
-          const ang = Math.atan2(p.body.center.y - a.y, p.x - a.x);
-          const sp = Math.min(900, 300 + age);
-          body.setVelocity(Phaser.Math.Linear(body.velocity.x, Math.cos(ang) * sp, 0.18), Phaser.Math.Linear(body.velocity.y, Math.sin(ang) * sp, 0.18));
-          if (Phaser.Math.Distance.Between(a.x, a.y, p.x, p.body.center.y) < 40) {
-            this.boomerangOut = false;
-            p.playCatch();
-            a.destroy();
-            return;
-          }
-          if (age > 600 && (a.getData("hits") as Set<unknown>).size && !a.getData("cleared")) {
-            a.setData("cleared", true);
-            (a.getData("hits") as Set<unknown>).clear();
-          }
-        } else body.velocity.x *= 0.985;
-      } else if (kind === "star") {
+      if (kind === "star") {
         a.rotation += 0.2;
         if (now > (a.getData("seekAfter") as number)) {
           let tgt: { x: number; y: number } | null = null;
@@ -1255,27 +1316,20 @@ export class GameScene extends Phaser.Scene {
       }
       const r = new Phaser.Geom.Rectangle(a.x - 16, a.y - 12, 32, 24);
       if (this.mech.arrowAt(r)) {
-        if (kind !== "boomerang") this.breakArrow(a);
+        this.breakArrow(a);
         return;
       }
       const hits = a.getData("hits") as Set<unknown>;
-      const cog = kind === "cog";
-      const tint = cog ? 0xffc35a : kind === "star" ? 0xffe27a : kind === "ray" ? 0xff7ad9 : 0x9ff5ff;
-      if (this.hitArea(r, hits, 1, cog ? "cog" : "arrow", a.x - body.velocity.x, tint)) {
-        Audio.sfx(cog ? "cog" : "arrow_hit");
-        if (!cog && kind !== "boomerang") this.breakArrow(a);
-        else if (cog && hits.size >= 4) this.breakArrow(a);
+      const tint = kind === "star" ? 0xffe27a : kind === "ray" ? 0xff7ad9 : 0x9ff5ff;
+      if (this.hitArea(r, hits, 1, "arrow", a.x - body.velocity.x, tint)) {
+        Audio.sfx("arrow_hit");
+        this.breakArrow(a);
       }
     });
   }
 
   private breakArrow(a: Phaser.Physics.Arcade.Sprite) {
     if (!a.active) return;
-    if (a.getData("kind") === "boomerang") {
-      // Boomerangs fly through walls and always come home (or expire).
-      if (this.time.now - (a.getData("born") as number) < (a.getData("life") as number)) return;
-      this.boomerangOut = false;
-    }
     this.fx("fx_spark", "hit", a.x, a.y, 0.18, 0x9ff5ff);
     a.destroy();
   }
@@ -1287,9 +1341,231 @@ export class GameScene extends Phaser.Scene {
       const h = this.addHeart(e.x, (e.type.flying ? floor - 40 : Math.min(e.body.top, floor - 40)) - 30, 22000);
       this.tweens.add({ targets: h.sprite, scale: { from: 0, to: h.sprite.scale }, duration: 300, ease: "Back.out" });
     }
+    // Minion kills charge SPECIAL even in boss levels (goal kills do not).
+    this.addSpecialCharge(1);
     if (this.info.boss) return;
     this.kills++;
     if (this.goal.kind === "kills") this.setGoal(this.kills);
+  }
+
+  /** Feed the SPECIAL meter; toasts once on the transition to full. */
+  private addSpecialCharge(n: number) {
+    if (this.specialCharge >= SPECIAL_MAX) return;
+    this.specialCharge = Math.min(SPECIAL_MAX, this.specialCharge + n);
+    this.registry.set("special", this.specialCharge);
+    if (this.specialCharge >= SPECIAL_MAX) {
+      Audio.sfx("checkpoint");
+      this.game.events.emit("hud:toast", "SPECIAL READY!");
+    }
+  }
+
+  /** Boss damage also charges the meter so it stays usable in boss fights. */
+  private chargeBossDamage(dmg: number) {
+    this.bossDamageAcc += dmg;
+    while (this.bossDamageAcc >= SPECIAL_BOSS_DAMAGE_PER_CHARGE) {
+      this.bossDamageAcc -= SPECIAL_BOSS_DAMAGE_PER_CHARGE;
+      this.addSpecialCharge(1);
+    }
+  }
+
+  /** SPECIAL v3 (Angelo, v60; fixed v69; reworked v70): Angely raises her
+   * Star Wand overhead and 8 stars burst from the wand tip and hunt the
+   * enemies. The burst stays well under half the screen and she stays
+   * clearly visible — the player herself performs the raise at her real
+   * 112px, and the burst is FX-only (no second Angely), on a 576px screen.
+   * v70 (Angelo, 2026-11-08): NO static light, NO static burst — v69 left
+   * a violet light pool + a radial burst + a spark spray anchored at the
+   * cast point, and on the phone they stayed behind when she moved,
+   * reading as a second Angely. Every visual now leaves with her: the
+   * 8 stars are the whole effect, they spawn at the wand tip and home.
+   * The stars LOOK exactly like the stars the Wand shoots (fx_star,
+   * gold 0xffe27a, spinning).
+   * Damage (Angelo, 2026-11-06): the burst itself deals NO damage -- each
+   * homing star deals SPECIAL_DAMAGE to the first enemy it touches. Meter
+   * (8 kills), radius, visuals and feel are unchanged. */
+  private triggerSpecial() {
+    if (this.specialCharge < SPECIAL_MAX || this.ending || this.cutscene || !this.player.alive || this.specialBurstActive) return;
+    this.specialBurstActive = true;
+    this.specialCharge = 0;
+    this.registry.set("special", 0);
+    const px = this.player.x;
+    const py = this.player.body.center.y;
+    const R = SPECIAL_RADIUS;
+    // NO burst damage (Angelo, 2026-11-06): the burst is visual only. The
+    // homing stars do the damage -- one star per enemy in range (max 8),
+    // plus the boss when vulnerable and in range. A star deals
+    // SPECIAL_DAMAGE on touch (see updateHomingStars) and is consumed.
+    const inRange: Enemy[] = [];
+    for (const e of this.enemies) {
+      if (!e.alive) continue;
+      const dx = e.x - px;
+      const dy = e.body.center.y - py;
+      if (dx * dx + dy * dy > R * R) continue;
+      inRange.push(e);
+    }
+    const targets: StarTarget[] = inRange.slice(0, 8).map((e) => ({ kind: "enemy", e }) as StarTarget);
+    if (this.boss?.vulnerable) {
+      const hb = this.boss.hitbox();
+      const dx = hb.centerX - px;
+      const dy = hb.centerY - py;
+      if (dx * dx + dy * dy <= R * R) targets.push({ kind: "boss" });
+    }
+    // SPECIAL v3, fixed v69 (Angelo, 2026-11-07): the player HERSELF raises
+    // the wand and STAYS VISIBLE — never hidden. The second Angely was the
+    // burst overlay sheet, which drew a full Angely of its own; the overlay
+    // is gone and the explosion is FX-only, so she renders exactly once.
+    // The raise holds ~1600ms, the old overlay's length.
+    this.player.playSpecialRaise(this.time.now, 1600);
+    // SPECIAL v70 (Angelo, 2026-11-08): the 8 stars ARE the effect — fired
+    // ~350ms in, when the raise peaks overhead (cast frames 0-2 wind up
+    // slow, frame 9 is the peak). They spawn at the wand tip read at fire
+    // time (she plants but can still drift), fan out in the facing
+    // direction like the wand's own cast, then home onto their quarry.
+    // Nothing here is anchored to the cast point: no light pool, no
+    // radial burst, no spark ring, no spray — v69's static pieces are
+    // gone, so nothing stays behind when she moves. Exactly 8 stars,
+    // always (Angelo: at least 8, not 3-4), one per enemy in range
+    // (targets[i]); extras retarget to the nearest live enemy on the fly
+    // (see updateHomingStars). Each star looks exactly like the stars
+    // the Wand shoots: fx_star, gold 0xffe27a, spinning (see castStars).
+    this.time.delayedCall(350, () => {
+      if (!this.player.alive) return;
+      const tipX = this.player.x + this.player.facing * 24;
+      const tipY = this.player.body.center.y - 140;
+      for (let i = 0; i < 8; i++) {
+        const spread = (i / 7 - 0.5) * 1.2;
+        const ang = (this.player.facing > 0 ? 0 : Math.PI) + spread * this.player.facing;
+        const sp = Phaser.Math.Between(260, 420);
+        const sprite = this.add.sprite(tipX, tipY, "fx_star").setDepth(96);
+        applyOrigin(sprite, "fx_star");
+        sprite.setScale(scaleForHeight("fx_star", SPECIAL_STAR_SIZE));
+        sprite.setTint(0xffe27a);
+        // Gold trail, same gold as the wand's stars — it rides the star
+        // via `follow` and dies with it (see removeHomingStar), so it
+        // never lingers at the cast point.
+        const trail = this.add.particles(0, 0, "dot", {
+          follow: sprite,
+          lifespan: 350,
+          speed: 0,
+          scale: { start: 0.6, end: 0 },
+          alpha: { start: 0.9, end: 0 },
+          tint: [0xffe27a, 0xffffff],
+          blendMode: Phaser.BlendModes.ADD,
+          frequency: 30,
+        });
+        trail.setDepth(95);
+        this.homingStars.push({
+          sprite,
+          trail,
+          vx: Math.cos(ang) * sp,
+          vy: Math.sin(ang) * sp,
+          target: targets[i] ?? null,
+          life: STAR_LIFE_MS,
+        });
+      }
+    });
+    // Re-trigger guard: the burst lasts 1600ms; the meter can refill from
+    // star kills mid-burst, so the block must outlive the burst, then
+    // clear on its own. (Scene shutdown clears the delayed call.)
+    this.time.delayedCall(1600, () => {
+      this.specialBurstActive = false;
+    });
+    // Tone-down (Angelo, 2026-11-06): softer + shorter impact flash.
+    this.cameras.main.flash(120, 110, 60, 200);
+    this.cameraKick("explosion");
+    this.hitStop(110);
+    Audio.sfx("ground_slam");
+  }
+
+  /** Where a star's quarry is right now (null = dead or gone). */
+  private starTargetPos(t: StarTarget): { x: number; y: number } | null {
+    if (!t) return null;
+    if (t.kind === "enemy") {
+      if (!t.e.alive) return null;
+      return { x: t.e.x, y: t.e.body.center.y };
+    }
+    const b = this.boss;
+    if (!b || !b.alive) return null;
+    const hb = b.hitbox();
+    return { x: hb.centerX, y: hb.centerY };
+  }
+
+  /** Nearest live enemy (or the boss) to a point, for retargeting. */
+  private nearestStarTarget(x: number, y: number): StarTarget {
+    let best: Enemy | null = null;
+    let bestD = Infinity;
+    for (const e of this.enemies) {
+      if (!e.alive) continue;
+      const d = Math.hypot(e.x - x, e.body.center.y - y);
+      if (d < bestD) {
+        bestD = d;
+        best = e;
+      }
+    }
+    const b = this.boss;
+    if (b && b.alive && b.vulnerable) {
+      const hb = b.hitbox();
+      if (Math.hypot(hb.centerX - x, hb.centerY - y) < bestD) return { kind: "boss" };
+    }
+    return best ? { kind: "enemy", e: best } : null;
+  }
+
+  private removeHomingStar(s: HomingStar) {
+    s.trail.destroy();
+    s.sprite.destroy();
+    const i = this.homingStars.indexOf(s);
+    if (i >= 0) this.homingStars.splice(i, 1);
+  }
+
+  /** Steer the SPECIAL's homing stars: chase the quarry, damage it on touch
+   * and spark on arrival, fall and fade when there is nothing to chase.
+   * Runs every frame. */
+  private updateHomingStars(delta: number) {
+    if (this.homingStars.length === 0) return;
+    const dt = Math.min(delta, 50) / 1000;
+    for (const s of [...this.homingStars]) {
+      s.life -= delta;
+      let pos = this.starTargetPos(s.target);
+      if (!pos) {
+        s.target = this.nearestStarTarget(s.sprite.x, s.sprite.y);
+        pos = this.starTargetPos(s.target);
+      }
+      if (pos) {
+        const dx = pos.x - s.sprite.x;
+        const dy = pos.y - s.sprite.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 36) {
+          // Touch = damage (Angelo, 2026-11-06): the star deals
+          // SPECIAL_DAMAGE to its quarry and is consumed. The boss only
+          // takes it while vulnerable. A blocked (armored-front) hit still
+          // consumes the star -- takeDamage returns false, deals nothing.
+          const t = s.target;
+          if (t?.kind === "enemy") {
+            if (t.e.alive) t.e.takeDamage(SPECIAL_DAMAGE, "sword", s.sprite.x);
+          } else if (t?.kind === "boss") {
+            if (this.boss?.vulnerable) this.boss.takeDamage(SPECIAL_DAMAGE, "sword", s.sprite.x);
+          }
+          this.fx("fx_spark", "hit", s.sprite.x, s.sprite.y, 0.22, 0xc9a8ff);
+          this.removeHomingStar(s);
+          continue;
+        }
+        const k = 1 - Math.exp(-dt * STAR_HOMING);
+        s.vx += ((dx / dist) * STAR_SPEED - s.vx) * k;
+        s.vy += ((dy / dist) * STAR_SPEED - s.vy) * k;
+      } else {
+        // Nothing to chase: keep falling, then fade out.
+        s.vy += 900 * dt;
+      }
+      s.sprite.x += s.vx * dt;
+      s.sprite.y += s.vy * dt;
+      // Spin like the wand's own stars (updateArrows: rotation += 0.2) —
+      // the special's stars ARE the wand's stars (v70).
+      s.sprite.rotation += 0.2;
+      if (s.life <= 0) {
+        s.sprite.setAlpha(Math.max(0, s.sprite.alpha - dt * 3));
+        if (s.sprite.alpha <= 0) this.removeHomingStar(s);
+      }
+    }
   }
 
   private openPortal() {
@@ -1787,7 +2063,12 @@ export class GameScene extends Phaser.Scene {
     this.cinema(true, 700);
     this.player.facing = this.boss!.x > this.player.x ? 1 : -1;
     await this.wait(500);
-    this.boss!.vanish();
+    // Umbra's defeat animation (v59, fixed v70): the authored umbra:dead
+    // anim + ashes. playDeath() drops her body onto the floor and does NOT
+    // fade her — she stays visible until the umbra_falls video ends, then
+    // vanish() fades her as the portal opens.
+    if (this.boss instanceof Boss) void this.boss.playDeath();
+    else this.boss!.vanish();
     if (this.bossShade) this.tweens.add({ targets: this.bossShade, fillColor: 0xffe7a3, fillAlpha: 0, duration: 1800 });
     this.cameras.main.flash(700, 255, 240, 200);
     await this.wait(1400);
@@ -1795,6 +2076,10 @@ export class GameScene extends Phaser.Scene {
     // Her fall plays as a story VIDEO (2026-10-21; dad_kiddo deleted 2026-10-24).
     this.cinema(false, 400);
     await this.playCutscene(["umbra_falls"]);
+
+    // Umbra death fix (Angelo, 2026-11-08): no fade before the video — only
+    // now, video done, she fades away as the portal opens.
+    this.boss!.vanish();
 
     this.portal.appear();
     this.portal.open();
@@ -1902,7 +2187,14 @@ export class GameScene extends Phaser.Scene {
         return;
       }
       if (seg && !this.mech.blocked(x)) {
-        this.spawnEnemy(type.key, x, seg.y - 60);
+        // v62: cap the spawn against the ACTUAL terrace under x. Tall
+        // enemies (Yeti body half-height 95.6px) spawned at seg.y - 60 sit
+        // embedded 35.6px INSIDE a raised terrace; Phaser's anti-tunnel
+        // guard refuses to separate them and they fall straight through.
+        // Body bottom starts 10px above the real floor.
+        const halfH = (type.height * type.body[1]) / 2;
+        const y = Math.min(seg.y - 60, seg.y - halfH - 10);
+        this.spawnEnemy(type.key, x, y);
         return;
       }
     }
@@ -1923,10 +2215,21 @@ export class GameScene extends Phaser.Scene {
   }
 
   spawnEnemy(key: string, x: number, y: number) {
-    // Chapter 9: pixel twins for the slime family; behavior keys stay flat.
-    const PIXEL_ENEMY: Partial<Record<string, SpriteKey>> = { squish: "squish_pixel", blob: "blob_pixel", toxic: "toxic_pixel" };
-    const tex = this.info.chapter === 9 ? PIXEL_ENEMY[key] ?? key : key;
-    const e = new Enemy(this, ENEMY_TYPES[key], x, y, this.enemyGroup, tex as SpriteKey);
+    const type = ENEMY_TYPES[key];
+    // v62: cap the spawn against the ACTUAL ground segment under x, not
+    // GROUND_Y. 4-1/4-2 terraces sit above 500; a tall ground enemy (Yeti
+    // body half-height 95.6px) spawned at seg.y - 60 starts embedded
+    // 35.6px INSIDE a terrace and falls straight through (Phaser's
+    // anti-tunnel guard refuses to separate it). The body bottom now sits
+    // 10px above the real floor. Climb landings and boss waves are
+    // unaffected: their spawn y is already above the cap.
+    if (!type.flying) {
+      const seg = groundAt(this.level.ground, x, 0);
+      const floor = seg?.y ?? GROUND_Y;
+      const cap = floor - (type.height * type.body[1]) / 2 - 10;
+      if (y > cap) y = cap;
+    }
+    const e = new Enemy(this, type, x, y, this.enemyGroup, key as SpriteKey);
     this.enemies.push(e);
     return e;
   }
@@ -1987,28 +2290,95 @@ export class GameScene extends Phaser.Scene {
   // -------------------------------------------------------- projectiles/fx
 
   spawnProjectile(sheet: ProjectileSheet, x: number, y: number, vx: number, vy: number, scale: number, tint?: number, fromKey?: string, seek = false, frame?: number, trail = 0) {
-    // Chapter 9: slime shots use the pixel orb / pixel dust (impact anim follows via data).
-    if (this.info.chapter === 9 && sheet === "fx_orb") sheet = "fx_orb_pixel";
-    if (this.info.chapter === 9 && sheet === "fx_dust") sheet = "fx_dust_pixel";
+    // Snowball (Yeti ranged attack, Angelo 2026-11-06): the real strip
+    // (snowball.webp, 6 frames, registered in sprites.gen.ts) spins via its
+    // "snowball:spin" anim -- no code rotation, no stand-in texture.
+    const isSnow = sheet === "snowball";
+    if (isSnow) SnowFx.ensureTexture(this);
     const pr = this.physics.add.sprite(x, y, sheet).setDepth(80).setScale(scale);
     if (fromKey) pr.setData("fromKey", fromKey);
     if (seek) pr.setData("seek", 1);
     this.projectiles.add(pr);
-    applyOrigin(pr, sheet);
-    if (sheet === "fx_dust" || sheet === "fx_dust_pixel") pr.setFrame(SPRITES[sheet].anims.puff.start + 2);
-    else if (frame !== undefined) pr.setFrame(frame);
-    else pr.play(`${sheet}:fly`);
+    if (isSnow) {
+      pr.setOrigin(0.5, 0.5);
+      pr.setData("snow", 1);
+      pr.play("snowball:spin");
+    } else {
+      applyOrigin(pr, sheet);
+      if (sheet === "fx_dust") pr.setFrame(SPRITES[sheet].anims.puff.start + 2);
+      else if (frame !== undefined) pr.setFrame(frame);
+      else pr.play(`${sheet}:fly`);
+    }
     if (tint) pr.setTint(tint);
     const body = pr.body as Phaser.Physics.Arcade.Body;
     body.setAllowGravity(false);
-    const r = sheet === "crystal_shot" ? 22 : sheet === "umbra_sky" ? 90 : SPRITES[sheet].frameHeight * 0.3;
-    body.setCircle(r, SPRITES[sheet].frameWidth / 2 - r, SPRITES[sheet].frameHeight / 2 - r);
+    // Body circle radius is in SOURCE pixels and scales with the sprite
+    // (Phaser Body.setCircle: world radius = r * scale). The real snowball
+    // frame is 261x245 with ~220px of ball, so r=90 gives a 27px world
+    // radius at the 0.3 attack scale -- forgiving against the 39px visual.
+    // (The old r=30 was tuned for the 96px stand-in and would have made
+    // the real ball nearly unhittable at 0.3.)
+    // v73: crystal_shot no longer has its own r=22 — the old value was
+    // tuned for the old 67px orb content (22 @ 30/67 ≈ 9.9px world). The
+    // new shard content fills the 256 cell, so the generic formula
+    // (256*0.3=76.8 @ 30/256 ≈ 9.0px world) keeps the same hitbox size.
+    const r = isSnow ? 90 : sheet === "umbra_sky" ? 90 : SPRITES[sheet].frameHeight * 0.3;
+    const fw = isSnow ? pr.frame.width : SPRITES[sheet].frameWidth;
+    const fh = isSnow ? pr.frame.height : SPRITES[sheet].frameHeight;
+    body.setCircle(r, fw / 2 - r, fh / 2 - r);
     body.setVelocity(vx, vy);
     pr.setFlipX(vx < 0);
-    pr.setRotation(sheet === "fx_dust" || sheet === "fx_dust_pixel" || sheet === "crystal_shot" || sheet === "umbra_sky" ? 0 : Math.atan2(vy, Math.abs(vx)) * (vx < 0 ? -1 : 1));
+    pr.setRotation(isSnow ? 0 : sheet === "fx_dust" || sheet === "crystal_shot" || sheet === "umbra_sky" ? 0 : Math.atan2(vy, Math.abs(vx)) * (vx < 0 ? -1 : 1));
     pr.setData("born", this.time.now);
     pr.setData("sheet", sheet);
     if (trail) pr.setData("trail", trail);
+    // Crystal Veil projectile wand effect (Angelo 2026-11-09, v73): the
+    // approved spinning shard flies with the wand's own language — a
+    // magenta dot-particle trail that FOLLOWS the projectile (same
+    // `follow` pattern as the special's gold stars, v70), plus the boss
+    // afterimage trail the boss passes in (trail color). Both ride the
+    // projectile and die with it — nothing stays behind at the fire
+    // point (the v69 static-glow bug). The emitter is destroyed in
+    // impactProjectile, the projectile's only death path.
+    if (sheet === "crystal_shot") {
+      const wandFx = this.add.particles(0, 0, "dot", {
+        follow: pr,
+        lifespan: 300,
+        speed: 0,
+        scale: { start: 0.55, end: 0 },
+        alpha: { start: 0.85, end: 0 },
+        tint: [0xff78cf, 0xffffff],
+        blendMode: Phaser.BlendModes.ADD,
+        frequency: 40,
+      });
+      wandFx.setDepth(79);
+      pr.setData("wandFx", wandFx);
+    }
+  }
+
+  /** Harness demo (dev only): throws a test snowball across the screen so
+   * the snow-shed trail + floor splat can be seen without the Yeti art.
+   * Flies over Angely's head (120px above her) so it never hurts her. */
+  demoSnowball(): void {
+    if (!this.player || !this.player.alive) return;
+    // Spawn just inside the left edge of the camera view so the ball is
+    // on-screen for its whole flight (player.x - 260 is off-screen when
+    // Angely stands at the level's left edge, so the first demos showed
+    // no ball at all -- it flew in from behind the left cliff).
+    const left = this.cameras.main.scrollX + 120;
+    const py = this.player.body.center.y - 120;
+    // Scale 0.3 = the real attack scale (78px ball), so the demo shows the
+    // true throw size.
+    this.spawnProjectile("snowball", left, py, 340, 60, 0.3, undefined, "yeti");
+  }
+
+  /** Harness demo (dev only): fills the SPECIAL meter and triggers it, so
+   * the special light can be screenshotted without playing 8 kills. */
+  demoSpecial(): void {
+    if (this.ending || this.cutscene || !this.player || !this.player.alive) return;
+    this.specialCharge = SPECIAL_MAX;
+    this.registry.set("special", SPECIAL_MAX);
+    this.triggerSpecial();
   }
 
   private updateProjectiles() {
@@ -2026,6 +2396,18 @@ export class GameScene extends Phaser.Scene {
           const g = this.add.image(pr.x, pr.y, pr.texture.key, pr.frame.name)
             .setDepth(79).setScale(pr.scaleX, pr.scaleY).setAlpha(0.4).setTint(trail).setRotation(pr.rotation);
           this.tweens.add({ targets: g, alpha: 0, duration: 200, onComplete: () => g.destroy() });
+        }
+      }
+      // Snowball (Yeti): sheds snowflakes behind it in flight. The spin
+      // comes from the "snowball:spin" anim -- no code rotation (it would
+      // double the spin). Same timed-puff cadence as the afterimage trail
+      // above — no persistent emitter, so nothing leaks when the
+      // projectile dies.
+      if (pr.getData("snow")) {
+        const lastShed = (pr.getData("snowT") as number | undefined) ?? 0;
+        if (now - lastShed > 70) {
+          pr.setData("snowT", now);
+          this.snowFx.shed(pr.x, pr.y);
         }
       }
       // Seeker projectiles (the Sovereign's orb): bend toward the player
@@ -2066,18 +2448,34 @@ export class GameScene extends Phaser.Scene {
   private impactProjectile(pr: Phaser.Physics.Arcade.Sprite, parried = false) {
     if (!pr.active) return;
     const sheet = pr.getData("sheet") as ProjectileSheet;
+    if (sheet === "snowball") {
+      // Snowball impact: snow burst + a pile that stays on the floor.
+      // No generic impact anim — the ball has no impact frames.
+      const floor = this.surfaceBelow(pr.x, pr.y) ?? pr.y;
+      this.snowFx.impact(pr.x, pr.y, floor);
+      pr.destroy();
+      return;
+    }
     if (sheet === "fx_fireball") {
       Audio.sfx("fire_impact");
       const floor = this.surfaceBelow(pr.x, pr.y) ?? pr.y;
       this.vfx.explosionShockwave(pr.x, floor - 3);
     }
-    if (sheet === "fx_dust" || sheet === "fx_dust_pixel") this.fx(sheet, "puff", pr.x, pr.y + 20, 0.3, 0xc9ff9a);
-    else this.fx(sheet, "impact", pr.x, pr.y, pr.scale);
+    if (sheet === "fx_dust") this.fx(sheet, "puff", pr.x, pr.y + 20, 0.3, 0xc9ff9a);
+    // v73: crystal_shot impact renders x1.8 so the burst keeps the old
+    // impact presence (old: 120h @ 30/67 ≈ 54px; new cells are 256h @
+    // 30/256 ≈ 30px without the multiplier).
+    else this.fx(sheet, "impact", pr.x, pr.y, sheet === "crystal_shot" ? pr.scale * 1.8 : pr.scale);
     if (parried) {
       this.hitStop(40);
       this.cameraKick("parry");
       this.fx("fx_spark", "hit", pr.x, pr.y, 0.3, 0xffffff);
     }
+    // v73: kill the projectile's wand trail emitter with it — the emitter
+    // follows the sprite, so it must die here or it would keep emitting
+    // at the impact point (the v69 static-glow bug, in particle form).
+    const wandFx = pr.getData("wandFx") as Phaser.GameObjects.Particles.ParticleEmitter | undefined;
+    if (wandFx) wandFx.destroy();
     pr.destroy();
   }
 
@@ -2110,7 +2508,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private addBobber(sheet: "stargem" | "starshield", x: number, y: number, height: number): Pickup {
-    const key = this.info.chapter === 9 ? (sheet === "stargem" ? "stargem_pixel" : "starshield_pixel") : sheet;
+    const key = sheet;
     const spr = this.add.sprite(x, y, key).setDepth(50);
     spr.setScale(scaleForHeight(key, height));
     applyOrigin(spr, key);
@@ -2137,7 +2535,7 @@ export class GameScene extends Phaser.Scene {
       if (d < bestD) { bestD = d; best = g; }
     }
     if (!best) {
-      const gemKey = this.info.chapter === 9 ? "stargem_pixel" : "stargem";
+      const gemKey = "stargem";
       const spr = this.add.sprite(x, y, gemKey).setDepth(50);
       spr.setScale(scaleForHeight(gemKey, 46));
       applyOrigin(spr, gemKey);
