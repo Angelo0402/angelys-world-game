@@ -31,6 +31,8 @@ import { backPlatform } from "../world/backing";
 import { DioramaLook } from "../world/DioramaLook";
 import { Portal } from "../world/Portal";
 import { fitCamera } from "../render";
+import { Machine } from "../state/machine";
+import { createSpecialMachine, type SpecialEvent, type SpecialState } from "../state/specialMachine";
 
 const BG_ZOOM = 1.25;
 
@@ -102,8 +104,15 @@ export class GameScene extends Phaser.Scene {
   private bossDamageAcc = 0;
   /** Stars from the latest SPECIAL burst, still hunting their quarry. */
   private homingStars: HomingStar[] = [];
-  /** True while a SPECIAL burst is playing; blocks a re-trigger. */
-  private specialBurstActive = false;
+  /** SPECIAL meter + burst as an explicit state machine (v75, see
+   * src/state/specialMachine.ts). Owns the 350 ms star delay and the
+   * 1600 ms re-trigger block; total reset() from init() closes the
+   * restart-mid-burst hole (v74 and earlier left the burst guard set
+   * forever, so SPECIAL could never fire again). Created in create()
+   * because it needs this.time. */
+  private special?: Machine<SpecialState, SpecialEvent>;
+  /** Targets captured at burst trigger time; the stars spawn from them at +350 ms. */
+  private specialTargets: StarTarget[] = [];
   boss?: Boss | Sandworm | CrystalVeilBoss | RuinSentinel;
   /** Veil fight summons: Astra's design — capped mixed waves while she fights. */
   nextVeilWave = Infinity;
@@ -188,6 +197,11 @@ export class GameScene extends Phaser.Scene {
     this.specialCharge = 0;
     this.bossDamageAcc = 0;
     this.registry.set("special", 0);
+    // SPECIAL machine (v75): total reset — cancels the burst's owned timers,
+    // destroys any live stars, drains the meter. This is the fix for the
+    // restart-mid-burst hole (v74 init() never cleared the burst guard).
+    // No-op on the first run: the machine is created in create().
+    this.special?.send("RESET");
     this.hearts = [];
     this.gems = [];
     this.stars = [];
@@ -222,6 +236,23 @@ export class GameScene extends Phaser.Scene {
 
   create() {
     fitCamera(this, true);
+    // SPECIAL explicit machine (v75): created once here — it needs
+    // this.time, which is why it is not built in init(). init() total-
+    // resets it on every restart via RESET.
+    if (!this.special) {
+      this.special = createSpecialMachine(
+        {
+          maxCharge: SPECIAL_MAX,
+          getCharge: () => this.specialCharge,
+          canTrigger: () => !this.ending && !this.cutscene && this.player.alive,
+          addCharge: (n) => this.addSpecialCharge(n),
+          startBurst: () => this.startSpecialBurst(),
+          spawnStars: () => this.spawnSpecialStars(),
+          clearBurst: () => this.clearSpecialBurst(),
+        },
+        this.time,
+      );
+    }
     this.vfx = new VisualFX(this);
     this.snowFx = new SnowFx(this);
     const info = this.info;
@@ -756,7 +787,7 @@ export class GameScene extends Phaser.Scene {
     }
     if (this.cutscene) input = this.scriptedInput();
     if (input.swapPressed) this.swapWeapon();
-    if (input.specialPressed) this.triggerSpecial();
+    if (input.specialPressed) this.special?.send("TRIGGER");
 
     this.player.pushing = this.mech.pushCheck(this.player, input.axis);
     this.player.update(time, delta, input);
@@ -1342,7 +1373,7 @@ export class GameScene extends Phaser.Scene {
       this.tweens.add({ targets: h.sprite, scale: { from: 0, to: h.sprite.scale }, duration: 300, ease: "Back.out" });
     }
     // Minion kills charge SPECIAL even in boss levels (goal kills do not).
-    this.addSpecialCharge(1);
+    this.special?.send("CHARGE");
     if (this.info.boss) return;
     this.kills++;
     if (this.goal.kind === "kills") this.setGoal(this.kills);
@@ -1364,14 +1395,14 @@ export class GameScene extends Phaser.Scene {
     this.bossDamageAcc += dmg;
     while (this.bossDamageAcc >= SPECIAL_BOSS_DAMAGE_PER_CHARGE) {
       this.bossDamageAcc -= SPECIAL_BOSS_DAMAGE_PER_CHARGE;
-      this.addSpecialCharge(1);
+      this.special?.send("CHARGE");
     }
   }
 
-  /** SPECIAL v3 (Angelo, v60; fixed v69; reworked v70): Angely raises her
-   * Star Wand overhead and 8 stars burst from the wand tip and hunt the
-   * enemies. The burst stays well under half the screen and she stays
-   * clearly visible — the player herself performs the raise at her real
+  /** SPECIAL v3 (Angelo, v60; fixed v69; reworked v70; machine v75): Angely
+   * raises her Star Wand overhead and 8 stars burst from the wand tip and
+   * hunt the enemies. The burst stays well under half the screen and she
+   * stays clearly visible — the player herself performs the raise at her real
    * 112px, and the burst is FX-only (no second Angely), on a 576px screen.
    * v70 (Angelo, 2026-11-08): NO static light, NO static burst — v69 left
    * a violet light pool + a radial burst + a spark spray anchored at the
@@ -1382,10 +1413,12 @@ export class GameScene extends Phaser.Scene {
    * gold 0xffe27a, spinning).
    * Damage (Angelo, 2026-11-06): the burst itself deals NO damage -- each
    * homing star deals SPECIAL_DAMAGE to the first enemy it touches. Meter
-   * (8 kills), radius, visuals and feel are unchanged. */
-  private triggerSpecial() {
-    if (this.specialCharge < SPECIAL_MAX || this.ending || this.cutscene || !this.player.alive || this.specialBurstActive) return;
-    this.specialBurstActive = true;
+   * (8 kills), radius, visuals and feel are unchanged.
+   * v75: this is the machine's TRIGGER action — the guard (charge, ending,
+   * cutscene, player alive) lives in the table, the re-trigger block is
+   * structural (no TRIGGER out of "bursting"), and the 350/1600 ms timers
+   * are owned by the machine. */
+  private startSpecialBurst(): void {
     this.specialCharge = 0;
     this.registry.set("special", 0);
     const px = this.player.x;
@@ -1410,71 +1443,84 @@ export class GameScene extends Phaser.Scene {
       const dy = hb.centerY - py;
       if (dx * dx + dy * dy <= R * R) targets.push({ kind: "boss" });
     }
+    // Captured for the machine: the stars spawn from these at +350 ms (see
+    // spawnSpecialStars). Cleared by the machine's reset.
+    this.specialTargets = targets;
     // SPECIAL v3, fixed v69 (Angelo, 2026-11-07): the player HERSELF raises
     // the wand and STAYS VISIBLE — never hidden. The second Angely was the
     // burst overlay sheet, which drew a full Angely of its own; the overlay
     // is gone and the explosion is FX-only, so she renders exactly once.
     // The raise holds ~1600ms, the old overlay's length.
     this.player.playSpecialRaise(this.time.now, 1600);
-    // SPECIAL v70 (Angelo, 2026-11-08): the 8 stars ARE the effect — fired
-    // ~350ms in, when the raise peaks overhead (cast frames 0-2 wind up
-    // slow, frame 9 is the peak). They spawn at the wand tip read at fire
-    // time (she plants but can still drift), fan out in the facing
-    // direction like the wand's own cast, then home onto their quarry.
-    // Nothing here is anchored to the cast point: no light pool, no
-    // radial burst, no spark ring, no spray — v69's static pieces are
-    // gone, so nothing stays behind when she moves. Exactly 8 stars,
-    // always (Angelo: at least 8, not 3-4), one per enemy in range
-    // (targets[i]); extras retarget to the nearest live enemy on the fly
-    // (see updateHomingStars). Each star looks exactly like the stars
-    // the Wand shoots: fx_star, gold 0xffe27a, spinning (see castStars).
-    this.time.delayedCall(350, () => {
-      if (!this.player.alive) return;
-      const tipX = this.player.x + this.player.facing * 24;
-      const tipY = this.player.body.center.y - 140;
-      for (let i = 0; i < 8; i++) {
-        const spread = (i / 7 - 0.5) * 1.2;
-        const ang = (this.player.facing > 0 ? 0 : Math.PI) + spread * this.player.facing;
-        const sp = Phaser.Math.Between(260, 420);
-        const sprite = this.add.sprite(tipX, tipY, "fx_star").setDepth(96);
-        applyOrigin(sprite, "fx_star");
-        sprite.setScale(scaleForHeight("fx_star", SPECIAL_STAR_SIZE));
-        sprite.setTint(0xffe27a);
-        // Gold trail, same gold as the wand's stars — it rides the star
-        // via `follow` and dies with it (see removeHomingStar), so it
-        // never lingers at the cast point.
-        const trail = this.add.particles(0, 0, "dot", {
-          follow: sprite,
-          lifespan: 350,
-          speed: 0,
-          scale: { start: 0.6, end: 0 },
-          alpha: { start: 0.9, end: 0 },
-          tint: [0xffe27a, 0xffffff],
-          blendMode: Phaser.BlendModes.ADD,
-          frequency: 30,
-        });
-        trail.setDepth(95);
-        this.homingStars.push({
-          sprite,
-          trail,
-          vx: Math.cos(ang) * sp,
-          vy: Math.sin(ang) * sp,
-          target: targets[i] ?? null,
-          life: STAR_LIFE_MS,
-        });
-      }
-    });
-    // Re-trigger guard: the burst lasts 1600ms; the meter can refill from
-    // star kills mid-burst, so the block must outlive the burst, then
-    // clear on its own. (Scene shutdown clears the delayed call.)
-    this.time.delayedCall(1600, () => {
-      this.specialBurstActive = false;
-    });
+    // The 8 stars spawn at +350 ms, when the raise peaks overhead — the
+    // machine fires spawnSpecialStars (below). Nothing here is anchored to
+    // the cast point: no light pool, no radial burst, no spark ring, no
+    // spray — v69's static pieces are gone, so nothing stays behind when
+    // she moves. Exactly 8 stars, always (Angelo: at least 8, not 3-4),
+    // one per enemy in range (specialTargets[i]); extras retarget to the
+    // nearest live enemy on the fly (see updateHomingStars). Each star
+    // looks exactly like the stars the Wand shoots: fx_star, gold 0xffe27a,
+    // spinning (see castStars).
     // Tone-down (Angelo, 2026-11-06): softer + shorter impact flash.
     this.cameras.main.flash(120, 110, 60, 200);
     this.cameraKick("explosion");
     this.hitStop(110);
     Audio.sfx("ground_slam");
+  }
+
+  /** Spawn the burst's 8 stars at the wand tip (v75: the machine fires
+   * this at +350 ms, when the raise peaks overhead — cast frames 0-2 wind
+   * up slow, frame 9 is the peak). The tip is read at fire time (she
+   * plants but can still drift); the stars fan out in the facing direction
+   * like the wand's own cast, then home onto their quarry. */
+  private spawnSpecialStars(): void {
+    if (!this.player.alive) return;
+    const tipX = this.player.x + this.player.facing * 24;
+    const tipY = this.player.body.center.y - 140;
+    for (let i = 0; i < 8; i++) {
+      const spread = (i / 7 - 0.5) * 1.2;
+      const ang = (this.player.facing > 0 ? 0 : Math.PI) + spread * this.player.facing;
+      const sp = Phaser.Math.Between(260, 420);
+      const sprite = this.add.sprite(tipX, tipY, "fx_star").setDepth(96);
+      applyOrigin(sprite, "fx_star");
+      sprite.setScale(scaleForHeight("fx_star", SPECIAL_STAR_SIZE));
+      sprite.setTint(0xffe27a);
+      // Gold trail, same gold as the wand's stars — it rides the star
+      // via `follow` and dies with it (see removeHomingStar), so it
+      // never lingers at the cast point.
+      const trail = this.add.particles(0, 0, "dot", {
+        follow: sprite,
+        lifespan: 350,
+        speed: 0,
+        scale: { start: 0.6, end: 0 },
+        alpha: { start: 0.9, end: 0 },
+        tint: [0xffe27a, 0xffffff],
+        blendMode: Phaser.BlendModes.ADD,
+        frequency: 30,
+      });
+      trail.setDepth(95);
+      this.homingStars.push({
+        sprite,
+        trail,
+        vx: Math.cos(ang) * sp,
+        vy: Math.sin(ang) * sp,
+        target: this.specialTargets[i] ?? null,
+        life: STAR_LIFE_MS,
+      });
+    }
+  }
+
+  /** Total SPECIAL cleanup (v75): destroy any live burst stars, drain the
+   * meter, clear the captured targets. Called by the machine's reset —
+   * this is what closes the restart-mid-burst hole (v74 init() never
+   * cleared the burst guard or the stars). Double-destroy is safe:
+   * Phaser's GameObject.destroy() no-ops when already destroyed, and the
+   * scene shutdown destroys the stars first on a restart. */
+  private clearSpecialBurst(): void {
+    for (const s of [...this.homingStars]) this.removeHomingStar(s);
+    this.specialCharge = 0;
+    this.registry.set("special", 0);
+    this.specialTargets = [];
   }
 
   /** Where a star's quarry is right now (null = dead or gone). */
@@ -2386,9 +2432,11 @@ export class GameScene extends Phaser.Scene {
    * the special light can be screenshotted without playing 8 kills. */
   demoSpecial(): void {
     if (this.ending || this.cutscene || !this.player || !this.player.alive) return;
-    this.specialCharge = SPECIAL_MAX;
-    this.registry.set("special", SPECIAL_MAX);
-    this.triggerSpecial();
+    // Drive the meter through the machine (v75): 8 real CHARGE events, then
+    // TRIGGER. The "SPECIAL READY!" toast fires on the 8th charge, as on a
+    // real fill — dev-only harness demo, harmless.
+    for (let i = 0; i < SPECIAL_MAX; i++) this.special?.send("CHARGE");
+    this.special?.send("TRIGGER");
   }
 
   private updateProjectiles() {
