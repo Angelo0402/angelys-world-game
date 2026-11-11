@@ -1711,6 +1711,14 @@ export class GameScene extends Phaser.Scene {
     return new Promise<void>((resolve) => this.time.delayedCall(ms, resolve));
   }
 
+  // Real-time wait (v76, stuck-after-final-boss fix): same promise shape as
+  // wait(), but driven by setTimeout, so a stalled scene clock (WebView
+  // throttle / RAF stall) cannot hold the outro hostage. ONLY veilOutro
+  // uses it — every other caller depends on scene-time semantics.
+  waitReal(ms: number) {
+    return new Promise<void>((resolve) => setTimeout(resolve, ms));
+  }
+
   say(lines: DialogueLine[], onLine?: (line: DialogueLine) => void) {
     return new Promise<void>((resolve) =>
       this.game.events.emit("hud:dialogue", {
@@ -1848,37 +1856,81 @@ export class GameScene extends Phaser.Scene {
   }
 
   private async veilOutro() {
-    if (this.veilState !== "fight") return;
-    this.veilState = "defeat";
-    this.cutscene = true;
-    this.registry.set("boss", null);
-    for (const e of this.enemies) e.remove();
-    this.nextVeilWave = Infinity;
-    this.veilSummons.clear();
-    for (const pk of [...this.hearts, ...this.gems, ...this.stars]) pk.sprite.setActive(false).setVisible(false);
-    this.projectiles.clear(true, true);
-    this.hazards.getChildren().forEach((h) => h.destroy());
-    Audio.stopMusic();
-    this.game.events.emit("hud:cinema", true);
-    const cam = this.cameras.main;
-    cam.stopFollow();
-    await this.wait(2000);
-    this.boss?.vanish();
-    await this.wait(800);
-    // Directed ending (2026-10-21): the finale trilogy in VIDEO — the Veil
-    // tears, the worlds relight, Angelo's rift opens, the hug, and father and
-    // daughter leave together through the golden portal. No in-engine staging.
-    // Angelo (2026-10-24): the phase-2 kill video plays first — it is the
-    // killing blow on the Brute, the last phase.
-    await this.playCutscene(["final_boss_phase2_kill"]);
-    this.veilState = "done";
-    this.ending = true;
-    updateSave({ cleared: true, finaleSeen: true });
-    // No hud:cinema false here: the THE END screen owns the HUD
-    // now, and the touch controls stay hidden behind it.
-    this.cameras.main.flash(600, 255, 255, 255);
-    Audio.music("music_victory");
-    this.game.events.emit("hud:victory");
+    if (this.veilState !== "fight") {
+      const bossDead = !!this.boss && !this.boss.alive;
+      console.warn(`[veilOutro] skipped: veilState=${this.veilState} bossDead=${bossDead}`);
+      if (!bossDead || this.veilState === "defeat" || this.veilState === "done") return;
+      // Boss is dead but the outro never ran: proceed instead of dropping
+      // the ending silently.
+      console.warn("[veilOutro] boss is dead but outro never ran — proceeding anyway");
+    }
+    // v76: the whole outro is guarded — a throw in the prefix used to abort
+    // the void-discarded chain silently and leave the game on the arena
+    // with the HUD hidden and no video. Now every error still forces the
+    // victory path, and each step logs so a live repro pins the exact step.
+    let videoPlayed = false;
+    try {
+      this.veilState = "defeat";
+      this.cutscene = true;
+      this.registry.set("boss", null);
+      for (const e of this.enemies) e.remove();
+      this.nextVeilWave = Infinity;
+      this.veilSummons.clear();
+      for (const pk of [...this.hearts, ...this.gems, ...this.stars]) pk.sprite.setActive(false).setVisible(false);
+      this.projectiles.clear(true, true);
+      this.hazards.getChildren().forEach((h) => h.destroy());
+      Audio.stopMusic();
+      this.game.events.emit("hud:cinema", true);
+      const cam = this.cameras.main;
+      cam.stopFollow();
+      console.log("[veilOutro] prefix done");
+      // Real-time waits (v76): the scene-time waits had no fallback — if
+      // the clock stalled, the game sat on the arena with the boss visible
+      // and no video. Same 2000/800 ms, same order, same visuals.
+      await this.waitReal(2000);
+      console.log("[veilOutro] wait 2000 done");
+      this.boss?.vanish();
+      console.log("[veilOutro] vanish done");
+      await this.waitReal(800);
+      console.log("[veilOutro] wait 800 done");
+      // Directed ending (2026-10-21): the finale trilogy in VIDEO — the Veil
+      // tears, the worlds relight, Angelo's rift opens, the hug, and father and
+      // daughter leave together through the golden portal. No in-engine staging.
+      // Angelo (2026-10-24): the phase-2 kill video plays first — it is the
+      // killing blow on the Brute, the last phase.
+      await this.playCutscene(["final_boss_phase2_kill"]);
+      videoPlayed = true;
+      console.log("[veilOutro] video done");
+      this.veilState = "done";
+      this.ending = true;
+      updateSave({ cleared: true, finaleSeen: true });
+      // No hud:cinema false here: the THE END screen owns the HUD
+      // now, and the touch controls stay hidden behind it.
+      this.cameras.main.flash(600, 255, 255, 255);
+      Audio.music("music_victory");
+      this.game.events.emit("hud:victory");
+      console.log("[veilOutro] victory shown");
+    } catch (error) {
+      console.warn("[veilOutro] error, forcing victory path:", error);
+      if (!videoPlayed) {
+        try {
+          await this.playCutscene(["final_boss_phase2_kill"]);
+        } catch (videoError) {
+          console.warn("[veilOutro] fallback video failed:", videoError);
+        }
+      }
+      this.veilState = "done";
+      this.ending = true;
+      try {
+        updateSave({ cleared: true, finaleSeen: true });
+      } catch (saveError) {
+        console.warn("[veilOutro] updateSave failed:", saveError);
+      }
+      this.cameras.main.flash(600, 255, 255, 255);
+      Audio.music("music_victory");
+      this.game.events.emit("hud:victory");
+      console.log("[veilOutro] victory shown (fallback)");
+    }
   }
 
   private async bossIntro() {
@@ -2065,7 +2117,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   onBossDefeated() {
-    this.bossKillSequence(() => void this.bossOutro());
+    // v76: the outro promise used to be void-discarded — a throw anywhere
+    // in bossOutro died silently. Log it instead of swallowing it.
+    this.bossKillSequence(() => {
+      this.bossOutro().catch((error) => console.warn("[bossOutro] unhandled error:", error));
+    });
   }
 
   /** Umbra's farewell, or the dune reunion with Angelo. */
