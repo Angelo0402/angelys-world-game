@@ -55,25 +55,39 @@ export class Portal {
 
     const shape = scene.make.graphics({}, false);
     shape.fillStyle(0xffffff).fillRect(wx(OPEN.left), wy(OPEN.arcY), w, wy(OPEN.bottom) - wy(OPEN.arcY)).fillCircle(this.cx, wy(OPEN.arcY), r * s);
-    const mask = shape.createGeometryMask();
+    // Phaser 4 (Beam): GeometryMask is Canvas-only and no-ops under WebGL —
+    // the v3 mask let the vortex spill past the arch (phone-verified
+    // 2026-10-27). Mask filter instead, same arch shape as the source:
+    // each masked object renders the shape to a DynamicTexture and clips
+    // to it. `shape` is deliberately NOT added to the display list, so it
+    // never draws on screen; the Mask filter captures it directly.
+    // `filters` is null until enableFilters() runs. One shared source,
+    // one filter per masked object (the mask texture is sized per object).
+    const applyArchMask = (obj: Phaser.GameObjects.GameObject): void => {
+      obj.enableFilters();
+      obj.filters!.internal.addMask(shape);
+    };
 
     this.halo = scene.add.image(this.cx, this.cy, "glow").setDepth(15.2).setTint(0x9f7bff).setAlpha(0).setBlendMode(Phaser.BlendModes.ADD);
     this.halo.setDisplaySize(w * 4, h * 2);
     this.floorGlow = scene.add.image(this.cx, floorY + 2, "glow").setDepth(15.3).setTint(0x9ff5ff).setAlpha(0).setBlendMode(Phaser.BlendModes.ADD);
     this.floorGlow.setDisplaySize(w * 3.4, 40);
 
-    this.inside = scene.add.rectangle(this.cx, this.cy, w + 4, h + 4, 0x150d2a).setDepth(15.4).setMask(mask);
+    this.inside = scene.add.rectangle(this.cx, this.cy, w + 4, h + 4, 0x150d2a).setDepth(15.4);
+    applyArchMask(this.inside);
     const vs = (h * 1.25) / (SPRITES["vortex"].frameHeight * 0.92);
-    this.vortex = scene.add.image(this.cx, this.cy, "vortex", 0).setDepth(15.5).setScale(vs).setTint(0x4a4466).setAlpha(0.5).setMask(mask);
+    this.vortex = scene.add.image(this.cx, this.cy, "vortex", 0).setDepth(15.5).setScale(vs).setTint(0x4a4466).setAlpha(0.5);
+    applyArchMask(this.vortex);
     this.vortexInner = scene.add
       .image(this.cx, this.cy, "vortex", 0)
       .setDepth(15.6)
       .setScale(vs * 0.6)
       .setFlipX(true)
       .setAlpha(0)
-      .setBlendMode(Phaser.BlendModes.ADD)
-      .setMask(mask);
-    this.core = scene.add.image(this.cx, this.cy, "glow").setDepth(15.7).setTint(0xffffff).setAlpha(0).setBlendMode(Phaser.BlendModes.ADD).setMask(mask);
+      .setBlendMode(Phaser.BlendModes.ADD);
+    applyArchMask(this.vortexInner);
+    this.core = scene.add.image(this.cx, this.cy, "glow").setDepth(15.7).setTint(0xffffff).setAlpha(0).setBlendMode(Phaser.BlendModes.ADD);
+    applyArchMask(this.core);
     this.core.setDisplaySize(w * 1.1, w * 1.1);
     this.sparks = scene.add
       .particles(this.cx, this.cy, "dot", {
@@ -88,8 +102,8 @@ export class Portal {
         frequency: 40,
         emitting: false,
       })
-      .setDepth(15.8)
-      .setMask(mask);
+      .setDepth(15.8);
+    applyArchMask(this.sparks);
 
     this.arch = scene.add.sprite(x, baseY, "portal").setDepth(16).setScale(s).setTint(0x8a86a0);
     applyOrigin(this.arch, "portal");

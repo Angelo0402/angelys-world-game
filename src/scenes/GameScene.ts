@@ -1129,14 +1129,21 @@ export class GameScene extends Phaser.Scene {
    * Impact frame: the whole screen flashes white then black for 2 frames on
    * strong hits (game feel, reels 2-3). Phaser 4 removed camera post
    * pipelines, so the former true-grayscale pipeline is gone; this uses
-   * only the white/black flash (white 0.85 rect 33ms -> black 0.6 rect
-   * 33ms -> destroy). The effect always removes itself.
+   * the white/black flash (white 0.85 rect 33ms -> black 0.6 rect
+   * 33ms -> destroy) PLUS a Phaser 4 camera ColorMatrix grayscale held
+   * ~34ms (time-based, not frame-counted — a 120 Hz device would otherwise
+   * shorten it), then removed. The effect always removes itself.
    */
   impactFrame(): void {
     const flash = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0xffffff, 0.85)
       .setOrigin(0).setScrollFactor(0).setDepth(9999);
     this.time.delayedCall(33, () => flash.setFillStyle(0x000000, 0.6));
     this.time.delayedCall(66, () => flash.destroy());
+    // Phaser 4 grayscale restore (cameras need no enableFilters step):
+    // external ColorMatrix so the whole screen desaturates with the flash.
+    const cm = this.cameras.main.filters.external.addColorMatrix();
+    cm.colorMatrix.grayscale(1);
+    this.time.delayedCall(34, () => this.cameras.main.filters.external.remove(cm));
   }
 
   /** Slow-mo: dramatic slowdown on boss kill (game feel). */
