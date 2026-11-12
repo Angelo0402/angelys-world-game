@@ -27,6 +27,7 @@ export class MotionPolish {
   private landUntil = -1000;
   private jumpUntil = -1000;
   private stopUntil = -1000;
+  private windupUntil = -1000;
 
   /** Landing event: 150ms squash. */
   land(time: number): void {
@@ -41,6 +42,11 @@ export class MotionPolish {
   /** Braking to a full stop: 150ms settle squash. */
   stop(time: number): void {
     this.stopUntil = time + 150;
+  }
+
+  /** Jump anticipation: crouch (24% squash) for `ms` before the launch. */
+  windup(time: number, ms = 180): void {
+    this.windupUntil = time + ms;
   }
 
   compute(time: number, s: MotionSample, attackScale?: { sx: number; sy: number } | null): { sx: number; sy: number } {
@@ -80,6 +86,12 @@ export class MotionPolish {
       }
       if (time < this.stopUntil) {
         sy = 0.93;
+        sx = 1.06;
+      }
+      // Jump wind-up crouch (v77): 24% squash, wins over land/stop windows
+      // while active — the crouch IS the anticipation, it must read.
+      if (time < this.windupUntil) {
+        sy = 0.76;
         sx = 1.06;
       }
     }

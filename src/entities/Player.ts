@@ -65,6 +65,8 @@ const MAX_FALL = 1050;
 const STOMP_BOUNCE = 560;
 const COYOTE_MS = 150;
 const BUFFER_MS = 160;
+/** Jump anticipation wind-up (game feel 1+6, v77, Angelo-approved GIF 2026-11-12). */
+const WINDUP_MS = 180;
 const INVULN_MS = 1100;
 const SHIELD_MS = 15000;
 const SHIELD_TINTS = [0xfff27a, 0xff6ad5, 0x7af0ff, 0xffffff, 0xb6ff6a, 0xff9a3d];
@@ -105,6 +107,8 @@ export class Player {
   private boosted = false;
   private lastGrounded = 0;
   private jumpBufferedAt = -1000;
+  /** Jump wind-up expiry (game time); 0 = no wind-up pending. */
+  private jumpWindupUntil = 0;
   private jumpCut = false;
   private invulnUntil = 0;
   private shieldUntil = 0;
@@ -225,6 +229,24 @@ export class Player {
     this.jumpBufferedAt = -1000;
   }
 
+  /** The actual launch at the end of the 0.18s wind-up (game feel 1+6, v77).
+   *  Identical to the old immediate jump, except jumpStart is backdated 75ms
+   *  so the post-launch crouch flash (pickAnim) is already over and the
+   *  takeoff frames play at launch, as in the approved GIF. */
+  private launchJump(time: number): void {
+    const body = this.body;
+    body.setVelocityY(-JUMP_V);
+    this.jumpStart = time - 75;
+    this.motion.jump(time);
+    this.jumpBufferedAt = -1000;
+    this.lastGrounded = -1000;
+    Audio.sfx("jump");
+    if (this.scene.info.chapter === 9) Barks.play(this.scene, ["bark_sq_bounce", "angely_bark_02"], 0.12);
+    else Barks.play(this.scene, ["angely_bark_02"], 0.1);
+    this.scene.fx("fx_dust", "puff", this.x, body.bottom, 0.2);
+    this.scene.vfx.jumpPoof(this.x, body.bottom);
+  }
+
   bounds() {
     return new Phaser.Geom.Rectangle(this.body.x, this.body.y, this.body.width, this.body.height);
   }
@@ -260,6 +282,18 @@ export class Player {
     }
     this.wasGrounded = grounded;
     if (!grounded) this.lastFallSpeed = body.velocity.y;
+
+    // Jump wind-up expiry / cancel (game feel 1+6, v77). A confirmed jump
+    // press crouches WINDUP_MS before the launch; any non-jumpable state
+    // (hurt/dead/celebrate/frozen/pickup) or water cancels the wind-up.
+    if (this.jumpWindupUntil > 0) {
+      if ((this.state !== "normal" && this.state !== "attack") || this.swim) {
+        this.jumpWindupUntil = 0;
+      } else if (time >= this.jumpWindupUntil) {
+        this.jumpWindupUntil = 0;
+        this.launchJump(time);
+      }
+    }
 
     if (this.state === "dead" || this.state === "celebrate" || this.state === "frozen" || this.state === "pickup") {
       body.setVelocityX(this.state === "dead" ? body.velocity.x * 0.92 : 0);
@@ -308,17 +342,14 @@ export class Player {
         return;
       }
       const canJump = time - this.lastGrounded < COYOTE_MS;
-      if (time - this.jumpBufferedAt < BUFFER_MS && canJump) {
-        body.setVelocityY(-JUMP_V);
-        this.jumpStart = time;
-        this.motion.jump(time);
+      if (time - this.jumpBufferedAt < BUFFER_MS && canJump && this.jumpWindupUntil <= 0) {
+        // Jump anticipation (game feel 1+6, v77): the press is consumed here
+        // and the launch fires from the wind-up expiry above, so the 0.18s
+        // crouch delay is real. Jump velocity, gravity, coyote and buffer
+        // values are unchanged.
         this.jumpBufferedAt = -1000;
-        this.lastGrounded = -1000;
-        Audio.sfx("jump");
-        if (this.scene.info.chapter === 9) Barks.play(this.scene, ["bark_sq_bounce", "angely_bark_02"], 0.12);
-        else Barks.play(this.scene, ["angely_bark_02"], 0.1);
-        this.scene.fx("fx_dust", "puff", this.x, body.bottom, 0.2);
-        this.scene.vfx.jumpPoof(this.x, body.bottom);
+        this.jumpWindupUntil = time + WINDUP_MS;
+        this.motion.windup(time, WINDUP_MS);
       }
       if (body.velocity.y >= 0) this.boosted = false;
       if (this.boosted) body.setGravityY(0);
@@ -507,6 +538,11 @@ export class Player {
     }
     if (this.state === "hurt") {
       this.setAnim(sword ? "angely_sword" : "angely", "hurt");
+      return;
+    }
+    if (time < this.jumpWindupUntil) {
+      // Jump anticipation (game feel 1+6, v77): crouch frames while winding up.
+      this.setAnim("angely", "crouch");
       return;
     }
     const body = this.body;

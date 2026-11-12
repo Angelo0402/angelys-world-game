@@ -24,20 +24,64 @@ export class VisualFX {
     this.scene.time.delayedCall(500, () => emitter.destroy());
   }
 
-  /** White/grey dust puff spreading sideways on landing. */
+  /** Landing dust, improved (game feel 1+6, v77 — Angelo-approved GIF 2026-11-12):
+   *  9 soft puffs + 4 tiny specks. Soft = the shared "glow" radial texture
+   *  (no hard edge), warm light-tan tint. Puffs spawn staggered 0-0.12s
+   *  after landing, expand ease-out-cubic from r~4px to 10-20px, drift
+   *  outward and up, and fade in fast then out over ~0.5s. Specks are 2px
+   *  dots that shoot outward fast and die in ~0.25s. */
   landDust(x: number, y: number): void {
-    const emitter = this.scene.add.particles(x, y, "dot", {
-      lifespan: 350,
-      speed: { min: 30, max: 70 },
-      angle: { min: 180, max: 360 },
-      scale: { start: 0.6, end: 0 },
-      alpha: { start: 0.6, end: 0 },
-      tint: [0xffffff, 0xcccccc],
-      quantity: 10,
-    });
-    emitter.setDepth(50);
-    emitter.explode(10);
-    this.scene.time.delayedCall(450, () => emitter.destroy());
+    const TINT = 0xe4dac6;
+    // (start dx, outward drift, rise, final radius px, spawn delay ms, life ms)
+    // dx/drift/rise/radius mirror the approved GIF (render2.py); the stagger
+    // is compressed to the 0-0.12s window from the spec.
+    const PUFFS: Array<[number, number, number, number, number, number]> = [
+      [-34, -26, 12, 20, 0, 540],
+      [-22, -18, 16, 15, 20, 500],
+      [-11, -9, 20, 12, 40, 460],
+      [0, 0, 22, 17, 0, 560],
+      [11, 9, 19, 12, 60, 460],
+      [22, 17, 15, 15, 40, 500],
+      [34, 25, 11, 19, 80, 540],
+      [-16, -12, 9, 10, 100, 420],
+      [16, 12, 9, 10, 120, 420],
+    ];
+    for (const [dx, drift, rise, r, delay, life] of PUFFS) {
+      this.scene.time.delayedCall(delay, () => {
+        const img = this.scene.add.image(x + dx, y - 3, "glow").setTint(TINT).setDepth(50).setAlpha(0).setScale(0.06);
+        this.scene.tweens.add({
+          targets: img,
+          scale: (r * 2) / 128,
+          x: x + dx + drift,
+          y: y - 3 - rise,
+          duration: life,
+          ease: "Cubic.easeOut",
+          onUpdate: (tween: Phaser.Tweens.Tween) => {
+            img.setAlpha(0.85 * Math.pow(Math.sin(Math.PI * tween.progress), 0.9));
+          },
+          onComplete: () => img.destroy(),
+        });
+      });
+    }
+    // Tiny fast specks (start dx, outward px, up px).
+    const SPECKS: Array<[number, number, number]> = [
+      [-18, -19, -14],
+      [-8, -9, -18],
+      [8, 9, -17],
+      [18, 18, -13],
+    ];
+    for (const [dx, ox, oy] of SPECKS) {
+      const dot = this.scene.add.image(x + dx, y - 4, "dot").setTint(0xe6deca).setDepth(50).setAlpha(0.9).setScale(0.15);
+      this.scene.tweens.add({
+        targets: dot,
+        x: x + dx + ox,
+        y: y - 4 + oy,
+        alpha: 0,
+        duration: 250,
+        ease: "Quad.easeOut",
+        onComplete: () => dot.destroy(),
+      });
+    }
   }
 
   /** Quick upward white puff when jumping. */
