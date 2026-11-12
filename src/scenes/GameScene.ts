@@ -1023,8 +1023,16 @@ export class GameScene extends Phaser.Scene {
     Audio.sfx("sword_pickup");
     Barks.play(this, ["bark_rx_weapon"], 0.8);
     this.cameras.main.flash(300, 200, 240, 255);
-    stone.setTint(0x777788);
-    (this.children.getByName("swordGlow") as Phaser.GameObjects.Particles.ParticleEmitter | null)?.stop();
+    // v79: the stone MUST go away when the sword is taken. It used to only
+    // get greyed out (setTint) and stay in the scene forever — after a
+    // reset the pedestal was still standing even though the sword was
+    // already owned. Fade it out like every other weapon pickup, destroy
+    // the stone and its glow emitter, so nothing is left to reappear.
+    this.tweens.killTweensOf(stone);
+    this.tweens.add({ targets: stone, alpha: 0, duration: 300, onComplete: () => stone.destroy() });
+    const glow = this.children.getByName("swordGlow") as Phaser.GameObjects.Particles.ParticleEmitter | null;
+    glow?.stop();
+    glow?.destroy();
     this.fx("fx_spark", "hit", stone.x, stone.y - 60, 0.45, 0x9ff5ff);
   }
 
