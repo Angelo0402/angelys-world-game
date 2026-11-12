@@ -35,7 +35,7 @@ export const SPRITES = {
         "end": 45,
         "fps": 24,
         "repeat": -1,
-        "h": 252
+        "h": 257
       },
       "run": {
         "start": 46,

@@ -72,7 +72,7 @@ export class HudScene extends Phaser.Scene {
   /** SPECIAL meter bar (v60, Angelo 2026-11-06): horizontal fill bar, top-center.
    * Replaces the old right-side circular button, which blocked incoming enemies. */
   private specialBar!: Phaser.GameObjects.Container;
-  private specialFill!: Phaser.GameObjects.Rectangle;
+  private specialFill!: Phaser.GameObjects.Graphics;
   private specialGlow!: Phaser.GameObjects.Graphics;
   private specialStars: Phaser.GameObjects.Text[] = [];
   private specialLabel!: Phaser.GameObjects.Text;
@@ -244,34 +244,55 @@ export class HudScene extends Phaser.Scene {
   }
 
   /**
-   * SPECIAL meter bar (v60, Angelo 2026-11-06): horizontal fill bar, top-center,
-   * just under the goal panel (y 90..110 -- clear of the panel, the level label
-   * and the toast, and far above the enemies at ground level). Violet fill with
-   * a little gold star pinned at each end; when FULL the whole bar glows bright
-   * and the stars twinkle. Tapping the bar fires the SPECIAL when full.
-   * Built here (not in touchUi) so the meter is visible on desktop too, and so
-   * it joins cinemaTop and hides during cutscenes like the rest of the top bar.
+   * SPECIAL meter bar (v78 redesign, Angelo 2026-11-12: "más bonita"): gold
+   * gradient fill with a top sheen, rounded bar, gold frame, gold glow pulse
+   * when FULL, gold stars at each end. Same position/size as v60 (top-center,
+   * y 90..110) — HUD layout untouched. Tapping the bar fires the SPECIAL
+   * when full. Built here (not in touchUi) so the meter is visible on
+   * desktop too, and so it joins cinemaTop and hides during cutscenes like
+   * the rest of the top bar.
    */
   private buildSpecialBar() {
     const { x, y, w, h } = SPECIAL_BAR;
-    const pad = 3;
     const g = this.add.graphics();
     g.fillStyle(0x1b0f2e, 0.85).fillRoundedRect(-w / 2, -h / 2, w, h, 10);
-    g.lineStyle(2, 0x8b5cf6, 1).strokeRoundedRect(-w / 2, -h / 2, w, h, 10);
-    this.specialFill = this.add.rectangle(-w / 2 + pad, 0, 0, h - pad * 2, 0x8b5cf6).setOrigin(0, 0.5);
+    g.lineStyle(2, 0xffd75a, 1).strokeRoundedRect(-w / 2, -h / 2, w, h, 10);
+    this.specialFill = this.add.graphics();
     this.specialGlow = this.add.graphics();
-    this.specialGlow.fillStyle(0xc9a8ff, 1).fillRoundedRect(-w / 2, -h / 2, w, h, 10);
+    this.specialGlow.fillStyle(0xffd75a, 1).fillRoundedRect(-w / 2, -h / 2, w, h, 10);
     this.specialGlow.setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
     // Two gold stars, one at each end -- the "SPECIAL" label sits in the middle.
     this.specialStars = [-1, 1].map((k) =>
       this.add
-        .text(k * (w / 2 - 16), 0, "★", { fontFamily: FONT, fontSize: "15px", color: "#ffd75a", stroke: "#2a1640", strokeThickness: 3 })
+        .text(k * (w / 2 - 16), 0, "★", { fontFamily: FONT, fontSize: "16px", color: "#ffd75a", stroke: "#2a1640", strokeThickness: 3 })
         .setOrigin(0.5),
     );
     this.specialLabel = this.add
-      .text(0, 0, "SPECIAL", { fontFamily: FONT, fontSize: "12px", fontStyle: "bold", color: "#fff4d6", stroke: "#2a1640", strokeThickness: 3 })
+      .text(0, 0, "SPECIAL", { fontFamily: FONT, fontSize: "12px", fontStyle: "bold", color: "#ffe9a8", stroke: "#2a1640", strokeThickness: 3 })
       .setOrigin(0.5);
     this.specialBar = this.add.container(x, y, [g, this.specialFill, this.specialGlow, ...this.specialStars, this.specialLabel]);
+  }
+
+  /** Gold gradient fill for the SPECIAL meter (v78): vertical gold gradient
+   * (light top -> deep gold bottom) + a lighter top sheen, rounded to the
+   * bar. Redrawn only when the charge changes. */
+  private drawSpecialFill(charge: number) {
+    const { w, h } = SPECIAL_BAR;
+    const pad = 3;
+    const inner = w - pad * 2;
+    const fw = Math.max(0, inner * Phaser.Math.Clamp(charge / 8, 0, 1));
+    const g = this.specialFill;
+    g.clear();
+    if (fw <= 0) return;
+    const fh = h - pad * 2;
+    const r = Math.min(7, fw / 2, fh / 2);
+    const x = -w / 2 + pad;
+    const y = -fh / 2;
+    g.fillGradientStyle(0xffe27a, 0xffe27a, 0xffb52e, 0xffb52e, 1);
+    g.fillRoundedRect(x, y, fw, fh, r);
+    const sh = Math.max(2, fh * 0.38);
+    g.fillStyle(0xfff6c9, 0.55);
+    g.fillRoundedRect(x + 1, y + 1, Math.max(0, fw - 2), sh, { tl: r, tr: r, bl: 0, br: 0 });
   }
 
   private buildBossBar() {
@@ -504,16 +525,13 @@ export class HudScene extends Phaser.Scene {
     this.attackBtn.setVisible(!!w);
   }
 
-  /** SPECIAL meter bar: violet fill grows with charge; when FULL the whole bar
-   * glows bright and the two gold stars twinkle (v60, Angelo 2026-11-06). */
+  /** SPECIAL meter bar: gold gradient fill grows with charge; when FULL the
+   * whole bar glows gold and the two gold stars twinkle (v78 redesign). */
   private setSpecial(charge: number) {
     this.specialCharge = charge;
     const full = charge >= 8;
-    const { w } = SPECIAL_BAR;
-    const pad = 3;
-    const inner = w - pad * 2;
-    this.specialFill.width = Math.max(0, inner * Phaser.Math.Clamp(charge / 8, 0, 1));
-    this.specialLabel.setColor(full ? "#ffe27a" : "#fff4d6");
+    this.drawSpecialFill(charge);
+    this.specialLabel.setColor(full ? "#ffe27a" : "#ffe9a8");
     if (full && !this.specialPulse) {
       this.specialPulse = this.tweens.add({ targets: this.specialBar, scale: { from: 1, to: 1.05 }, duration: 320, yoyo: true, repeat: -1, ease: "Sine.inOut" });
       this.specialGlowTween = this.tweens.add({ targets: this.specialGlow, alpha: { from: 0.25, to: 0.65 }, duration: 420, yoyo: true, repeat: -1, ease: "Sine.inOut" });

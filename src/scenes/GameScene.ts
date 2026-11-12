@@ -52,8 +52,9 @@ const STAR_LIFE_MS = 1500;
 /** Height of a SPECIAL star — SAME as the stars the Wand shoots
  * (castStars: launch("fx_star", ..., h = 20, ..., tint 0xffe27a)).
  * v70 (Angelo, 2026-11-08): the special's stars must look exactly like
- * the Wand's shot stars — same texture, same gold, same spin. */
-const SPECIAL_STAR_SIZE = 20;
+ * the Wand's shot stars — same texture, same gold, same spin.
+ * v78: 20 -> 30 — Angelo wants the special stars BIGGER. */
+const SPECIAL_STAR_SIZE = 30;
 const ARROW_SPEED = 980;
 const DESPAWN_X = 1500;
 const DESPAWN_Y = 950;
