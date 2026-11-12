@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "cli": "node scripts/cli.mjs",
     "preview": "vite preview",
     "sprites": "PYTHONPATH=tools python3 tools/build_sprites.py",
     "android:sync": "npm run build && npx cap sync android",
