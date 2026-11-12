@@ -372,7 +372,7 @@ export class Enemy {
     this.hp -= amount;
     this.warn.setVisible(false);
     this.sprite.angle = 0;
-    this.sprite.setTintFill(0xffffff);
+    this.sprite.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
     this.scene.vfx.hitSpark(this.x, this.body.center.y);
     this.scene.time.delayedCall(80, () => this.sprite.active && this.restoreTint());
     if (this.hp <= 0) {

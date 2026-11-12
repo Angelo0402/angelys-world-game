@@ -127,7 +127,7 @@ export class VisualFX {
   /** Soft green pulsing glow tween on a sprite for 600ms, then removes itself. */
   healGlow(target: Phaser.GameObjects.Sprite): void {
     const originalTint = target.isTinted ? target.tintTopLeft : 0xffffff;
-    target.setTintFill(0x7cfc9a);
+    target.setTint(0x7cfc9a).setTintMode(Phaser.TintModes.FILL);
 
     this.scene.tweens.add({
       targets: target,

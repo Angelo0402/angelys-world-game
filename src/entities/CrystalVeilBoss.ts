@@ -592,7 +592,7 @@ export class CrystalVeilBoss {
       // Normal hit: report HP so the HUD bar tracks every hit (the death
       // and crossing branches report their own values above).
       this.scene.onBossHp(this.hp,this.maxHp,amount);
-      this.sprite.setTintFill(0xffffff);
+      this.sprite.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
       this.flashUntil = time+90;
       // Wind-ups and strikes finish even when hit. Heavy weapons briefly
       // stagger a walking boss; its attack schedule does not restart.

@@ -296,7 +296,7 @@ export class GameScene extends Phaser.Scene {
     this.player.swim = swim;
     this.lowHealthVignette = this.add.image(0, 0, "vignette")
       .setDisplaySize(GAME_W + 32, GAME_H + 32)
-      .setTintFill(0xff1f2d)
+      .setTint(0xff1f2d).setTintMode(Phaser.TintModes.FILL)
       .setAlpha(0)
       .setDepth(9997);
     this.setupWeapons();
@@ -1126,30 +1126,17 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * Impact frame: the whole screen goes black-and-white for 2 frames on
-   * strong hits (game feel, reels 2-3). True grayscale via a post pipeline.
-   * Phaser only applies pipelines registered by name, so the class is
-   * registered first (idempotent) and set by string; if anything fails, or
-   * the pipeline did not actually apply, it falls back to the old
-   * white/black flash. The effect always removes itself, so a shader
-   * problem can never stick.
+   * Impact frame: the whole screen flashes white then black for 2 frames on
+   * strong hits (game feel, reels 2-3). Phaser 4 removed camera post
+   * pipelines, so the former true-grayscale pipeline is gone; this uses
+   * only the white/black flash (white 0.85 rect 33ms -> black 0.6 rect
+   * 33ms -> destroy). The effect always removes itself.
    */
   impactFrame(): void {
-    const cam = this.cameras.main;
-    try {
-      const renderer = this.game.renderer as Phaser.Renderer.WebGL.WebGLRenderer;
-      renderer.pipelines.addPostPipeline('GrayScale', GrayScalePipeline);
-      cam.setPostPipeline('GrayScale');
-      if (cam.postPipelines.length === 0) throw new Error('GrayScale did not apply');
-      this.time.delayedCall(33, () => {
-        try { cam.removePostPipeline('GrayScale'); } catch { /* noop */ }
-      });
-    } catch {
-      const flash = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0xffffff, 0.85)
-        .setOrigin(0).setScrollFactor(0).setDepth(9999);
-      this.time.delayedCall(33, () => flash.setFillStyle(0x000000, 0.6));
-      this.time.delayedCall(66, () => flash.destroy());
-    }
+    const flash = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0xffffff, 0.85)
+      .setOrigin(0).setScrollFactor(0).setDepth(9999);
+    this.time.delayedCall(33, () => flash.setFillStyle(0x000000, 0.6));
+    this.time.delayedCall(66, () => flash.destroy());
   }
 
   /** Slow-mo: dramatic slowdown on boss kill (game feel). */
@@ -1839,7 +1826,7 @@ export class GameScene extends Phaser.Scene {
       // Entry drama (feel package 2026-10-26, ~1.8s, no camera changes):
       // silhouette fade-in, arena crystals lighting in sequence, one heavy
       // tone — then the fight begins. veilEntryDone is the harness hook.
-      boss.sprite.setTintFill(0x1a0f2e).setAlpha(0.45);
+      boss.sprite.setTint(0x1a0f2e).setTintMode(Phaser.TintModes.FILL).setAlpha(0.45);
       this.tweens.add({ targets: boss.sprite, alpha: 1, duration: 500, onComplete: () => boss.sprite.clearTint() });
       const arenaXs = [arena.x0 + 200, (arena.x0 + arena.x1) / 2 - 150, (arena.x0 + arena.x1) / 2 + 150, arena.x1 - 200];
       arenaXs.forEach((x, i) => this.time.delayedCall(200 + i * 200, () => this.fx("crystal_shot", "impact", x, GROUND_Y - 110, 0.5)));
@@ -2697,26 +2684,3 @@ export class GameScene extends Phaser.Scene {
   }
 }
 
-/**
- * True black-and-white post pipeline for the impact frame (game feel).
- * Phaser supplies the vertex shader (outTexCoord) and uMainSampler; this
- * fragment shader only desaturates. A compile failure throws at
- * construction, which impactFrame() catches and falls back from.
- */
-class GrayScalePipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPipeline {
-  constructor(game: Phaser.Game) {
-    super({
-      game,
-      renderTarget: true,
-      fragShader: `
-        precision mediump float;
-        uniform sampler2D uMainSampler;
-        varying vec2 outTexCoord;
-        void main() {
-          vec4 color = texture2D(uMainSampler, outTexCoord);
-          float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
-          gl_FragColor = vec4(vec3(gray), color.a);
-        }`,
-    });
-  }
-}

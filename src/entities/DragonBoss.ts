@@ -74,7 +74,7 @@ export class DragonBoss {
 
     // Flash white when hit
     if (time < this.hitUntil) {
-      this.sprite.setTintFill(0xffffff);
+      this.sprite.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
     } else {
       this.sprite.clearTint();
     }

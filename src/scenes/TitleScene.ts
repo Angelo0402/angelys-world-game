@@ -94,9 +94,8 @@ export class TitleScene extends Phaser.Scene {
 
   private showTitle() {
     // The art is 16:9 and the game is wider: show all of it (logo included) over a
-    // blurred, darkened cover copy, with soft gradients hiding the seams.
-    const back = coverImage(this, "title_splash").setTint(0x6a6488);
-    back.preFX?.addBlur(1, 2, 2, 1.2);
+    // darkened cover copy, with soft gradients hiding the seams.
+    coverImage(this, "title_splash").setTint(0x6a6488);
     const art = this.add.image(GAME_W / 2, GAME_H / 2, "title_splash");
     const base = GAME_H / art.height;
     const edge = this.add.graphics();

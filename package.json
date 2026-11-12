@@ -47,7 +47,7 @@
     "@capacitor/core": "^7.4.3",
     "@capacitor/splash-screen": "^7.0.3",
     "@capacitor/status-bar": "^7.0.3",
-    "phaser": "^3.90.0",
+    "phaser": "^4.2.1",
     "three": "^0.185.1"
   }
 }

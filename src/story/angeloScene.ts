@@ -214,7 +214,7 @@ export async function angeloCutscene(scene: GameScene, arena: { x0: number; x1: 
   };
 
   rift.surge();
-  angelo.setTintFill(0xbfe0ff).setAlpha(0);
+  angelo.setTint(0xbfe0ff).setTintMode(Phaser.TintModes.FILL).setAlpha(0);
   pose("run");
   tweens.add({ targets: angelo, alpha: 1, duration: 260 });
   await tween({ targets: angelo, x: rift.x + 150, duration: 520, ease: "Sine.easeOut" });
@@ -233,7 +233,7 @@ export async function angeloCutscene(scene: GameScene, arena: { x0: number; x1: 
     scene.fx("fx_explode", "boom", x, y, big ? 0.7 : 0.4, 0x9fd0ff);
     cam.shake(big ? 500 : 180, big ? 0.02 : 0.008);
     golem.play("colossus:hurt", true);
-    golem.setTintFill(0xffffff);
+    golem.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
     scene.time.delayedCall(70, () => golem.clearTint());
     await hitStop(big ? 140 : 70);
   };
@@ -293,7 +293,7 @@ export async function angeloCutscene(scene: GameScene, arena: { x0: number; x1: 
   // ---- he leaves through his rift
   await runTo(rift.x + 40, 1.4, "walk");
   rift.surge();
-  angelo.setTintFill(0xbfe0ff);
+  angelo.setTint(0xbfe0ff).setTintMode(Phaser.TintModes.FILL);
   await tween({ targets: angelo, x: rift.x, alpha: 0, scaleX: angelo.scaleX * 0.4, duration: 320, ease: "Quad.easeIn" });
   angelo.destroy();
   await scene.wait(250);
@@ -399,7 +399,7 @@ export async function angeloPraise(scene: GameScene, arena: { x0: number; x1: nu
   pose("idle");
   rift.surge();
   Audio.sfx("portal_enter");
-  angelo.setTintFill(0xbfe0ff);
+  angelo.setTint(0xbfe0ff).setTintMode(Phaser.TintModes.FILL);
   await tween({ targets: angelo, alpha: 0, scaleX: angelo.scaleX * 0.4, duration: 280 });
   angelo.destroy();
   await scene.wait(200);

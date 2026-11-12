@@ -574,7 +574,7 @@ export class Player {
     this.body.setVelocity(away * 140, -160);
     this.state = "hurt";
     this.stateUntil = this.scene.time.now + 360;
-    this.sprite.setTintFill(0xffffff);
+    this.sprite.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
     this.scene.time.delayedCall(70, () => this.sprite.setTint(0xff9090));
     this.scene.time.delayedCall(260, () => this.sprite.clearTint());
     return true;

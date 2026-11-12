@@ -509,7 +509,7 @@ export class Boss {
     const prevHp = this.hp;
     this.hp = Math.max(0, this.hp - amount);
     Audio.sfx("boss_hit");
-    this.sprite.setTintFill(0xffffff);
+    this.sprite.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
     this.scene.time.delayedCall(90, () => this.sprite.active && this.state !== "dead" && this.sprite.clearTint());
     this.scene.onBossHp(this.hp, this.maxHp, amount);
     // Heavy = a big single hit, or crossing a half/quarter-HP boundary.
