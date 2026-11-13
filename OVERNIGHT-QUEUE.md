@@ -53,6 +53,36 @@ El loop diario toma el PRIMER item de esta lista cada mañana, lo hace, lo verif
 - Implementar SOLO después de su veredicto de v80 (él está probando v80 ahora). Cuando se implemente: primero GIF de ejemplo para su veredicto, luego integración.
 - Estado: pendiente, no empezar.
 
+### 4. Fullscreen / modo inmersivo — PENDIENTE (pedido por Angelo 2026-11-12 21:20, en llamada)
+- Al abrir el juego los botones de navegación del Galaxy se quedan abajo; quiere que entre automático a fullscreen.
+- Verificado: MainActivity.java es un BridgeActivity pelado, sin código inmersivo; el manifest no tiene flags de fullscreen. SÍ se puede: modo inmersivo sticky nativo en MainActivity (esconder barras, re-esconder al recuperar foco). Sin plugin.
+- Estado: pendiente, para la próxima versión (v82). No tocar en v81.
+
+### 5. Efecto de estrella en el Star Shield (invencible 15s) — PENDIENTE GIF (pedido por Angelo 2026-11-12 21:22)
+- Al coger la estrella es invencible 15 segundos (SHIELD_MS=15000 verificado, Player.ts:69) y hoy "no tiene efecto".
+- OJO: sí existe un tint arcoíris cíclico (SHIELD_TINTS, Player.ts:702) — él no lo percibe, así que no basta. Quiere un efecto de estrella visible sobre Angely durante los 15s.
+- Regla GIF primero: preparar GIF de propuesta (estrellas orbitando / destellos dorados) para su veredicto, luego integrar. No integrar sin su "sí".
+- Estado: pendiente, GIF por hacer.
+
+### 6. Sprites de nado inconsistentes — PENDIENTE VEREDICTO (reportado por Angelo 2026-11-12 21:23)
+- "Se ven como diferentes size, como diferentes character, como si fuesen diferentes personas."
+- Medido 2026-11-12 (alpha bboxes, angely_swim.webp, celdas 280px): swim (fr 0–23) ancho 189–252px (varía 33%), alto 82–102px; float (24–35) alto 237–240px; up (36–43) alto 188–201px. Misma escala 0.432 en juego: nadando mide 35–44px de alto, flotando 102–104px. GIF del ciclo a 18fps: `~/workspace/qa_tmp/v81/swim_cycle_18fps.gif`.
+- Fix = trabajo de sprites (no código): contact sheet + GIF para que señale qué frames están mal; regen con regla de todas-las-originales-primero, o arreglo offline. Nada sin su veredicto.
+- Estado: pendiente de su veredicto sobre el GIF.
+
+### 7. Hitbox del swing de la espada — PENDIENTE MEDICIÓN + GIF (reportado por Angelo 2026-11-12 21:19)
+- "Se ve que le estoy dando al aire, pero en realidad le estoy dando al enemigo."
+- Verificado: el reach NO cambió desde v78 (130 en suelo / 120 en aire, Player.ts, git show 0d47c8c idéntico). La causa que le dijeron ("el sprite creció pero el hitbox se quedó grande") NO está verificada — no repetirla.
+- Próximo paso: medir la punta de la espada en los frames del strike (local 2–5) contra el rect de 130px, y mandar GIF antes de tocar nada.
+- Estado: pendiente, GIF por hacer.
+
+### 8. Gema del spring en 9-2 fuera de pantalla — PENDIENTE VEREDICTO (sweep del loop, 2026-11-13)
+- 9-2 Bubble Falls (meta: 6 gemas) pone su 6ta gema en (7355, -60): 60px SOBRE la pantalla. La cámara en modo run no baja de y=0, así que no se ve. El portal exige 6/6, así que con 5/6 queda sellado sin gema visible.
+- Solo se roza en una ventana de ~30ms con salto aguantado y velocidad sub-máxima (apex spring ~391px, cuerpo 40x96, caja 44x44) — en juego normal es inalcanzable. Misma clase que la gema de 3-2 en y=-80, arreglada 2026-10-23.
+- GIF esquemático (no gameplay): `goals/angely-s-world-game/hidden_files/overnight-loop/sweep-2026-11-13/gem_9-2_spring_schematic.gif`. Detalle y evidencia en `sweep-log.md`.
+- Fix propuesto (NO integrado, espera su veredicto): bajar la gema del spring a nivel del muro (`Y - 4*BLOCK_H - 50`, y=20 con Y=350) o clampear gemas a y>=40 en `buildSide`.
+- Estado: pendiente de su veredicto sobre el GIF.
+
 ## Historial
 
 - 2026-11-08: cola creada. Loop propuesto por Angelo ("loop de arreglar el juego overnight"). Sin correr aún.
