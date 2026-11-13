@@ -21,6 +21,25 @@ El loop toma el PRIMER item de esta lista en cada corrida, lo hace, lo verifica 
 - Angely: siempre desde poses de maniquí + sprites viejos aprobados + THE LITTLE LIGHT. Nunca regenerar desde cero.
 - Si ChatGPT falla o la sesión se cae de noche, el loop lo reporta y sigue con código. Nunca inventa un strip.
 
+## Cola de features (nueva, Angelo 2026-11-13, voz — cron aparte 2× al día, `game-features-twice-daily`)
+- Cada corrida del cron de features toma el PRIMER item, lo prepara como PRUEBA con un GIF esquemático distinto (como el GIF de la gema 9-2), y ESPERA el veredicto/prueba de Angelo. Nada se integra sin que él diga que pasó la prueba.
+- F1. Efectos Graveyard (cap. 11): niebla, glow, polvo, luces — solo efectos Phaser por código, sin sprites nuevos.
+- F2. Entorno destructible: bloques que se rompen (tilemap removeTileAt + partículas de escombro).
+- F3. Efecto visible de estrella en Star Shield (ver item 5 abajo).
+- F4. Barra/dial de volumen de música en el menú (ver item 3 abajo).
+- F5. Música distinta por capítulo: hoy la música es procedural (AudioManager SONGS, sin archivos) y se repite — ch5, ch10 y ch11 usan la misma `music_shadow`. Angelo 2026-11-13: "no escucho música nueva".
+- F6. Portal que se abre por coleccionar, no solo por matar enemigos (regla Graveyard; ejemplo de Angelo pendiente — su frase quedó cortada).
+
+## Capítulo 11 Graveyard — spec (Angelo 2026-11-13, voz; su character sheet nuevo llega primero)
+- Bonus después del 10-2, desde level select. NO igual que los otros niveles.
+- LARGO: 3× la longitud normal. Estirar los niveles, no puede ser muy corto.
+- Graves (tumbas) y zombies que salen del ataúd.
+- Underground LITERAL (no un phase): flecha hacia abajo, rompes el piso con el martillo y entras por el mismo roto que acabas de romper. Abajo hay más enemigos: esqueletos, zombies, murciélagos.
+- Murciélagos: cada uno con sus strikes y sus efectos. Efectos primero con código/herramientas guardadas (pixelfx, 4-layer VFX) — NO depender 100% de ChatGPT. ChatGPT solo si algo que él manda no le gusta.
+- Portal: NO solo por matar enemigos. Se puede abrir si consigues algo (ejemplo pendiente de Angelo).
+- Sonido del corazón / heal APROBADO por Angelo 2026-11-13 ("me gustó"): arpegio B2 (sine G4→C5→E5) + healBurst de pluses mint (v80, sigue a Angely en v81). No tocar.
+- Su character sheet nuevo (lo pide a ChatGPT) es oro y va PRIMERO en cada pedido de sprite de Angely, junto con todas las hojas originales.
+
 ## Cola
 
 ### 1. [x] Limpieza de código muerto — HECHO 2026-11-09 (v71)
@@ -82,6 +101,13 @@ El loop toma el PRIMER item de esta lista en cada corrida, lo hace, lo verifica 
 - GIF esquemático (no gameplay): `goals/angely-s-world-game/hidden_files/overnight-loop/sweep-2026-11-13/gem_9-2_spring_schematic.gif`. Detalle y evidencia en `sweep-log.md`.
 - Fix integrado: gema del spring bajada a nivel del muro (`Y - 4*BLOCK_H - 50`, y=20 con Y=350, visible como el corazón). Angelo lo ordenó 2026-11-13 06:17 ("Arreglalo").
 - Estado: [x] terminado 2026-11-13 (v83, versionCode 47). Checker `check-levels.cjs`: 9-2 limpio, 6/6 gemas en pantalla. tsc 0, vite limpio, APK 205.8 MB, MD5 78907dfb5624e0e7d7bfcb77f84a1d7c, ZIP OK. APK: ~/workspace/your_files/AngelysWorld-v83-TEST.apk.
+
+### 9. Bajar escalera en táctil imposible (cap. 11 PRUEBA) — PENDIENTE VEREDICTO
+- En el teléfono (HUD táctil, JUMP + ACTION) Angely puede SUBIR la escalera (mantener JUMP → upHeld) pero NO bajarla: `downHeld` no tiene fuente táctil (`src/input/controls.ts:64` — solo teclado DOWN/S o gamepad; comentario: "Touch has no down button yet"). El joystick calcula `dy` pero solo escribe `touchState.axis` con `dx` (`src/scenes/HudScene.ts:676`). Mientras trepa, bajar exige `input.downHeld` (`src/entities/Player.ts:325`), siempre falso en táctil; entrar a la escalera desde arriba hacia abajo está bloqueado (`Player.ts:352-356`).
+- Alcance: NO tranca los layouts actuales de ch11 — 11-1 baja por el roto del piso, 11-2 baja caminando por los bordes; las escaleras solo se usan para subir. Pero en táctil la escalera es solo-de-subida: si Angely la agarra a medio salto (JUMP mantenido = upHeld) no hay descenso controlado, solo soltarse con JUMP y caer. Cualquier layout futuro que pida bajar por escalera en el teléfono no se puede jugar.
+- GIF esquemático (no gameplay): `goals/angely-s-world-game/hidden_files/overnight-loop/sweep-2026-11-13-afternoon/ladder_touch_down_schematic.gif` (720x460, 36f). Detalle y evidencia en `sweep-log.md`.
+- Fix pendiente de su decisión (no integrar sin su "sí"): opciones — que el joystick hacia abajo alimente `downHeld`; que ACTION en escalera = bajar; o un botón de bajar en el HUD. La regla del HUD es JUMP + ACTION solo, así que es decisión de Angelo.
+- Estado: pendiente, GIF por veredicto. Nada integrado (código ch11 PRUEBA, sin commit).
 
 ## Historial
 
