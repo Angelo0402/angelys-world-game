@@ -33,11 +33,8 @@ interface AttackTiming {
 }
 
 const ATTACK_TIMING: Record<WeaponId, AttackTiming> & { sword_air: AttackTiming } = {
-  // Slash — v79: 43f @185fps (22f doubled by DIS interpolation; the full
-  // swing now completes inside the 290ms state instead of playing cut
-  // short). windup/strike ends rescaled x2 with the frames so the hit
-  // window keeps the same share of the swing (was 2/5 on 22f).
-  sword: { windupEnd: 5, strikeEnd: 11, windupScale: 0.55, strikeScale: 1.5, recoveryScale: 0.8, stateMs: 290 },
+  // Slash — ORIGINAL v65 timing (11f @34fps values; 2x strip is 22f, plays cut short).
+  sword: { windupEnd: 2, strikeEnd: 5, windupScale: 0.55, strikeScale: 1.5, recoveryScale: 0.8, stateMs: 290 },
   // Air slash — ORIGINAL v65 timing (4f @14fps values; 2x strip is 8f).
   sword_air: { windupEnd: 1, strikeEnd: 3, windupScale: 0.8, strikeScale: 1.4, recoveryScale: 0.9, stateMs: 250 },
   // Smash 24f @27fps (2x strips, v66 — KEPT per Angelo 2026-11-07: he likes the smash).

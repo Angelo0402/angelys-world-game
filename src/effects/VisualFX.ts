@@ -227,6 +227,68 @@ export class VisualFX {
     this.landDust(x + 80, y + 120);
   }
 
+  /** Heal burst (Angelo-approved GIF 2026-11-12, v80): small mint pluses
+   *  rising from Angely's body, centered slightly left on her. 7 pluses,
+   *  staggered 0-0.48s, rise ~50px over ~0.95s, fade out at the top; 8 tiny
+   *  mint sparkles twinkle on her body + a faint mint glow. Plays on heart
+   *  pickup (when it heals) and on checkpoint touch. Full life + heart =
+   *  nothing — gated by Player.heal() in GameScene.checkPickups, so this
+   *  method only ever runs on a real heal. */
+  healBurst(x: number, y: number): void {
+    const MINT = 0x6ef2a8;
+    // (dx, dy, size px, spawn delay ms) — mirrors the approved GIF.
+    const PLUSES: Array<[number, number, number, number]> = [
+      [-6, 10, 12, 0],
+      [7, 0, 10, 80],
+      [-2, -12, 13, 160],
+      [9, 8, 9, 240],
+      [-8, -2, 11, 320],
+      [4, -18, 9, 400],
+      [-10, 4, 10, 480],
+    ];
+    for (const [dx, dy, size, delay] of PLUSES) {
+      this.scene.time.delayedCall(delay, () => {
+        const img = this.scene.add.image(x + dx, y + dy, "heal_plus").setTint(MINT).setDepth(50).setAlpha(0).setScale(size / 32);
+        this.scene.tweens.add({
+          targets: img,
+          y: y + dy - 50,
+          x: x + dx + 2,
+          duration: 950,
+          ease: "Cubic.easeOut",
+          onUpdate: (tween: Phaser.Tweens.Tween) => {
+            const p = tween.progress;
+            img.setAlpha(p < 0.1 ? p / 0.1 : p > 0.65 ? 1 - (p - 0.65) / 0.35 : 1);
+          },
+          onComplete: () => img.destroy(),
+        });
+      });
+    }
+    // Tiny sparkles twinkling on her body.
+    const sparks = this.scene.add.particles(x, y, "dot", {
+      x: { min: -14, max: 14 },
+      y: { min: -25, max: 20 },
+      lifespan: 700,
+      speed: { min: 0, max: 8 },
+      scale: { start: 0.35, end: 0 },
+      alpha: { start: 0.9, end: 0 },
+      tint: MINT,
+      blendMode: Phaser.BlendModes.ADD,
+      frequency: 90,
+    });
+    sparks.setDepth(50);
+    this.scene.time.delayedCall(900, () => sparks.destroy());
+    // Faint mint glow on the body.
+    const glow = this.scene.add.image(x, y - 10, "glow").setTint(MINT).setDepth(49).setAlpha(0).setScale(0.5);
+    this.scene.tweens.add({
+      targets: glow,
+      alpha: 0.22,
+      duration: 120,
+      onComplete: () => {
+        this.scene.tweens.add({ targets: glow, alpha: 0, duration: 700, onComplete: () => glow.destroy() });
+      },
+    });
+  }
+
   /** Golden rising sparkle column for checkpoint activation. */
   checkpointSparkle(x: number, y: number): void {
     const sparks = this.scene.add.particles(x, y, "dot", {

@@ -108,6 +108,15 @@ export function buildSharedTextures(scene: Phaser.Scene) {
     ctx.fillRect(0, 0, 128, 128);
     tex.refresh();
   }
+  if (!scene.textures.exists("heal_plus")) {
+    // White plus (tinted mint at spawn) for the heal burst — v80.
+    const g = scene.make.graphics({ x: 0, y: 0 }, false);
+    g.fillStyle(0xffffff, 1);
+    g.fillRoundedRect(12, 2, 8, 28, 4);
+    g.fillRoundedRect(2, 12, 28, 8, 4);
+    g.generateTexture("heal_plus", 32, 32);
+    g.destroy();
+  }
   if (!scene.textures.exists("vignette")) {
     const tex = scene.textures.createCanvas("vignette", 256, 144)!;
     const ctx = tex.getContext();

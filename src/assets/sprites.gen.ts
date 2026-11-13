@@ -1120,35 +1120,35 @@ export const SPRITES = {
       },
       "slash": {
         "start": 8,
-        "end": 50,
-        "fps": 185,
+        "end": 29,
+        "fps": 34,
         "repeat": 0,
         "h": 315
       },
       "jump_attack": {
-        "start": 51,
-        "end": 58,
+        "start": 30,
+        "end": 37,
         "fps": 14,
         "repeat": 0,
         "h": 290
       },
       "pickup": {
-        "start": 59,
-        "end": 64,
+        "start": 38,
+        "end": 43,
         "fps": 4,
         "repeat": 0,
         "h": 270
       },
       "hurt": {
-        "start": 65,
-        "end": 68,
+        "start": 44,
+        "end": 47,
         "fps": 8,
         "repeat": 0,
         "h": 216
       },
       "defeat": {
-        "start": 69,
-        "end": 74,
+        "start": 48,
+        "end": 53,
         "fps": 5,
         "repeat": 0,
         "h": 151

@@ -309,6 +309,10 @@ class AudioManagerImpl {
       case "ground_slam": this.tone(t, 90, 0.35, "sine", 0.5, 40); this.noise(t, 0.3, 0.3, 400, "lowpass"); break;
       case "player_hurt": this.tone(t, 520, 0.22, "sawtooth", 0.22, 180); break;
       case "heart_pickup": [0, 4, 7, 12].forEach((n, i) => this.tone(t + i * 0.06, midi(76 + n), 0.14, "triangle", 0.2)); break;
+      // v80 heal (Angelo's pick 2026-11-12: "B2 Arpegio bajo"): soft sine
+      // G4 -> C5 -> E5, slow 50ms attack, low volume. NOT in VARIED_SFX —
+      // the chord must stay in tune. Replaces heart_pickup on a real heal.
+      case "heal": [67, 72, 76].forEach((n, i) => this.tone(t + i * 0.12, midi(n), 0.7, "sine", 0.12, undefined, undefined, 0.05)); break;
       case "sword_pickup": [0, 4, 7, 12, 16].forEach((n, i) => this.tone(t + i * 0.09, midi(67 + n), 0.3, "square", 0.14)); break;
       case "checkpoint": this.tone(t, midi(72), 0.12, "triangle", 0.2); this.tone(t + 0.12, midi(79), 0.25, "triangle", 0.2); break;
       case "portal_unlock": [0, 7, 12, 16, 19, 24].forEach((n, i) => this.tone(t + i * 0.07, midi(64 + n), 0.5, "sine", 0.16)); break;
@@ -349,7 +353,7 @@ class AudioManagerImpl {
     }
   }
 
-  private tone(t: number, f: number, dur: number, type: OscillatorType, vol: number, slideTo?: number, bus?: GainNode) {
+  private tone(t: number, f: number, dur: number, type: OscillatorType, vol: number, slideTo?: number, bus?: GainNode, attack = 0.01) {
     const ctx = this.ctx!;
     const o = ctx.createOscillator();
     const g = ctx.createGain();
@@ -360,7 +364,7 @@ class AudioManagerImpl {
     o.frequency.setValueAtTime(f * pitch, t);
     if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo * pitch, t + dur);
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(vol, t + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(g).connect(bus ?? this.sfxBus!);
     o.start(t);
