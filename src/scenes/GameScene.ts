@@ -930,7 +930,7 @@ export class GameScene extends Phaser.Scene {
         // stays and nothing plays — Angelo's rule 2026-11-12). New soft
         // sound (B2 Arpegio bajo) + small mint pluses from her body.
         Audio.sfx("heal");
-        this.vfx.healBurst(this.player.x, this.player.body.center.y - 10);
+        this.vfx.healBurst(() => this.player.x, () => this.player.body.center.y - 10);
         Barks.play(this, ["angely_bark_03"], 0.4);
         this.tweens.killTweensOf(h.sprite);
         this.tweens.add({ targets: h.sprite, scale: h.sprite.scale * 2, alpha: 0, y: h.sprite.y - 30, duration: 350, onComplete: () => h.sprite.destroy() });
@@ -984,7 +984,7 @@ export class GameScene extends Phaser.Scene {
         this.fx("fx_spark", "hit", c.spot.x, c.spot.y - 70, 0.3, 0xffe27a);
         this.vfx.checkpointSparkle(c.spot.x, c.spot.y - 70);
         // v80: the same small heal burst from her body on checkpoint touch.
-        this.vfx.healBurst(this.player.x, this.player.body.center.y - 10);
+        this.vfx.healBurst(() => this.player.x, () => this.player.body.center.y - 10);
       }
     }
 

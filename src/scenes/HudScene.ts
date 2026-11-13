@@ -137,6 +137,7 @@ export class HudScene extends Phaser.Scene {
     const ge = this.game.events;
     const handlers: Record<string, (...a: never[]) => void> = {
       "hud:toast": (t: string) => this.toast(t),
+      "hud:toast-hide": () => this.hideToast(),
       "hud:banner": (t: string) => this.banner(t),
       "hud:paused": () => this.showPause(),
       "hud:gameover": (d: { level: number; goal: GoalState; bossHp?: number; bossMax?: number; bossPhase?: number }) => this.showGameOver(d),
@@ -701,6 +702,12 @@ export class HudScene extends Phaser.Scene {
     this.toastText.setText(text).setAlpha(0).setY(y + 12);
     this.tweens.add({ targets: this.toastText, alpha: 1, y, duration: 220 });
     this.tweens.add({ targets: this.toastText, alpha: 0, delay: 2600, duration: 400 });
+  }
+
+  /** v81: hide the yellow hint box immediately (crate push). */
+  private hideToast() {
+    this.tweens.killTweensOf(this.toastText);
+    this.toastText.setAlpha(0);
   }
 
   private banner(text: string) {

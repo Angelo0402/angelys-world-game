@@ -233,8 +233,12 @@ export class VisualFX {
    *  mint sparkles twinkle on her body + a faint mint glow. Plays on heart
    *  pickup (when it heals) and on checkpoint touch. Full life + heart =
    *  nothing — gated by Player.heal() in GameScene.checkPickups, so this
-   *  method only ever runs on a real heal. */
-  healBurst(x: number, y: number): void {
+   *  method only ever runs on a real heal.
+   *  v81 FIX: the anchor is a live position (getX/getY closures), not a
+   *  snapshot — every element re-anchors to Angely each frame, so the
+   *  effect rides with her when she walks instead of floating where she
+   *  was standing (bug found by Angelo on v80, 2026-11-12). */
+  healBurst(getX: () => number, getY: () => number): void {
     const MINT = 0x6ef2a8;
     // (dx, dy, size px, spawn delay ms) — mirrors the approved GIF.
     const PLUSES: Array<[number, number, number, number]> = [
@@ -248,44 +252,61 @@ export class VisualFX {
     ];
     for (const [dx, dy, size, delay] of PLUSES) {
       this.scene.time.delayedCall(delay, () => {
-        const img = this.scene.add.image(x + dx, y + dy, "heal_plus").setTint(MINT).setDepth(50).setAlpha(0).setScale(size / 32);
+        const img = this.scene.add.image(getX() + dx, getY() + dy, "heal_plus").setTint(MINT).setDepth(50).setAlpha(0).setScale(size / 32);
         this.scene.tweens.add({
           targets: img,
-          y: y + dy - 50,
-          x: x + dx + 2,
           duration: 950,
           ease: "Cubic.easeOut",
           onUpdate: (tween: Phaser.Tweens.Tween) => {
             const p = tween.progress;
+            // Re-anchor to her live position every frame; the rise is
+            // relative to where she is NOW, not where she was at spawn.
+            img.setPosition(getX() + dx + 2 * p, getY() + dy - 50 * p);
             img.setAlpha(p < 0.1 ? p / 0.1 : p > 0.65 ? 1 - (p - 0.65) / 0.35 : 1);
           },
           onComplete: () => img.destroy(),
         });
       });
     }
-    // Tiny sparkles twinkling on her body.
-    const sparks = this.scene.add.particles(x, y, "dot", {
-      x: { min: -14, max: 14 },
-      y: { min: -25, max: 20 },
-      lifespan: 700,
-      speed: { min: 0, max: 8 },
-      scale: { start: 0.35, end: 0 },
-      alpha: { start: 0.9, end: 0 },
-      tint: MINT,
-      blendMode: Phaser.BlendModes.ADD,
-      frequency: 90,
-    });
-    sparks.setDepth(50);
-    this.scene.time.delayedCall(900, () => sparks.destroy());
-    // Faint mint glow on the body.
-    const glow = this.scene.add.image(x, y - 10, "glow").setTint(MINT).setDepth(49).setAlpha(0).setScale(0.5);
+    // Tiny sparkles twinkling on her body — individual dots so each one
+    // re-anchors to her live position like the pluses.
+    const SPARKS: Array<[number, number, number]> = [
+      [-12, -20, 0],
+      [10, -15, 90],
+      [-4, 5, 180],
+      [13, 10, 270],
+      [-9, -8, 360],
+      [5, -22, 450],
+      [-14, 12, 540],
+      [8, 2, 630],
+    ];
+    for (const [sx, sy, delay] of SPARKS) {
+      this.scene.time.delayedCall(delay, () => {
+        const dot = this.scene.add.image(getX() + sx, getY() + sy, "dot").setTint(MINT).setDepth(50).setAlpha(0.9).setScale(0.35).setBlendMode(Phaser.BlendModes.ADD);
+        this.scene.tweens.add({
+          targets: dot,
+          duration: 700,
+          onUpdate: (tween: Phaser.Tweens.Tween) => {
+            const p = tween.progress;
+            dot.setPosition(getX() + sx, getY() + sy);
+            dot.setAlpha(0.9 * (1 - p));
+            dot.setScale(0.35 * (1 - p));
+          },
+          onComplete: () => dot.destroy(),
+        });
+      });
+    }
+    // Faint mint glow on the body — rides with her too.
+    const glow = this.scene.add.image(getX(), getY() - 10, "glow").setTint(MINT).setDepth(49).setAlpha(0).setScale(0.5);
     this.scene.tweens.add({
       targets: glow,
-      alpha: 0.22,
-      duration: 120,
-      onComplete: () => {
-        this.scene.tweens.add({ targets: glow, alpha: 0, duration: 700, onComplete: () => glow.destroy() });
+      duration: 820,
+      onUpdate: (tween: Phaser.Tweens.Tween) => {
+        const p = tween.progress;
+        glow.setPosition(getX(), getY() - 10);
+        glow.setAlpha(p < 0.15 ? 0.22 * (p / 0.15) : 0.22 * (1 - (p - 0.15) / 0.85));
       },
+      onComplete: () => glow.destroy(),
     });
   }
 

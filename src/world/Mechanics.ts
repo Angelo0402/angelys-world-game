@@ -82,6 +82,7 @@ interface Hint {
   text: string | (() => string);
   shown: boolean;
   when?: () => boolean;
+  id?: string;
 }
 
 const PLATFORM_ART: Record<PlatformDef["prop"], "plat_l" | "plat_m" | "plat_s"> = {
@@ -113,6 +114,8 @@ export class Mechanics {
   private crumbles: Crumble[] = [];
   private targets: Target[] = [];
   private hints: Hint[] = [];
+  /** True while the yellow crate-push hint toast is on screen (v81). */
+  private crateHintVisible = false;
   private swordWarned = false;
   private moverClock = 0;
   /** Landing-on-crate detection. Player has no public landed hook (its
@@ -232,7 +235,7 @@ export class Mechanics {
     } else if (def.blocks === 2) {
       // Low wall under a gate.
     } else if (def.blocks === 3) {
-      this.hints.push({ x: def.x - 520, text: "Too tall to jump! Push the crate against the wall and climb", shown: false });
+      this.hints.push({ x: def.x - 520, text: "Too tall to jump! Push the crate against the wall and climb", shown: false, id: "crate-push" });
     } else if (def.blocks === 4) {
       this.hints.push({ x: def.x - 360, text: "Bounce on the spring to clear the wall!", shown: false });
     } else {
@@ -410,6 +413,12 @@ export class Mechanics {
       }
       if (push) {
         pushing = true;
+        // v81: the moment she starts pushing the crate, the yellow hint box
+        // goes away (Angelo 2026-11-12) — she already knows what to do.
+        if (this.crateHintVisible) {
+          this.crateHintVisible = false;
+          this.scene.game.events.emit("hud:toast-hide");
+        }
         // v79: chevrons point the way the crate was last pushed.
         c.lastPush = push > 0 ? 1 : -1;
         cb.setVelocityX(push * PUSH_SPEED * Math.abs(axis));
@@ -562,6 +571,7 @@ export class Mechanics {
       if (h.shown || (h.when && !h.when())) continue;
       if (player.x > h.x && player.x < h.x + 420 && (h.y === undefined || Math.abs(player.body.bottom - h.y) < 300)) {
         h.shown = true;
+        if (h.id === "crate-push") this.crateHintVisible = true;
         this.scene.toast(typeof h.text === "function" ? h.text() : h.text);
       }
     }
