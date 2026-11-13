@@ -53,10 +53,10 @@ El loop diario toma el PRIMER item de esta lista cada mañana, lo hace, lo verif
 - Implementar SOLO después de su veredicto de v80 (él está probando v80 ahora). Cuando se implemente: primero GIF de ejemplo para su veredicto, luego integración.
 - Estado: pendiente, no empezar.
 
-### 4. Fullscreen / modo inmersivo — PENDIENTE (pedido por Angelo 2026-11-12 21:20, en llamada)
+### 4. Fullscreen / modo inmersivo — [x] HECHO 2026-11-13 (v82)
 - Al abrir el juego los botones de navegación del Galaxy se quedan abajo; quiere que entre automático a fullscreen.
-- Verificado: MainActivity.java es un BridgeActivity pelado, sin código inmersivo; el manifest no tiene flags de fullscreen. SÍ se puede: modo inmersivo sticky nativo en MainActivity (esconder barras, re-esconder al recuperar foco). Sin plugin.
-- Estado: pendiente, para la próxima versión (v82). No tocar en v81.
+- Implementado: modo inmersivo sticky nativo en MainActivity (sin plugin): API 30+ con WindowInsetsController (hide systemBars + BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE + setDecorFitsSystemWindows(false)); fallback legacy IMMERSIVE_STICKY para API <30. Re-aplica en onWindowFocusChanged.
+- Estado: [x] terminado 2026-11-13 (v82, versionCode 46, commit local 50beceb). tsc 0, vite limpio, APK 205.8 MB, MD5 f8213be676ad839810e6e542e21ccb83, ZIP OK, versionCode 46 verificado por aapt2, MainActivity compilada con hideSystemBars() verificado por javap. APK: ~/workspace/your_files/AngelysWorld-v82-TEST.apk. NOTA: el primer `./gradlew assembleDebug` falló en extractDebugAnnotations (lint-gradle sin red, esperado) y el APK quedó STALE (mismo MD5 que v81) — se reconstruyó con `-x :capacitor-android:extractDebugAnnotations`, BUILD SUCCESSFUL, APK fresco. Veredicto en teléfono pendiente (comportamiento inmersivo NO verificable en la VM).
 
 ### 5. Efecto de estrella en el Star Shield (invencible 15s) — PENDIENTE GIF (pedido por Angelo 2026-11-12 21:22)
 - Al coger la estrella es invencible 15 segundos (SHIELD_MS=15000 verificado, Player.ts:69) y hoy "no tiene efecto".
