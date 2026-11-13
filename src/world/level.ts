@@ -199,7 +199,10 @@ function buildSide(info: LevelInfo, r: () => number): LevelDef {
       L.springs.push({ x: x + 330, y: Y });
       L.walls.push({ x: x + 480, y: Y, blocks: 4 });
       L.hearts.push({ x: x + 480, y: Y - 4 * BLOCK_H - 50 });
-      gemSpots.push({ x: x + 420, y: Y - 4 * BLOCK_H - 130 });
+      // Angelo (2026-11-13): gem was Y-4*BLOCK_H-130 — in 9-2 (Y=350) that put it
+      // at y=-60, off-screen with the run camera clamped at scrollY 0, so the
+      // portal stayed sealed at 5/6 gems. Now at wall-top level like the heart.
+      gemSpots.push({ x: x + 420, y: Y - 4 * BLOCK_H - 50 });
       // Return path (Angelo, 2026-10-27): after springing over the wall
       // Angely could not come back for a missed pickup. A platform past the
       // wall reopens the way: ground -> platform (rise 140, within her

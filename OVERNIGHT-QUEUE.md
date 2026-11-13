@@ -1,6 +1,6 @@
-# Cola diaria — Angely's World (loop de las 6 AM)
+# Cola diaria — Angely's World (loop 3× al día desde 2026-11-13)
 
-El loop diario toma el PRIMER item de esta lista cada mañana, lo hace, lo verifica y deja el APK + reporte. Un item por día. Cuando un item se termina, se marca [x] con fecha y se pasa al siguiente. ANTES de la cola, cada mañana el loop hace un SWEEP: caza UN bug nuevo o una mejora concreta del juego y lo propone con GIF para veredicto de Angelo — nada se integra sin su aprobado.
+El loop toma el PRIMER item de esta lista en cada corrida, lo hace, lo verifica y deja el APK + reporte. Un item por corrida. Cuando un item se termina, se marca [x] con fecha y se pasa al siguiente. ANTES de la cola, cada corrida hace un SWEEP: caza UN bug nuevo o una mejora concreta del juego y lo propone con GIF para veredicto de Angelo — nada se integra sin su aprobado.
 
 ## Reglas del loop (fijas)
 
@@ -76,12 +76,12 @@ El loop diario toma el PRIMER item de esta lista cada mañana, lo hace, lo verif
 - Próximo paso: medir la punta de la espada en los frames del strike (local 2–5) contra el rect de 130px, y mandar GIF antes de tocar nada.
 - Estado: pendiente, GIF por hacer.
 
-### 8. Gema del spring en 9-2 fuera de pantalla — PENDIENTE VEREDICTO (sweep del loop, 2026-11-13)
+### 8. [x] Gema del spring en 9-2 fuera de pantalla — HECHO 2026-11-13 (v83)
 - 9-2 Bubble Falls (meta: 6 gemas) pone su 6ta gema en (7355, -60): 60px SOBRE la pantalla. La cámara en modo run no baja de y=0, así que no se ve. El portal exige 6/6, así que con 5/6 queda sellado sin gema visible.
 - Solo se roza en una ventana de ~30ms con salto aguantado y velocidad sub-máxima (apex spring ~391px, cuerpo 40x96, caja 44x44) — en juego normal es inalcanzable. Misma clase que la gema de 3-2 en y=-80, arreglada 2026-10-23.
 - GIF esquemático (no gameplay): `goals/angely-s-world-game/hidden_files/overnight-loop/sweep-2026-11-13/gem_9-2_spring_schematic.gif`. Detalle y evidencia en `sweep-log.md`.
-- Fix propuesto (NO integrado, espera su veredicto): bajar la gema del spring a nivel del muro (`Y - 4*BLOCK_H - 50`, y=20 con Y=350) o clampear gemas a y>=40 en `buildSide`.
-- Estado: pendiente de su veredicto sobre el GIF.
+- Fix integrado: gema del spring bajada a nivel del muro (`Y - 4*BLOCK_H - 50`, y=20 con Y=350, visible como el corazón). Angelo lo ordenó 2026-11-13 06:17 ("Arreglalo").
+- Estado: [x] terminado 2026-11-13 (v83, versionCode 47). Checker `check-levels.cjs`: 9-2 limpio, 6/6 gemas en pantalla. tsc 0, vite limpio, APK 205.8 MB, MD5 78907dfb5624e0e7d7bfcb77f84a1d7c, ZIP OK. APK: ~/workspace/your_files/AngelysWorld-v83-TEST.apk.
 
 ## Historial
 
