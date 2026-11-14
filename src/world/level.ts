@@ -39,6 +39,15 @@ export interface MoverDef {
   period: number;
 }
 
+/** A climbable ladder: x is its centre, yTop the upper floor, yBottom the lower floor.
+ *  PRUEBA ch11 (2026-11-13): Angelo delivers the climbing sprites later; the
+ *  player anim is a placeholder (walk) until then. */
+export interface LadderDef {
+  x: number;
+  yTop: number;
+  yBottom: number;
+}
+
 /** Spiked urchin bobbing along a line. */
 export interface MineDef {
   x: number;
@@ -60,10 +69,21 @@ export interface LevelDef {
   width: number;
   /** Highest world y the camera may show (climb levels go far above 0). */
   top: number;
+  /** PRUEBA ch11: extra camera scroll BELOW the screen, for underground floors
+   *  (run camera bounds become GAME_H + bottom). 0 everywhere else. */
+  bottom: number;
   ground: Segment[];
   platforms: PlatformDef[];
   /** Wide platforms where ground enemies may spawn (climb levels). */
   landings: { x0: number; x1: number; y: number }[];
+  /** Climbable ladders (ch11 only for now). */
+  ladders: LadderDef[];
+  /** Hammer-breakable chests (ch11): breaking one drops coins. Future shop currency. */
+  chests: Spot[];
+  /** Decorative tombstones (ch11): no physics, no hints, no collision. */
+  graves: Spot[];
+  /** Down-arrow effect marker (ch11 11-1): floats over the breakable floor. */
+  downArrow?: Spot;
   hearts: Spot[];
   checkpoints: Spot[];
   spikes: Spot[];
@@ -102,7 +122,7 @@ function rng(seed: number) {
 
 function emptyLevel(mode: LevelMode): LevelDef {
   return {
-    mode, width: 0, top: 0, ground: [], platforms: [], landings: [], hearts: [], checkpoints: [], spikes: [], walls: [], crates: [],
+    mode, width: 0, top: 0, bottom: 0, ground: [], platforms: [], landings: [], ladders: [], chests: [], graves: [], hearts: [], checkpoints: [], spikes: [], walls: [], crates: [],
     springs: [], movers: [], crumbles: [], targets: [], mines: [], gems: [], stars: [], portal: { x: 0, y: GROUND_Y },
   };
 }
@@ -112,6 +132,7 @@ export function buildLevel(info: LevelInfo): LevelDef {
   const L = info.chapter === 10 && info.boss ? crystalCrownArena(emptyLevel("run"))
     : info.boss && info.chapter === 8 ? duneArena(emptyLevel("run"))
     : info.boss ? bossLevel(emptyLevel("run"), info.chapter)
+    : info.chapter === 11 ? buildGraveyard(info, r)
     : info.mode === "climb" ? buildClimb(info, r)
     : buildSide(info, r);
   placeStars(L);
@@ -325,6 +346,118 @@ function buildSide(info: LevelInfo, r: () => number): LevelDef {
   L.hearts.push(...L.checkpoints.map((c) => ({ x: c.x + 90, y: c.y - 40 })));
   L.spikes = L.spikes.filter((s) => !L.checkpoints.some((c) => Math.abs(c.x - s.x) < 200));
   if (info.goal === "gems") L.gems = spread(gemSpots, info.need);
+  return L;
+}
+
+/**
+ * PRUEBA ch11 — The Graveyard (Angelo, 2026-11-13). Hand-laid, NOT piece-generated:
+ * 11-1: surface with graves -> hammer-breakable floor plug -> UNDERGROUND second
+ * half (camera follows Angely down, bottom=500) -> LADDER up -> surface with the
+ * portal on top. 11-2: elevation down -> up -> down -> up with ladders and chests.
+ * Goal gems need 6 in both is the PLACEHOLDER for the collectible Angelo will name;
+ * the portal does NOT open by kills in ch11. Layout constants are explicit so the
+ * schematic GIFs and the checker can read them back.
+ */
+const GY_SURF = GROUND_Y; // 500
+const GY_UNDER = GROUND_Y + 500; // 1000
+const GY_BOTTOM = 500; // camera scroll below the screen
+
+function buildGraveyard(info: LevelInfo, _r: () => number): LevelDef {
+  const L = emptyLevel("run");
+  L.bottom = GY_BOTTOM;
+  const g = (x0: number, x1: number, y: number) => L.ground.push({ x0, x1, y });
+  const grave = (x: number, y: number) => L.graves.push({ x, y });
+  if (info.stage === 1) {
+    // --- 11-1 "The Graveyard" ---
+    // Surface A: graves, a chest, first gems, checkpoint 1.
+    g(-200, 5960, GY_SURF);
+    // The floor plug: a cracked 2-block wall filling an 80px gap in the
+    // surface floor (5960..6040). 3 hammer hits break it and Angely drops
+    // through the hole she just made. Jumping over it also works (shortcut).
+    L.walls.push({ x: 6000, y: GY_SURF, blocks: 2, breakable: true, hits: 3 });
+    L.downArrow = { x: 6000, y: GY_SURF - 170 };
+    // Underground second half: starts under the plug gap so any fall through
+    // the hole lands on it. Skeleton/ghost spawns land here via groundAt.
+    g(5960, 14300, GY_UNDER);
+    // Ladder up: underground floor runs 100px past it; a one-way platform at
+    // the top catches Angely, then a short hop right onto surface B.
+    L.ladders.push({ x: 14200, yTop: GY_SURF, yBottom: GY_UNDER });
+    L.platforms.push({ x: 14200, y: GY_SURF, prop: "plat_float" });
+    // Surface B: 2-3 enemies, last gem, portal on top.
+    g(14420, 17500, GY_SURF);
+    L.portal = { x: 17000, y: GY_SURF };
+    L.width = 17700;
+    L.gems = [
+      { x: 2000, y: GY_SURF - 120 }, { x: 4500, y: GY_SURF - 120 },
+      { x: 8000, y: GY_UNDER - 100 }, { x: 11000, y: GY_UNDER - 100 },
+      { x: 11800, y: GY_UNDER - 100 }, { x: 16200, y: GY_SURF - 100 },
+    ];
+    L.chests = [{ x: 4800, y: GY_SURF }, { x: 9000, y: GY_UNDER }, { x: 12500, y: GY_UNDER }];
+    L.checkpoints = [{ x: 3000, y: GY_SURF }, { x: 10000, y: GY_UNDER }];
+    L.hearts = [
+      { x: 3090, y: GY_SURF - 40 }, { x: 10090, y: GY_UNDER - 40 },
+      { x: 3500, y: GY_SURF - 50 }, { x: 11500, y: GY_UNDER - 50 }, { x: 16500, y: GY_SURF - 50 },
+    ];
+    L.platforms.push(
+      { x: 1500, y: GY_SURF - 125, prop: "plat_log" },
+      { x: 2800, y: GY_SURF - 140, prop: "plat_float" },
+      { x: 4200, y: GY_SURF - 125, prop: "plat_float_small" },
+      { x: 7500, y: GY_UNDER - 140, prop: "plat_float" },
+      { x: 10500, y: GY_UNDER - 140, prop: "plat_log" },
+      { x: 13000, y: GY_UNDER - 140, prop: "plat_float_small" },
+    );
+    L.spikes.push({ x: 9500, y: GY_UNDER }, { x: 13500, y: GY_UNDER });
+    L.walls.push({ x: 5200, y: GY_SURF, blocks: 2 }, { x: 15200, y: GY_SURF, blocks: 2 });
+    grave(1200, GY_SURF); grave(1800, GY_SURF); grave(2600, GY_SURF); grave(3200, GY_SURF); grave(4200, GY_SURF);
+    grave(7000, GY_UNDER); grave(8200, GY_UNDER);
+    grave(15500, GY_SURF); grave(16000, GY_SURF);
+  } else {
+    // --- 11-2 "Graveyard Depths": down -> up -> down -> up ---
+    // Each down step is a floor edge the player walks off (lower floor starts
+    // exactly where the upper ends, so the fall always lands). Each up step
+    // is a ladder with a one-way platform at the top + a 150px hop to the
+    // next floor.
+    g(-200, 4000, GY_SURF); // S1 high
+    g(4000, 9000, GY_UNDER); // S2 low
+    L.ladders.push({ x: 8800, yTop: GY_SURF, yBottom: GY_UNDER });
+    L.platforms.push({ x: 8800, y: GY_SURF, prop: "plat_float" });
+    g(9020, 13500, GY_SURF); // S3 high
+    g(13500, 17500, GY_UNDER); // S4 low
+    L.ladders.push({ x: 17300, yTop: GY_SURF, yBottom: GY_UNDER });
+    L.platforms.push({ x: 17300, y: GY_SURF, prop: "plat_float" });
+    g(17520, 19500, GY_SURF); // S5 high, portal here
+    L.portal = { x: 19000, y: GY_SURF };
+    L.width = 19700;
+    L.gems = [
+      { x: 1500, y: GY_SURF - 100 }, { x: 5500, y: GY_UNDER - 100 },
+      { x: 8000, y: GY_UNDER - 100 }, { x: 10500, y: GY_SURF - 100 },
+      { x: 15000, y: GY_UNDER - 100 }, { x: 18500, y: GY_SURF - 100 },
+    ];
+    L.chests = [
+      { x: 3000, y: GY_SURF }, { x: 6500, y: GY_UNDER },
+      { x: 11500, y: GY_SURF }, { x: 15500, y: GY_UNDER },
+    ];
+    L.checkpoints = [{ x: 2500, y: GY_SURF }, { x: 12000, y: GY_SURF }];
+    L.hearts = [
+      { x: 2590, y: GY_SURF - 40 }, { x: 12090, y: GY_SURF - 40 },
+      { x: 7000, y: GY_UNDER - 50 }, { x: 16000, y: GY_UNDER - 50 }, { x: 18500, y: GY_SURF - 50 },
+    ];
+    L.platforms.push(
+      { x: 1800, y: GY_SURF - 125, prop: "plat_float" },
+      { x: 5500, y: GY_UNDER - 140, prop: "plat_log" },
+      { x: 7800, y: GY_UNDER - 140, prop: "plat_float" },
+      { x: 10000, y: GY_SURF - 125, prop: "plat_float_small" },
+      { x: 12500, y: GY_SURF - 125, prop: "plat_log" },
+      { x: 15000, y: GY_UNDER - 140, prop: "plat_float" },
+      { x: 18300, y: GY_SURF - 125, prop: "plat_float_small" },
+    );
+    L.spikes.push({ x: 6000, y: GY_UNDER }, { x: 14800, y: GY_UNDER });
+    grave(1000, GY_SURF); grave(2200, GY_SURF);
+    grave(5000, GY_UNDER); grave(7500, GY_UNDER);
+    grave(10000, GY_SURF); grave(12500, GY_SURF);
+    grave(14500, GY_UNDER); grave(16500, GY_UNDER);
+    grave(18000, GY_SURF);
+  }
   return L;
 }
 

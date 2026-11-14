@@ -150,7 +150,8 @@ export class Mechanics {
   }
 
   private prop(name: string) {
-    return `${name}_${this.chapter.id}`;
+    // PRUEBA ch11: no *_11 art exists yet — use ch10's as placeholder (Angelo delivers art).
+    return `${name}_${this.chapter.id === 11 ? 10 : this.chapter.id}`;
   }
 
   // ----------------------------------------------------------------- build
@@ -601,6 +602,12 @@ export class Mechanics {
   /** True when x is inside a standing wall (no ground spawns there). */
   blocked(x: number, margin = 60) {
     return this.walls.some((w) => !w.broken && !w.def.hang && Math.abs(w.def.x - x) < BLOCK_W / 2 + margin);
+  }
+
+  /** PRUEBA ch11: true once the breakable wall near x has been smashed (used
+   *  to hide the down-arrow over the underground entrance). */
+  wallBrokenAt(x: number): boolean {
+    return this.walls.some((w) => w.def.breakable && Math.abs(w.def.x - x) < 80 && w.broken);
   }
 
   // ---------------------------------------------------------------- weapons

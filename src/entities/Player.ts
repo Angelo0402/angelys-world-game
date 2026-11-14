@@ -7,6 +7,7 @@ import { Barks } from "../audio/barks";
 import { MAX_HEARTS, WEAPON_ORDER, type WeaponId } from "../config";
 import type { FrameInput } from "../input/controls";
 import type { GameScene } from "../scenes/GameScene";
+import type { LadderDef } from "../world/level";
 import { MotionPolish } from "./motionPolish";
 
 /**
@@ -49,6 +50,8 @@ const ATTACK_TIMING: Record<WeaponId, AttackTiming> & { sword_air: AttackTiming 
 
 const SPEED = 350;
 export const PUSH_SPEED = 140;
+/** PRUEBA ch11 ladder climb speed (px/s). */
+const CLIMB_SPEED = 150;
 const SWIM_SPEED = 230;
 const SWIM_STROKE = 430;
 const SWIM_GRAVITY = 420;
@@ -95,6 +98,13 @@ export class Player {
   pushing = false;
   /** Underwater: JUMP is a swim stroke usable anytime and gravity is light. */
   swim = false;
+  /** PRUEBA ch11: ladders the scene hands over (empty everywhere else). */
+  ladders: LadderDef[] = [];
+  /** True while climbing a ladder (gravity off, vertical input moves her). */
+  climbing = false;
+  private climbLadder?: LadderDef;
+  /** PRUEBA ch11: hold the climb-top crouch pose until this time. */
+  private climbCrouchUntil = 0;
   private lastStroke = 0;
   private nextBreath = 0;
   private nextTrail = 0;
@@ -158,6 +168,7 @@ export class Player {
       angely_ray: scaleForHeight("angely", HEIGHT, "idle"),
       angely_swim: scaleForHeight("angely", HEIGHT, "idle"),
       angely_got: scaleForHeight("angely", HEIGHT, "idle"),
+      angely_climb: scaleForHeight("angely", HEIGHT, "idle"),
     };
     this.bubbles = scene.add
       .particles(0, 0, "bubble", {
@@ -247,6 +258,20 @@ export class Player {
     return new Phaser.Geom.Rectangle(this.body.x, this.body.y, this.body.width, this.body.height);
   }
 
+  /** PRUEBA ch11: the ladder Angely overlaps, if any. */
+  private ladderAt(): LadderDef | undefined {
+    return this.ladders.find(
+      (l) => Math.abs(this.x - l.x) < 36 && this.body.bottom >= l.yTop - 30 && this.body.top <= l.yBottom + 30,
+    );
+  }
+
+  /** PRUEBA ch11: leave the ladder, gravity back on. */
+  private exitClimb() {
+    this.climbing = false;
+    this.climbLadder = undefined;
+    this.body.setAllowGravity(true);
+  }
+
   private setAnim(sheet: SpriteKey, anim: string, restart = false) {
     if (sheet !== this.sheet) {
       this.sheet = sheet;
@@ -288,6 +313,67 @@ export class Player {
 
     if (this.state === "hurt" && time > this.stateUntil) this.state = "normal";
     if (this.state === "attack" && time > this.stateUntil) this.state = "normal";
+
+    // --- Ladder (PRUEBA ch11) ---
+    // Climbing: gravity off, up/down moves her along the ladder, JUMP lets
+    // go (the jump buffer below then fires the jump). Entering needs overlap
+    // + up/down held; rising fast past a ladder does NOT grab it, so a jump
+    // held on touch doesn't snap her onto a ladder mid-leap.
+    if (this.climbing) {
+      const lad = this.climbLadder!;
+      if (input.jumpPressed) {
+        this.exitClimb();
+      } else {
+        const vy = input.upHeld ? -CLIMB_SPEED : input.downHeld ? CLIMB_SPEED : 0;
+        body.setVelocityX(0);
+        body.setVelocityY(vy);
+        body.x = lad.x - body.width / 2;
+        if (vy < 0 && body.bottom <= lad.yTop + 6) {
+          // Reached the top: stand on the floor / one-way platform above,
+          // crouch to get up (climb strip frame 8), then idle. The crouch
+          // holds 1200ms so the beat reads — at 450ms it flashed by.
+          body.y = lad.yTop - body.height;
+          body.setVelocity(0, 0);
+          this.exitClimb();
+          this.setAnim("angely_climb", "crouch");
+          this.climbCrouchUntil = time + 1200;
+          this.sync(time);
+          return;
+        }
+        if (vy > 0 && body.bottom >= lad.yBottom) {
+          body.y = lad.yBottom - body.height;
+          body.setVelocity(0, 0);
+          this.exitClimb();
+          this.setAnim("angely", "idle");
+          this.sync(time);
+          return;
+        }
+        // Real climb anim (angely_climb sheet, 8f @ 10fps). Hold the pose
+        // when she stops mid-ladder instead of climbing in place.
+        this.setAnim("angely_climb", "climb");
+        if (vy !== 0) this.sprite.anims.resume();
+        else this.sprite.anims.pause();
+        this.sync(time);
+        return;
+      }
+    } else if (this.state === "normal" && !this.swim) {
+      const lad = this.ladderAt();
+      if (lad && (input.upHeld || input.downHeld) && body.velocity.y > -100) {
+        const atTop = this.grounded && body.bottom <= lad.yTop + 8;
+        const atBottom = this.grounded && body.bottom >= lad.yBottom - 8;
+        const blocked = (atTop && input.upHeld && !input.downHeld) || (atBottom && input.downHeld && !input.upHeld);
+        if (!blocked) {
+          this.climbing = true;
+          this.climbLadder = lad;
+          body.setAllowGravity(false);
+          body.setVelocity(0, 0);
+          body.x = lad.x - body.width / 2;
+          this.setAnim("angely", "idle");
+          this.sync(time);
+          return;
+        }
+      }
+    }
 
     if (input.jumpPressed) this.jumpBufferedAt = time;
     if (input.attackPressed) this.attackBufferedAt = time;
@@ -520,6 +606,12 @@ export class Player {
       this.setAnim(sword ? "angely_sword" : "angely", "hurt");
       return;
     }
+    // PRUEBA ch11: hold the climb-top crouch briefly after reaching a
+    // ladder top (physics keeps running; only the pose is held).
+    if (time < this.climbCrouchUntil) {
+      this.setAnim("angely_climb", "crouch");
+      return;
+    }
     const body = this.body;
     if (!this.grounded) {
       // Jump set of 9 phases (ChatGPT sheet, Angelo-approved GIF 2026-10-23).
@@ -569,6 +661,7 @@ export class Player {
    *  `pool` lets the caller pick a context bark (e.g. squishy attack) over the default hurt pool. */
   hurt(fromX: number, pool?: SfxName[]): boolean {
     if (!this.alive || this.invulnerable || this.state === "celebrate" || this.state === "pickup") return false;
+    if (this.climbing) this.exitClimb();
     this.hearts = Math.max(0, this.hearts - 1);
     this.scene.onHeartsChanged(this.hearts);
     Audio.sfx("player_hurt");
@@ -601,6 +694,7 @@ export class Player {
   /** Pit or lava: lose one heart and return to the checkpoint. A Star Shield skips the heart. */
   fall(respawnX: number, respawnY: number) {
     if (!this.alive) return;
+    if (this.climbing) this.exitClimb();
     if (this.shielded) {
       this.body.reset(respawnX, respawnY);
       this.body.setVelocity(0, 0);
@@ -627,6 +721,7 @@ export class Player {
   }
 
   private die() {
+    if (this.climbing) this.exitClimb();
     this.state = "dead";
     Audio.sfx("player_defeat");
     this.body.setVelocity(-this.facing * 120, -260);

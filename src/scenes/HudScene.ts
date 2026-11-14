@@ -37,6 +37,9 @@ export class HudScene extends Phaser.Scene {
   private killPanel!: Phaser.GameObjects.Container;
   private killText!: Phaser.GameObjects.Text;
   private lockIcon!: Phaser.GameObjects.Graphics;
+  /** PRUEBA ch11: coin counter (top-right) — banked coins, future shop currency. */
+  private coinIcon!: Phaser.GameObjects.Graphics;
+  private coinText!: Phaser.GameObjects.Text;
   private bossPanel!: Phaser.GameObjects.Container;
   private bossFill!: Phaser.GameObjects.Rectangle;
   private bossChip!: Phaser.GameObjects.Rectangle;
@@ -128,6 +131,7 @@ export class HudScene extends Phaser.Scene {
     const onData = (_p: unknown, key: string, value: unknown) => {
       if (key === "hearts") this.setHearts(value as number);
       if (key === "goal") this.setGoal(value as GoalState);
+      if (key === "coins") this.setCoins(value as number);
       if (key === "weapon" || key === "weapons") this.refreshWeapon();
       if (key === "boss") this.setBoss(value as { name: string; hp: number; max: number; veilPhase?: number } | null);
       if (key === "shield") this.setShield(value as number);
@@ -165,6 +169,7 @@ export class HudScene extends Phaser.Scene {
     this.setHearts(this.registry.get("hearts") ?? MAX_HEARTS);
     this.setShield(this.registry.get("shield") ?? 0);
     this.setGoal(this.registry.get("goal") ?? { kind: "kills", have: 0, need: 0 });
+    this.setCoins(this.registry.get("coins") ?? 0);
     this.setBoss(this.registry.get("boss") ?? null);
     this.refreshWeapon();
     this.setSpecial(this.registry.get("special") ?? 0);
@@ -217,6 +222,16 @@ export class HudScene extends Phaser.Scene {
       .setOrigin(0.5, 0);
     this.gemIcon = this.add.image(GAME_W / 2 - 122, 39, "hud_gem").setDisplaySize(44, 54).setVisible(false);
     this.killPanel = this.add.container(0, 0, [kp, this.killText, this.lockIcon, this.gemIcon, lvl]);
+
+    // PRUEBA ch11: coin counter, top-right (nothing else lives there). Gold
+    // disc drawn in code + count. Joins cinemaTop via buildTopBar order.
+    this.coinIcon = this.add.graphics();
+    this.coinIcon.fillStyle(0xffd75a, 1).fillCircle(GAME_W - 130, 39, 15);
+    this.coinIcon.fillStyle(0xffb52e, 1).fillCircle(GAME_W - 130, 39, 11);
+    this.coinIcon.fillStyle(0xffe27a, 1).fillCircle(GAME_W - 130, 39, 7);
+    this.coinText = this.add
+      .text(GAME_W - 108, 39, "0", { fontFamily: FONT, fontSize: "24px", fontStyle: "bold", color: "#ffd75a", stroke: "#2a1640", strokeThickness: 5 })
+      .setOrigin(0, 0.5);
 
     const pause = this.add.container(78, 40);
     pause.add(hudDisc(this, "hud_pause", 28)).setSize(64, 64).setInteractive({ useHandCursor: true });
@@ -468,6 +483,11 @@ export class HudScene extends Phaser.Scene {
     this.shieldText.setText(`★ ${seconds}s`).setColor(colors[seconds % colors.length]);
   }
 
+  /** PRUEBA ch11: banked coin count (top-right). */
+  private setCoins(n: number) {
+    this.coinText.setText(String(Math.max(0, n)));
+  }
+
   private setGoal(g: GoalState) {
     const info = LEVELS[this.levelIndex];
     const shown = Math.min(g.have, g.need);
@@ -654,12 +674,18 @@ export class HudScene extends Phaser.Scene {
     const ax = Phaser.Math.Clamp(dx / JOY_R, -1, 1);
     const mag = Math.abs(ax) < DEAD_ZONE ? 0 : Math.min(1, (Math.abs(ax) - DEAD_ZONE) / 0.5);
     touchState.axis = Math.sign(ax) * (mag === 0 ? 0 : 0.45 + 0.55 * mag);
+    // PRUEBA ch11: joystick vertical drives the ladder (hold up to climb the
+    // whole ladder, hold down to come back down). Same dead-zone/ramp as X.
+    const ay = Phaser.Math.Clamp(dy / JOY_R, -1, 1);
+    const magY = Math.abs(ay) < DEAD_ZONE ? 0 : Math.min(1, (Math.abs(ay) - DEAD_ZONE) / 0.5);
+    touchState.axisY = Math.sign(ay) * (magY === 0 ? 0 : 0.45 + 0.55 * magY);
   }
 
   private onUp(p: Phaser.Input.Pointer) {
     if (p.id === this.joyId) {
       this.joyId = -1;
       touchState.axis = 0;
+      touchState.axisY = 0;
       this.resetJoy();
     }
     if (p.id === this.jumpId) {

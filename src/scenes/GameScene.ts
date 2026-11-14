@@ -3,9 +3,10 @@ import { applyOrigin, scaleForHeight } from "../assets/manifest";
 import { PROPS, SPRITES, type SpriteKey } from "../assets/sprites.gen";
 import { Audio } from "../audio/AudioManager";
 import type { SfxName } from "../audio/manifest";
+import { GraveyardMusic } from "../audio/GraveyardMusic";
 import { Barks, ENTRY_BARKS, HURT_BARKS, SIGHT_BARKS, STOMP_BARKS } from "../audio/barks";
 import {
-  CHAPTERS, GAME_H, GAME_W, GROUND_Y, LAST_LEVEL, LEVELS, MAX_HEARTS, WEAPON_NAMES, WEAPON_ORDER, levelLabel, weaponsBefore,
+  BG11_FG, BG11_MID, BG11_SKY, CHAPTERS, FONT, GAME_H, GAME_W, GROUND_Y, LAST_LEVEL, LEVELS, MAX_HEARTS, WEAPON_NAMES, WEAPON_ORDER, levelLabel, weaponsBefore,
   type ChapterDef, type LevelInfo, type WeaponId,
 } from "../config";
 import { Boss, BOSS_NAME, HOVER_Y } from "../entities/Boss";
@@ -15,7 +16,7 @@ import { ENEMY_TYPES, type ProjectileSheet } from "../entities/enemyTypes";
 import { Player } from "../entities/Player";
 import { KeyboardInput, NO_INPUT, resetTouch, touchState, type FrameInput } from "../input/controls";
 import { Gamepad } from "../input/gamepad";
-import { addWeapon, loadSave, unlockLevel, updateSave } from "../save";
+import { addCoins, addWeapon, loadSave, unlockLevel, updateSave } from "../save";
 import { CrystalVeilBoss } from "../entities/CrystalVeilBoss";
 import { Sandworm } from "../entities/Sandworm";
 import { VEIL_NAME, VEIL_PHASE2 } from "../story/crystalveil";
@@ -136,11 +137,25 @@ export class GameScene extends Phaser.Scene {
   hazards!: Phaser.Physics.Arcade.Group;
   private platformTops: { x0: number; x1: number; y: number }[] = [];
   private far!: Phaser.GameObjects.Image;
+  /** bg11 only: midground ruins (depth -80) + foreground branches (depth 30). */
+  private mid!: Phaser.GameObjects.Image;
+  private fore!: Phaser.GameObjects.Image;
   private look?: DioramaLook;
   private hearts: Pickup[] = [];
   private seenTypes = new Set<string>();
   private gems: Pickup[] = [];
   private stars: Pickup[] = [];
+  /** PRUEBA ch11: coin pickups (spawned by broken chests) + banked total. */
+  private coinPickups: Pickup[] = [];
+  private coinsTotal = 0;
+  /** PRUEBA ch11: hammer-breakable chests. */
+  private chests: { x: number; y: number; img: Phaser.GameObjects.Image; body: Phaser.GameObjects.Rectangle; broken: boolean }[] = [];
+  private chestGroup!: Phaser.Physics.Arcade.StaticGroup;
+  /** PRUEBA ch11: down-arrow over the breakable floor (11-1). */
+  private downArrow?: Phaser.GameObjects.Container;
+  /** PRUEBA ch11: GraveyardMusic instance — chapter 11 ONLY, replaces Audio.music. */
+  private graveyardMusic?: GraveyardMusic;
+  private downArrowX = 0;
   private shieldShown = -1;
   private checkpoints: { spot: Spot; sprite: Phaser.GameObjects.Sprite; active: boolean }[] = [];
   private respawn: Spot = { x: 160, y: GROUND_Y - 80 };
@@ -206,6 +221,11 @@ export class GameScene extends Phaser.Scene {
     this.hearts = [];
     this.gems = [];
     this.stars = [];
+    this.coinPickups = [];
+    this.coinsTotal = 0;
+    this.chests = [];
+    this.downArrow = undefined;
+    this.downArrowX = 0;
     this.shieldShown = -1;
     this.checkpoints = [];
     this.platformTops = [];
@@ -269,7 +289,9 @@ export class GameScene extends Phaser.Scene {
       this.cameras.main.setBounds(0, 0, W, GAME_H);
     } else {
       this.physics.world.setBounds(0, -600, W, GAME_H + 1200);
-      this.cameras.main.setBounds(0, 0, W, GAME_H);
+      // PRUEBA ch11: underground floors need the camera to scroll DOWN.
+      // L.bottom is 0 everywhere else, so this changes nothing there.
+      this.cameras.main.setBounds(0, 0, W, GAME_H + L.bottom);
     }
     this.physics.world.setBoundsCollision(true, true, swim, false);
     this.cameras.main.setBackgroundColor(0x120d1f);
@@ -312,6 +334,12 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.collider(this.enemyGroup, this.groundGroup);
     this.physics.add.collider(this.enemyGroup, this.platformGroup);
     this.mech.colliders(this.player, this.enemyGroup, this.groundGroup);
+    // PRUEBA ch11: chests are solid for Angely and the enemies; ladders ride on the player.
+    if (this.chestGroup) {
+      this.physics.add.collider(this.player.rect, this.chestGroup);
+      this.physics.add.collider(this.enemyGroup, this.chestGroup);
+    }
+    this.player.ladders = L.ladders;
     this.physics.add.overlap(this.player.rect, this.enemyGroup, (_p, e) => this.onPlayerTouchEnemy(e as Phaser.GameObjects.Rectangle));
     this.physics.add.overlap(this.player.rect, this.projectiles, (_p, pr) => this.onProjectileHitPlayer(pr as Phaser.Physics.Arcade.Sprite));
     this.physics.add.overlap(this.projectiles, this.groundGroup, (pr) => this.impactProjectile(pr as Phaser.Physics.Arcade.Sprite));
@@ -346,11 +374,23 @@ export class GameScene extends Phaser.Scene {
     this.registry.set("level", info.index);
     this.registry.set("hearts", MAX_HEARTS);
     this.registry.set("goal", { ...this.goal });
+    // PRUEBA ch11: banked coins from the save, shown in the HUD counter.
+    this.coinsTotal = loadSave().coins;
+    this.registry.set("coins", this.coinsTotal);
     this.registry.set("portalOpen", this.portal.isOpen);
     this.registry.set("boss", null);
     this.publishWeapons();
 
-    Audio.music(this.chapter.music);
+    // PRUEBA ch11 (2026-11-13): GraveyardMusic (procedural dark-night
+    // music, ChatGPT-authored, reviewed) replaces music_shadow in
+    // chapter 11 ONLY. All other chapters keep Audio.music unchanged.
+    // GraveyardMusic starts on first pointerdown (browser audio unlock)
+    // and destroys itself on scene shutdown/destroy.
+    if (this.chapter.id === 11) {
+      this.graveyardMusic = new GraveyardMusic(this);
+    } else {
+      Audio.music(this.chapter.music);
+    }
     Audio.duck(false);
 
     this.scene.launch("Hud");
@@ -414,6 +454,19 @@ export class GameScene extends Phaser.Scene {
     // Solid backdrop behind the image so no black bars ever show through
     const bgColor = this.chapter.id === 5 ? 0x1a0f2e : this.chapter.id === 6 ? 0x2b6cd2 : 0x0d0a1a;
     this.add.rectangle(0, 0, GAME_W + 400, GAME_H + 400, bgColor).setOrigin(0).setDepth(-101).setScrollFactor(0);
+    if (this.chapter.id === 11) {
+      // bg11 — three parallax layers (Option A, Moonlit Graveyard Ruins).
+      // Explicit display sizes from config (BG11_*): in this engine a layer's
+      // drift is (displayWidth - GAME_W), so each layer's size IS its parallax
+      // factor — no BG_ZOOM here, the sizes already are the display sizes.
+      this.far = this.add.image(0, 0, "bg11_sky").setOrigin(0).setDepth(-100);
+      this.far.setDisplaySize(BG11_SKY.w, BG11_SKY.h);
+      this.mid = this.add.image(0, 0, "bg11_mid").setOrigin(0).setDepth(-80);
+      this.mid.setDisplaySize(BG11_MID.w, BG11_MID.h);
+      this.fore = this.add.image(0, 0, "bg11_fg").setOrigin(0).setDepth(30);
+      this.fore.setDisplaySize(BG11_FG.w, BG11_FG.h);
+      return;
+    }
     this.far = this.add.image(0, 0, key).setOrigin(0).setDepth(-100);
     const zoom = Math.max(GAME_W / this.far.width, GAME_H / this.far.height) * BG_ZOOM;
     this.far.setScale(zoom);
@@ -435,16 +488,38 @@ export class GameScene extends Phaser.Scene {
     const extra = this.far.displayHeight - GAME_H;
     // Climbing: the sky drifts down slowly as Angely rises.
     const ty = climb ? Phaser.Math.Clamp((view.y - this.level.top) / Math.max(1, GAME_H - this.level.top), 0, 1) : 0.6;
-    this.far.setPosition(view.x - (this.far.displayWidth - GAME_W) * t, view.y - extra * ty);
+    if (this.chapter.id === 11) {
+      // bg11: place all three layers, each with its own vertical band (ty)
+      // and drift (from its displayWidth). Dim ALL THREE together while the
+      // camera is underground, so the lower half reads as a cave.
+      const underground = view.centerY > GROUND_Y + 60;
+      const tint = underground ? 0x565678 : 0xffffff;
+      this.placeBgLayer(this.far, BG11_SKY.ty, t, view, tint);
+      this.placeBgLayer(this.mid, BG11_MID.ty, t, view, tint);
+      this.placeBgLayer(this.fore, BG11_FG.ty, t, view, tint);
+    } else {
+      this.far.setPosition(view.x - (this.far.displayWidth - GAME_W) * t, view.y - extra * ty);
+    }
     this.atmosphere?.place(view);
     this.water?.setPosition(view.x, view.y);
     this.lowHealthVignette?.setPosition(view.centerX, view.centerY);
     this.look?.place(view, this.far, span, t, ty);
   }
 
+  /** One bg11 parallax layer: same drift formula as the single-image path
+   * (drift = displayWidth - GAME_W, so the size IS the parallax factor),
+   * with its own vertical band (ty) and dim tint. */
+  private placeBgLayer(img: Phaser.GameObjects.Image, ty: number, t: number, view: Phaser.Geom.Rectangle, tint: number) {
+    const extra = img.displayHeight - GAME_H;
+    img.setPosition(view.x - (img.displayWidth - GAME_W) * t, view.y - extra * ty);
+    img.setTint(tint);
+  }
+
   private buildGround() {
     const c = this.chapter.id;
-    const key = `ground_${c}`;
+    // PRUEBA ch11: no ground_11 texture exists — use ch10's (Angelo delivers art).
+    const art = c === 11 ? 10 : c;
+    const key = `ground_${art}`;
     const meta = PROPS[key as keyof typeof PROPS];
     const fill = ({
       1: 0x3b2414, 2: 0x2a2d3c, 3: 0x1d1418, 4: 0x2c3a52, 5: 0x1c1230, 6: 0xd8dcef, 7: 0x1d4a5a,
@@ -515,8 +590,10 @@ export class GameScene extends Phaser.Scene {
 
   private buildPlatforms() {
     const c = this.chapter.id;
+    // PRUEBA ch11: no plat_*_11 textures exist — use ch10's (Angelo delivers art).
+    const art = c === 11 ? 10 : c;
     for (const p of this.level.platforms) {
-      const key = `${PLATFORM_ART[p.prop]}_${c}`;
+      const key = `${PLATFORM_ART[p.prop]}_${art}`;
       const meta = PROPS[key as keyof typeof PROPS];
       this.add
         .image(p.x, p.y - meta.height * meta.surface, key)
@@ -538,7 +615,8 @@ export class GameScene extends Phaser.Scene {
 
   private buildProps() {
     const L = this.level;
-    const spikesKey = `spikes_${this.chapter.id}`;
+    // PRUEBA ch11: no spikes_11 texture exists — use ch10's (Angelo delivers art).
+    const spikesKey = `spikes_${this.chapter.id === 11 ? 10 : this.chapter.id}`;
     const spikes = PROPS[spikesKey as keyof typeof PROPS];
     for (const s of L.spikes) {
       const w = spikes.width * 0.8;
@@ -560,11 +638,67 @@ export class GameScene extends Phaser.Scene {
     for (const h of L.hearts) this.addHeart(h.x, h.y);
     for (const g of L.gems) this.gems.push(this.addBobber("stargem", g.x, g.y, 46));
     for (const s of L.stars) this.stars.push(this.addBobber("starshield", s.x, s.y, 52));
+    this.buildLadders();
+    this.buildChests();
+    this.buildGraves();
+    this.buildDownArrow();
 
     this.portal = new Portal(this, L.portal.x, !this.info.boss, L.portal.y);
     if (this.info.goal === "reach") this.portal.open(true);
     else this.portal.setRemaining(this.info.goal === "gems" ? L.gems.length : this.info.need, this.info.goal === "gems" ? "gems" : "left");
     this.buildPortalArrow();
+  }
+
+  /** PRUEBA ch11: code-drawn ladders (two rails + rungs, no art yet — Angelo
+   *  delivers the old/mouldy ladder look later). */
+  private buildLadders() {
+    for (const lad of this.level.ladders) {
+      const g = this.add.graphics().setDepth(12);
+      g.lineStyle(5, 0x6b4a2a, 1);
+      g.beginPath().moveTo(lad.x - 22, lad.yTop).lineTo(lad.x - 22, lad.yBottom).strokePath();
+      g.beginPath().moveTo(lad.x + 22, lad.yTop).lineTo(lad.x + 22, lad.yBottom).strokePath();
+      g.lineStyle(4, 0x8a6238, 1);
+      for (let y = lad.yTop + 24; y < lad.yBottom - 8; y += 44) {
+        g.beginPath().moveTo(lad.x - 22, y).lineTo(lad.x + 22, y).strokePath();
+      }
+    }
+  }
+
+  /** PRUEBA ch11: hammer-breakable chests (code-drawn texture, no art yet).
+   *  Breaking one drops 3 coins — future shop currency. */
+  private buildChests() {
+    ensureChestTexture(this);
+    ensureCoinTexture(this);
+    this.chestGroup = this.physics.add.staticGroup();
+    for (const c of this.level.chests) {
+      const body = this.add.rectangle(c.x, c.y - 38, 72, 76).setVisible(false);
+      this.chestGroup.add(body);
+      const img = this.add.image(c.x, c.y - 38, "chest").setDisplaySize(78, 60).setDepth(14);
+      this.chests.push({ x: c.x, y: c.y, img, body, broken: false });
+    }
+    this.chestGroup.refresh();
+  }
+
+  /** PRUEBA ch11: decorative tombstones (ch10 block texture, grey tint).
+   *  No physics — they never block Angely or the enemies. */
+  private buildGraves() {
+    for (const gr of this.level.graves) {
+      this.add.image(gr.x, gr.y - 34, "block_10").setDisplaySize(64, 76).setDepth(11).setTint(0x9aa0b8);
+    }
+  }
+
+  /** PRUEBA ch11 (11-1): gold down-arrow bobbing over the breakable floor,
+   *  telling Angely to go down. Hides once the plug breaks or she is below. */
+  private buildDownArrow() {
+    const spot = this.level.downArrow;
+    if (!spot) return;
+    this.downArrowX = spot.x;
+    const g = this.add.graphics();
+    g.fillStyle(0xffd75a, 1).fillTriangle(0, 26, -22, -8, 22, -8);
+    g.lineStyle(3, 0x2a1640, 1).strokeTriangle(0, 26, -22, -8, 22, -8);
+    const t = this.add.text(0, 44, "DOWN!", { fontFamily: FONT, fontSize: "18px", fontStyle: "bold", color: "#ffd75a", stroke: "#2a1640", strokeThickness: 5 }).setOrigin(0.5, 0);
+    this.downArrow = this.add.container(spot.x, spot.y, [g, t]).setDepth(50);
+    this.tweens.add({ targets: this.downArrow, y: spot.y + 14, duration: 700, yoyo: true, repeat: -1, ease: "Sine.inOut" });
   }
 
   /** Points at the open portal while it's off screen. */
@@ -821,6 +955,13 @@ export class GameScene extends Phaser.Scene {
 
     this.checkFall();
     this.checkPickups(time);
+    // PRUEBA ch11: the down-arrow goes away once the floor plug is smashed
+    // or Angely is already below ground.
+    if (this.downArrow && (this.mech.wallBrokenAt(this.downArrowX) || this.player.body.center.y > GROUND_Y + 200)) {
+      this.tweens.killTweensOf(this.downArrow);
+      this.downArrow.destroy();
+      this.downArrow = undefined;
+    }
     this.updateProjectiles();
     this.updateHomingStars(delta);
     this.updateArrows();
@@ -899,7 +1040,11 @@ export class GameScene extends Phaser.Scene {
   private checkFall() {
     const p = this.player;
     if (!p.alive) return;
-    const limit = this.chapter.pitKind === "lava" ? GAME_H - 24 : GAME_H + 80;
+    // PRUEBA ch11: the fall floor follows the LOWEST ground, not the screen —
+    // underground floors sit at y=1000, below the old GAME_H + 80 line.
+    // Math.max keeps every other level exactly as before.
+    const maxGround = Math.max(...this.level.ground.map((g) => g.y));
+    const limit = this.chapter.pitKind === "lava" ? GAME_H - 24 : Math.max(GAME_H + 80, maxGround + 80);
     if (p.body.bottom > limit) {
       if (this.chapter.pitKind === "lava") this.fx("fx_lava", "burst", p.x, GAME_H - 4, 0.45);
       if (this.level.mode === "chase" && this.chaseOn) p.fall(...this.safeSpotAhead());
@@ -970,6 +1115,22 @@ export class GameScene extends Phaser.Scene {
       this.toast("Star Shield! Nothing can touch you for 15 seconds.");
     }
     this.stars = this.stars.filter((s) => !s.taken);
+
+    // PRUEBA ch11: coins from broken chests — banked into the save (future shop currency).
+    for (const c of this.coinPickups) {
+      if (c.taken) continue;
+      const cb = new Phaser.Geom.Rectangle(c.sprite.x - 18, c.sprite.y - 18, 36, 36);
+      if (!Phaser.Geom.Rectangle.Overlaps(pb, cb)) continue;
+      c.taken = true;
+      this.coinsTotal += 1;
+      addCoins(1);
+      this.registry.set("coins", this.coinsTotal);
+      Audio.sfx("gem");
+      this.tweens.killTweensOf(c.sprite);
+      this.tweens.add({ targets: c.sprite, scale: 1.2, alpha: 0, y: c.sprite.y - 30, duration: 300, onComplete: () => c.sprite.destroy() });
+      this.fx("fx_spark", "hit", c.sprite.x, c.sprite.y, 0.3, 0xffd75a);
+    }
+    this.coinPickups = this.coinPickups.filter((c) => !c.taken);
 
     for (const c of this.checkpoints) {
       if (!c.active && Math.abs(this.player.x - c.spot.x) < 40 && Math.abs(this.player.body.bottom - c.spot.y) < 30 && this.player.alive) {
@@ -1245,6 +1406,39 @@ export class GameScene extends Phaser.Scene {
       this.chargeBossDamage(2);
     }
     this.mech.hammerAt(r);
+    // PRUEBA ch11: hammer also smashes chests.
+    this.hammerChests(r);
+  }
+
+  /** PRUEBA ch11: a hammer swing overlapping an unbroken chest breaks it open
+   *  and spills 3 coins. Future shop currency — the coins are picked up, not
+   *  auto-banked, so the player sees them land. */
+  private hammerChests(r: Phaser.Geom.Rectangle) {
+    for (const c of this.chests) {
+      if (c.broken) continue;
+      const cr = new Phaser.Geom.Rectangle(c.x - 40, c.y - 80, 80, 80);
+      if (!Phaser.Geom.Rectangle.Overlaps(r, cr)) continue;
+      c.broken = true;
+      c.body.destroy();
+      Audio.sfx("wall_break");
+      this.cameras.main.shake(140, 0.006);
+      this.fx("fx_spark", "hit", c.x, c.y - 40, 0.5, 0xffd75a);
+      this.fx("fx_dust", "puff", c.x, c.y, 0.4);
+      this.tweens.add({ targets: c.img, scale: c.img.scaleX * 1.3, alpha: 0, y: c.y - 70, duration: 350, onComplete: () => c.img.destroy() });
+      this.addCoin(c.x - 34, c.y - 70);
+      this.addCoin(c.x, c.y - 92);
+      this.addCoin(c.x + 34, c.y - 70);
+      this.toast("A chest! Grab the coins!");
+    }
+  }
+
+  /** PRUEBA ch11: one bobbing coin pickup (code-drawn texture). */
+  private addCoin(x: number, y: number): Pickup {
+    const spr = this.add.sprite(x, y, "coin").setDepth(50).setScale(0.62);
+    this.tweens.add({ targets: spr, y: y - 10, duration: 650, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+    const p: Pickup = { sprite: spr, baseY: y, taken: false };
+    this.coinPickups.push(p);
+    return p;
   }
 
   /** Living targets for auto-aim and homing: enemies, Umbra and star targets. */
@@ -1638,6 +1832,18 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(1800, () => this.toast(this.portal.cx > this.player.x ? "Head right to the portal!" : "Head back to the portal!"));
   }
 
+  /**
+   * PRUEBA ch11: stop GraveyardMusic whenever the game switches music
+   * while the Game scene stays alive (victory / game over / boss
+   * intro-outro). Level transitions and restarts shut the scene down,
+   * and GraveyardMusic destroys itself on shutdown — no call needed
+   * there. Safe no-op in every other chapter (field is undefined).
+   */
+  private stopGraveyardMusic(): void {
+    this.graveyardMusic?.stop();
+    this.graveyardMusic = undefined;
+  }
+
   private enterPortal() {
     if (this.ending) return;
     this.ending = true;
@@ -1660,6 +1866,7 @@ export class GameScene extends Phaser.Scene {
       } else {
         updateSave({ cleared: true });
         this.cameras.main.flash(600, 255, 255, 255);
+        this.stopGraveyardMusic();
         Audio.music("music_victory");
         this.game.events.emit("hud:victory");
       }
@@ -1677,6 +1884,7 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(animated ? 1400 : 700, () => {
       this.physics.pause();
       Barks.play(this, ["angely_bark_05"], 1, true);
+      this.stopGraveyardMusic();
       Audio.music("music_game_over");
       // Feel package 2026-10-26: the retry screen shows boss progress on
       // the final boss only; other chapters get the plain game-over flow.
@@ -1788,6 +1996,7 @@ export class GameScene extends Phaser.Scene {
     this.cinema(false, 500);
     this.registry.set("boss", { name: WORM_NAME, hp: worm.hp, max: worm.maxHp });
     this.game.events.emit("hud:banner", WORM_NAME);
+    this.stopGraveyardMusic();
     Audio.music("music_boss");
     worm.begin();
     this.cutscene = false;
@@ -1807,6 +2016,7 @@ export class GameScene extends Phaser.Scene {
     this.portal.appear();
     this.portal.open();
     Audio.sfx("portal_unlock");
+    this.stopGraveyardMusic();
     Audio.music("music_title");
     this.cinema(false, 500);
     this.game.events.emit("hud:banner", "TO THE SQUISHY VALLEY!");
@@ -1861,6 +2071,7 @@ export class GameScene extends Phaser.Scene {
       Audio.sfx("ground_slam");
       await this.wait(900);
       this.veilEntryDone = true;
+      this.stopGraveyardMusic();
       Audio.music("music_boss");
       boss.begin();
       this.veilState = "fight";
@@ -1922,6 +2133,7 @@ export class GameScene extends Phaser.Scene {
       // No hud:cinema false here: the THE END screen owns the HUD
       // now, and the touch controls stay hidden behind it.
       this.cameras.main.flash(600, 255, 255, 255);
+      this.stopGraveyardMusic();
       Audio.music("music_victory");
       this.game.events.emit("hud:victory");
       console.log("[veilOutro] victory shown");
@@ -1942,6 +2154,7 @@ export class GameScene extends Phaser.Scene {
         console.warn("[veilOutro] updateSave failed:", saveError);
       }
       this.cameras.main.flash(600, 255, 255, 255);
+      this.stopGraveyardMusic();
       Audio.music("music_victory");
       this.game.events.emit("hud:victory");
       console.log("[veilOutro] victory shown (fallback)");
@@ -1999,6 +2212,7 @@ export class GameScene extends Phaser.Scene {
     this.cinema(false, 600);
     this.registry.set("boss", { name: BOSS_NAME, hp: boss.hp, max: boss.maxHp });
     this.game.events.emit("hud:banner", BOSS_NAME);
+    this.stopGraveyardMusic();
     Audio.music("music_boss");
     this.tweens.killTweensOf(boss);
     boss.begin();
@@ -2044,6 +2258,7 @@ export class GameScene extends Phaser.Scene {
     this.cinema(false, 600);
     this.registry.set("boss", { name: BOSS_NAME, hp: boss.hp, max: boss.maxHp });
     this.game.events.emit("hud:banner", BOSS_NAME);
+    this.stopGraveyardMusic();
     Audio.music("music_boss");
     this.tweens.killTweensOf(boss);
     boss.begin();
@@ -2201,6 +2416,7 @@ export class GameScene extends Phaser.Scene {
     this.portal.appear();
     this.portal.open();
     Audio.sfx("portal_unlock");
+    this.stopGraveyardMusic();
     Audio.music("music_title");
     this.game.events.emit("hud:banner", "TO THE SKY TOWER!");
     this.cutscene = false;
@@ -2734,4 +2950,51 @@ class GrayScalePipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPipeline {
         }`,
     });
   }
+}
+
+/**
+ * PRUEBA ch11: code-drawn chest texture (no art yet — Angelo delivers the
+ * real chest look later). Brown box, darker lid, gold trim + lock.
+ */
+function ensureChestTexture(scene: Phaser.Scene) {
+  if (scene.textures.exists("chest")) return;
+  const g = scene.make.graphics({}, false);
+  // Body.
+  g.fillStyle(0x7a4a21, 1).fillRoundedRect(6, 26, 84, 40, 6);
+  g.fillStyle(0x5d3617, 1).fillRoundedRect(6, 52, 84, 14, 6);
+  // Lid.
+  g.fillStyle(0x8a5a28, 1).fillRoundedRect(4, 8, 88, 24, 10);
+  g.fillStyle(0x6b421e, 1).fillRoundedRect(4, 24, 88, 8, 4);
+  // Gold trim + lock.
+  g.fillStyle(0xffd75a, 1).fillRect(44, 8, 8, 58);
+  g.fillStyle(0xffb52e, 1).fillRect(40, 30, 16, 16);
+  g.fillStyle(0x2a1640, 1).fillCircle(48, 38, 4);
+  // Wood grain.
+  g.lineStyle(2, 0x5d3617, 0.7);
+  g.beginPath().moveTo(10, 40).lineTo(42, 40).strokePath();
+  g.beginPath().moveTo(54, 40).lineTo(86, 40).strokePath();
+  g.generateTexture("chest", 96, 72);
+  g.destroy();
+}
+
+/**
+ * PRUEBA ch11: code-drawn coin texture (no art yet). Gold disc, darker
+ * inner ring, bright star — same gold family as the SPECIAL meter.
+ */
+function ensureCoinTexture(scene: Phaser.Scene) {
+  if (scene.textures.exists("coin")) return;
+  const g = scene.make.graphics({}, false);
+  g.fillStyle(0xffd75a, 1).fillCircle(24, 24, 22);
+  g.fillStyle(0xffb52e, 1).fillCircle(24, 24, 17);
+  g.fillStyle(0xffe27a, 1).fillCircle(24, 24, 12);
+  const star: Phaser.Math.Vector2[] = [];
+  for (let i = 0; i < 10; i++) {
+    const r = i % 2 ? 3 : 8;
+    const a = -Math.PI / 2 + (i * Math.PI) / 5;
+    star.push(new Phaser.Math.Vector2(24 + Math.cos(a) * r, 24 + Math.sin(a) * r));
+  }
+  g.fillStyle(0xb97a00, 1).fillPoints(star, true);
+  g.fillStyle(0xffffff, 0.5).fillCircle(17, 16, 4);
+  g.generateTexture("coin", 48, 48);
+  g.destroy();
 }

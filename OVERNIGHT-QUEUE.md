@@ -102,12 +102,12 @@ El loop toma el PRIMER item de esta lista en cada corrida, lo hace, lo verifica 
 - Fix integrado: gema del spring bajada a nivel del muro (`Y - 4*BLOCK_H - 50`, y=20 con Y=350, visible como el corazón). Angelo lo ordenó 2026-11-13 06:17 ("Arreglalo").
 - Estado: [x] terminado 2026-11-13 (v83, versionCode 47). Checker `check-levels.cjs`: 9-2 limpio, 6/6 gemas en pantalla. tsc 0, vite limpio, APK 205.8 MB, MD5 78907dfb5624e0e7d7bfcb77f84a1d7c, ZIP OK. APK: ~/workspace/your_files/AngelysWorld-v83-TEST.apk.
 
-### 9. Bajar escalera en táctil imposible (cap. 11 PRUEBA) — PENDIENTE VEREDICTO
+### 9. Bajar escalera en táctil imposible (cap. 11 PRUEBA) — DECIDIDO 2026-11-13 (voz), pendiente de implementar
 - En el teléfono (HUD táctil, JUMP + ACTION) Angely puede SUBIR la escalera (mantener JUMP → upHeld) pero NO bajarla: `downHeld` no tiene fuente táctil (`src/input/controls.ts:64` — solo teclado DOWN/S o gamepad; comentario: "Touch has no down button yet"). El joystick calcula `dy` pero solo escribe `touchState.axis` con `dx` (`src/scenes/HudScene.ts:676`). Mientras trepa, bajar exige `input.downHeld` (`src/entities/Player.ts:325`), siempre falso en táctil; entrar a la escalera desde arriba hacia abajo está bloqueado (`Player.ts:352-356`).
 - Alcance: NO tranca los layouts actuales de ch11 — 11-1 baja por el roto del piso, 11-2 baja caminando por los bordes; las escaleras solo se usan para subir. Pero en táctil la escalera es solo-de-subida: si Angely la agarra a medio salto (JUMP mantenido = upHeld) no hay descenso controlado, solo soltarse con JUMP y caer. Cualquier layout futuro que pida bajar por escalera en el teléfono no se puede jugar.
 - GIF esquemático (no gameplay): `goals/angely-s-world-game/hidden_files/overnight-loop/sweep-2026-11-13-afternoon/ladder_touch_down_schematic.gif` (720x460, 36f). Detalle y evidencia en `sweep-log.md`.
-- Fix pendiente de su decisión (no integrar sin su "sí"): opciones — que el joystick hacia abajo alimente `downHeld`; que ACTION en escalera = bajar; o un botón de bajar en el HUD. La regla del HUD es JUMP + ACTION solo, así que es decisión de Angelo.
-- Estado: pendiente, GIF por veredicto. Nada integrado (código ch11 PRUEBA, sin commit).
+- DECISIÓN de Angelo 2026-11-13 (voz): la escalera se sube y se baja SOLO con el joystick — mantener el joystick hacia arriba sube la escalera completa; mantenerlo hacia abajo baja la escalera. Sin botón extra, sin ACTION. Fix: que el joystick hacia abajo alimente `downHeld` (y arriba ya alimenta `upHeld`).
+- Estado: [x] IMPLEMENTADO 2026-11-13 (tarde, main agent, no loop): `touchState.axisY` nuevo (HudScene.ts onMove: vertical del joystick, mismo dead-zone/rampa que X; onUp lo resetea a 0) alimenta `upHeld` (axisY < -0.25) y `downHeld` (axisY > 0.25) en controls.ts. JUMP mantenido sigue subiendo (comportamiento previo, no se quitó). tsc --noEmit 0, checker 22 niveles, mismos 5 issues preexistentes. Sin APK (ch11 PRUEBA, sin commit). Verificar en el teléfono de Angelo.
 
 ## Historial
 

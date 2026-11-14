@@ -20,9 +20,20 @@ const BUTTERFLY_FILES: Record<string, string> = {
   atmo_butterfly_pink: "assets/runtime/atmo_butterfly_pink.webp",
 };
 
+// bg11 (ch11 Graveyard, Option A, approved 2026-11-13). Loaded explicitly
+// here, same pattern as WALLBLOCK_FILES, so sprites.gen.ts stays
+// generator-owned. Sky is opaque JPEG; mid/fg are WebP (alpha preserved,
+// ~3x smaller than PNG at these sizes).
+const BG11_FILES: Record<string, string> = {
+  bg11_sky: "assets/runtime/backdrops/bg11_sky.jpg",
+  bg11_mid: "assets/runtime/backdrops/bg11_mid.webp",
+  bg11_fg: "assets/runtime/backdrops/bg11_fg.webp",
+};
+
 export function queueAssets(load: Phaser.Loader.LoaderPlugin) {
   queueHudIcons(load);
   for (const [key, url] of Object.entries(BACKDROPS)) load.image(key, url);
+  for (const [key, file] of Object.entries(BG11_FILES)) load.image(key, file);
   for (const [key, meta] of Object.entries(SPRITES)) {
     load.spritesheet(key, meta.file, { frameWidth: meta.frameWidth, frameHeight: meta.frameHeight });
   }

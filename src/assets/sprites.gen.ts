@@ -14,6 +14,11 @@
 // 2026-10-26, spliced by hand; generic regen loses overrides.
 // Sandworm retains its actual 10-frame layout. Validate before packaging with
 // python tools/check_runtime_sprites.py; generic regeneration loses authored overrides.
+// Hand-splice 2026-11-13 (PRUEBA ch11 ladder climb, Angelo's strip): angely_climb
+// 168x322, climb 0-7 @10fps + crouch 8 (single frame, repeat 0). Normalized from
+// the 2172x724 RGBA re-export + 256x256 crouch frame: median body height
+// (bow top -> feet) 370px scaled to idle 259px so she renders at 112px in game;
+// frames re-centred + re-baselined on the standing foot; alpha<24 halo zeroed.
 export const SPRITES = {
   "angely": {
     "file": "assets/runtime/angely.webp",
@@ -134,6 +139,30 @@ export const SPRITES = {
         "fps": 10,
         "repeat": -1,
         "h": 252
+      }
+    }
+  },
+  "angely_climb": {
+    "file": "assets/runtime/angely_climb.webp",
+    "frameWidth": 168,
+    "frameHeight": 322,
+    "originX": 0.5,
+    "originY": 0.9348,
+    "bodyHeight": 259,
+    "anims": {
+      "climb": {
+        "start": 0,
+        "end": 7,
+        "fps": 10,
+        "repeat": -1,
+        "h": 259
+      },
+      "crouch": {
+        "start": 8,
+        "end": 8,
+        "fps": 10,
+        "repeat": 0,
+        "h": 167
       }
     }
   },
