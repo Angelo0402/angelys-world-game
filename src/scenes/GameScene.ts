@@ -137,7 +137,8 @@ export class GameScene extends Phaser.Scene {
   hazards!: Phaser.Physics.Arcade.Group;
   private platformTops: { x0: number; x1: number; y: number }[] = [];
   private far!: Phaser.GameObjects.Image;
-  /** bg11 only: midground ruins (depth -80) + foreground branches (depth 30). */
+  /** bg11 only: midground ruins (depth -80) + foreground branches (depth -40,
+   *  BEHIND gameplay — Angelo 2026-11-14: at depth 30 the fg layer covered the blocks). */
   private mid!: Phaser.GameObjects.Image;
   private fore!: Phaser.GameObjects.Image;
   private look?: DioramaLook;
@@ -393,7 +394,11 @@ export class GameScene extends Phaser.Scene {
     // chapter 11 ONLY. All other chapters keep Audio.music unchanged.
     // GraveyardMusic starts on first pointerdown (browser audio unlock)
     // and destroys itself on scene shutdown/destroy.
+    // FIX (Angelo 2026-11-14): entering ch11 NEVER stopped the previous
+    // Audio track — music_shadow (or the title track) kept playing UNDER
+    // GraveyardMusic. Stop it first so ch11 plays ONE music only.
     if (this.chapter.id === 11) {
+      Audio.stopMusic();
       this.graveyardMusic = new GraveyardMusic(this);
     } else {
       Audio.music(this.chapter.music);
@@ -470,7 +475,11 @@ export class GameScene extends Phaser.Scene {
       this.far.setDisplaySize(BG11_SKY.w, BG11_SKY.h);
       this.mid = this.add.image(0, 0, "bg11_mid").setOrigin(0).setDepth(-80);
       this.mid.setDisplaySize(BG11_MID.w, BG11_MID.h);
-      this.fore = this.add.image(0, 0, "bg11_fg").setOrigin(0).setDepth(30);
+      // Angelo 2026-11-14: the fg layer was depth 30 (IN FRONT of gameplay)
+      // and covered the blocks — it now sits BEHIND the tiles (depth 9-10)
+      // and the player/enemies, in front of mid (-80). Moon, tree and vines
+      // still show through the empty areas; blocks are always visible.
+      this.fore = this.add.image(0, 0, "bg11_fg").setOrigin(0).setDepth(-40);
       this.fore.setDisplaySize(BG11_FG.w, BG11_FG.h);
       return;
     }
@@ -1247,6 +1256,14 @@ export class GameScene extends Phaser.Scene {
       }
       this.fx("fx_dust", "puff", e.x, e.body.top + 10, 0.28);
       e.takeDamage(1, "stomp", p.x);
+      return;
+    }
+    // Star Shield (Angelo 2026-11-14): while the star is active, touching a
+    // small enemy defeats it. Bosses never reach this handler (separate
+    // this.boss path) and are untouched by the shield either way: hurt()
+    // already no-ops while shielded, and touch never damages a boss.
+    if (p.shielded) {
+      e.takeDamage(99, "shield", p.x);
       return;
     }
     if (e.harmful) p.hurt(e.x, HURT_BARKS[e.type.key] ? [HURT_BARKS[e.type.key]] : undefined);

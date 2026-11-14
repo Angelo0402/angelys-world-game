@@ -141,6 +141,11 @@ class AudioManagerImpl {
 
   private backgrounded = false;
 
+  /** Phaser's WebAudio context — GraveyardMusic schedules on it directly. */
+  private phaserCtx(): AudioContext | undefined {
+    return (this.game?.sound as unknown as { context?: AudioContext })?.context;
+  }
+
   /** Mute everything when the app goes to background; restore on return. */
   private setBackground(hidden: boolean) {
     if (hidden === this.backgrounded) return;
@@ -155,11 +160,17 @@ class AudioManagerImpl {
       }
       // Suspend audio context (stops all Web Audio)
       this.ctx?.suspend();
+      // FIX (Angelo 2026-11-14): GraveyardMusic runs on PHASER's WebAudio
+      // context, not this one — suspending only this ctx left the ch11
+      // music playing after the app went to background. Suspend Phaser's
+      // context too (its scheduler just freezes and resumes cleanly).
+      void this.phaserCtx()?.suspend();
       // Also pause Phaser sound manager
       this.game?.sound.pauseAll();
     } else {
       // Resume audio context
       this.ctx?.resume();
+      void this.phaserCtx()?.resume();
       // Resume Phaser sounds
       this.game?.sound.resumeAll();
       // Resume file music if it was playing
