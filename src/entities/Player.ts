@@ -52,6 +52,11 @@ const SPEED = 350;
 export const PUSH_SPEED = 140;
 /** PRUEBA ch11 ladder climb speed (px/s). */
 const CLIMB_SPEED = 150;
+/** PRUEBA ch11 fix (2026-11-14, phone bug 2): if Angely stops this close to a
+ *  ladder end, finish the climb for her (see the climbing branch below).
+ *  48px covers the freeze the phone showed (feet on the platform face,
+ *  ~38px below the top) while a mid-ladder stop still holds the pose. */
+const CLIMB_FINISH = 48;
 const SWIM_SPEED = 230;
 const SWIM_STROKE = 430;
 const SWIM_GRAVITY = 420;
@@ -71,6 +76,12 @@ const BUFFER_MS = 160;
 const INVULN_MS = 1100;
 const SHIELD_MS = 15000;
 const SHIELD_TINTS = [0xfff27a, 0xff6ad5, 0x7af0ff, 0xffffff, 0xb6ff6a, 0xff9a3d];
+/** Gold sparkle offsets (px from body center) for the Star Shield effect. */
+const SHIELD_SPARK_OFFSETS: Array<[number, number]> = [
+  [-14, -18],
+  [12, -30],
+  [6, 10],
+];
 const HEIGHT = 112;
 
 type PState = "normal" | "attack" | "hurt" | "pickup" | "dead" | "celebrate" | "frozen" | "catch";
@@ -84,6 +95,13 @@ export class Player {
   readonly body: Phaser.Physics.Arcade.Body;
   readonly sprite: Phaser.GameObjects.Sprite;
   private shadow: Phaser.GameObjects.Image;
+  /** Star Shield visible effect (item 5, Angelo 2026-11-14): 4 stars
+   *  orbiting Angely + a gold ring + 3 sparkles while the 15s shield
+   *  is up. Created once, shown/hidden with the shield — the old
+   *  rainbow tint + flicker stays underneath. */
+  private shieldStars: Phaser.GameObjects.Sprite[] = [];
+  private shieldRing: Phaser.GameObjects.Ellipse;
+  private shieldSparks: Phaser.GameObjects.Image[] = [];
   private scene: GameScene;
   private sheet?: SpriteKey;
   private scales: Record<string, number>;
@@ -182,6 +200,26 @@ export class Player {
       })
       .setDepth(61);
     this.shadow = scene.add.image(x, y, "shadow").setAlpha(0.3).setDepth(30);
+    // Star Shield effect (item 5): 4 glowing stars orbit her, a gold ring
+    // frames her body, 3 gold sparkles twinkle on her. Hidden until a
+    // shield is picked up; update() drives the orbit while shielded.
+    for (let i = 0; i < 4; i++) {
+      const star = scene.add.sprite(x, y, "starshield").setDepth(61).setVisible(false);
+      star.setScale(scaleForHeight("starshield", 30));
+      star.play("starshield:glow");
+      this.shieldStars.push(star);
+    }
+    this.shieldRing = scene.add.ellipse(x, y, 108, 76).setStrokeStyle(3, 0xffd94a, 0.85).setDepth(59).setVisible(false);
+    for (const [dx, dy] of SHIELD_SPARK_OFFSETS) {
+      const spark = scene.add
+        .image(x + dx, y + dy, "dot")
+        .setTint(0xffd94a)
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setScale(0.5)
+        .setDepth(61)
+        .setVisible(false);
+      this.shieldSparks.push(spark);
+    }
     this.sprite = scene.add.sprite(x, y, "angely").setDepth(60);
     this.setAnim("angely", "idle");
   }
@@ -324,7 +362,15 @@ export class Player {
       if (input.jumpPressed) {
         this.exitClimb();
       } else {
-        const vy = input.upHeld ? -CLIMB_SPEED : input.downHeld ? CLIMB_SPEED : 0;
+        let vy = input.upHeld ? -CLIMB_SPEED : input.downHeld ? CLIMB_SPEED : 0;
+        // PRUEBA ch11 fix (2026-11-14, phone bug 2): releasing UP just below
+        // the top froze her there forever — climbing=true, climb anim paused
+        // on the back-view frame, feet on the platform face — because both
+        // exits needed her moving (vy<0 / vy>0). If she stopped within a
+        // short step of either end, finish the climb for her so the normal
+        // top/bottom exit fires. A mid-ladder stop still holds the pose.
+        if (vy === 0 && body.bottom <= lad.yTop + CLIMB_FINISH) vy = -CLIMB_SPEED;
+        else if (vy === 0 && body.bottom >= lad.yBottom - CLIMB_FINISH) vy = CLIMB_SPEED;
         body.setVelocityX(0);
         body.setVelocityY(vy);
         body.x = lad.x - body.width / 2;
@@ -796,10 +842,36 @@ export class Player {
       this.shieldWas = true;
       s.setTint(SHIELD_TINTS[Math.floor(time / 90) % SHIELD_TINTS.length]);
       s.setAlpha(Math.floor(time / 80) % 2 ? 1 : 0.45);
+      // Star Shield visible effect (item 5): 4 stars orbit her body, a gold
+      // ring frames her, 3 sparkles twinkle — all ride her live position.
+      const cx = this.x;
+      const cy = this.body.bottom - HEIGHT / 2;
+      const t = time / 600;
+      const starScale = scaleForHeight("starshield", 30);
+      for (let i = 0; i < 4; i++) {
+        const a = t + (i * Math.PI) / 2;
+        this.shieldStars[i]
+          .setVisible(true)
+          .setPosition(cx + Math.cos(a) * 54, cy + Math.sin(a) * 36 - 6)
+          .setRotation(a)
+          .setScale(starScale * (1 + 0.12 * Math.sin(t * 2 + i)));
+      }
+      this.shieldRing.setVisible(true).setPosition(cx, cy - 6).setAlpha(0.55 + 0.25 * Math.sin(t * 2));
+      for (let i = 0; i < 3; i++) {
+        const [dx, dy] = SHIELD_SPARK_OFFSETS[i];
+        this.shieldSparks[i]
+          .setVisible(true)
+          .setPosition(cx + dx, cy + dy)
+          .setAlpha(0.35 + 0.55 * Math.abs(Math.sin(time / 280 + i * 2.1)));
+      }
     } else {
       if (this.shieldWas) {
         this.shieldWas = false;
         s.clearTint();
+        // Shield ended: hide the orbit effect with the tint.
+        for (const star of this.shieldStars) star.setVisible(false);
+        this.shieldRing.setVisible(false);
+        for (const spark of this.shieldSparks) spark.setVisible(false);
       }
       s.setAlpha(this.invulnerable && this.alive && Math.floor(time / 70) % 2 ? 0.35 : 1);
     }

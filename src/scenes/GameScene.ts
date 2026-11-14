@@ -330,7 +330,14 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.physics.add.collider(this.player.rect, this.groundGroup);
-    this.physics.add.collider(this.player.rect, this.platformGroup);
+    // PRUEBA ch11 fix (2026-11-14, ladder-down): the one-way platform at a
+    // ladder top blocked the climb back down — its up-face separation
+    // cancelled the downward climb velocity every step, so she climbed in
+    // place at the top forever (harness: vy=+150, bottom stuck at 500).
+    // While she is on a ladder, skip platform collision entirely (the
+    // ladder owns her Y; she passes through the top platform both ways).
+    // Off the ladder the collider behaves exactly as before.
+    this.physics.add.collider(this.player.rect, this.platformGroup, undefined, () => !this.player.climbing);
     this.physics.add.collider(this.enemyGroup, this.groundGroup);
     this.physics.add.collider(this.enemyGroup, this.platformGroup);
     this.mech.colliders(this.player, this.enemyGroup, this.groundGroup);

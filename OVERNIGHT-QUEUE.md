@@ -79,12 +79,13 @@ El loop toma el PRIMER item de esta lista en cada corrida, lo hace, lo verifica 
 - Implementado: modo inmersivo sticky nativo en MainActivity (sin plugin): API 30+ con WindowInsetsController (hide systemBars + BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE + setDecorFitsSystemWindows(false)); fallback legacy IMMERSIVE_STICKY para API <30. Re-aplica en onWindowFocusChanged.
 - Estado: [x] terminado 2026-11-13 (v82, versionCode 46, commit local 50beceb). tsc 0, vite limpio, APK 205.8 MB, MD5 f8213be676ad839810e6e542e21ccb83, ZIP OK, versionCode 46 verificado por aapt2, MainActivity compilada con hideSystemBars() verificado por javap. APK: ~/workspace/your_files/AngelysWorld-v82-TEST.apk. NOTA: el primer `./gradlew assembleDebug` falló en extractDebugAnnotations (lint-gradle sin red, esperado) y el APK quedó STALE (mismo MD5 que v81) — se reconstruyó con `-x :capacitor-android:extractDebugAnnotations`, BUILD SUCCESSFUL, APK fresco. Veredicto en teléfono pendiente (comportamiento inmersivo NO verificable en la VM).
 
-### 5. Efecto de estrella en el Star Shield (invencible 15s) — PENDIENTE GIF (pedido por Angelo 2026-11-12 21:22)
+### 5. Efecto de estrella en el Star Shield (invencible 15s) — APROBADO por Angelo 2026-11-14 01:05
 - Al coger la estrella es invencible 15 segundos (SHIELD_MS=15000 verificado, Player.ts:69) y hoy "no tiene efecto".
 - OJO: sí existe un tint arcoíris cíclico (SHIELD_TINTS, Player.ts:702) — él no lo percibe, así que no basta. Quiere un efecto de estrella visible sobre Angely durante los 15s.
 - Regla GIF primero: preparar GIF de propuesta (estrellas orbitando / destellos dorados) para su veredicto, luego integrar. No integrar sin su "sí".
 - Estado: pendiente, GIF por hacer.
 - Estado 2026-11-13 noche (loop): GIF de propuesta LISTO para veredicto — `goals/angely-s-world-game/hidden_files/overnight-loop/sweep-2026-11-13-night/star_shield_proposal.gif` (720x460, 36f, 3 fases: hoy = tint 90ms + parpadeo / propuesta = 4 estrellas orbitando + anillo dorado + destellos / caminando con escudo). Verificado en codigo: SHIELD_MS=15000 (Player.ts:72), tint cicla 6 colores cada 90ms + alpha 1<->0.45 cada 80ms (Player.ts:795-797), contador HUD ya existe (GameScene.ts:929-932). Nada integrado — espera su "si".
+- Estado 2026-11-14 01:05: APROBADO ("Si"). Patch listo, tsc 0 verificado en copia aparte (`/tmp/star5`, baseline OK): `goals/angely-s-world-game/hidden_files/overnight-loop/sweep-2026-11-13-night/star_shield_item5.patch` (93 líneas, aplica limpio) — 4 estrellas "starshield" orbitando + anillo dorado + 3 destellos en Player.ts, tint viejo se queda. NO aplicado al árbol todavía: el checker de la 1am está corriendo en el mismo árbol (Player.ts). Va en el v86 junto con los 2 arreglos de la 1am.
 
 ### 6. Sprites de nado inconsistentes — PENDIENTE VEREDICTO (reportado por Angelo 2026-11-12 21:23)
 - "Se ven como diferentes size, como diferentes character, como si fuesen diferentes personas."
