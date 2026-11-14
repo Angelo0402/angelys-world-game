@@ -67,6 +67,12 @@ export class AtmosphereManager {
       case 8: this.buildDesert(); break;
       case 9: this.buildCandy(); break;
       case 10: this.buildVeil(); break;
+      // F1 PRUEBA (features cron 2026-11-13): dedicated graveyard preset.
+      // Replaces the castle reuse. Phaser built-ins only, no new sprites.
+      // Screen-anchored like every other preset, so fog/wisps follow the
+      // camera into the underground phase too. NOT integrated into an APK
+      // until Angelo passes the schematic GIF verdict.
+      case 11: this.buildGraveyard(); break;
       default: break;
     }
     scene.events.on(Phaser.Scenes.Events.UPDATE, this.onUpdate, this);
@@ -387,6 +393,61 @@ export class AtmosphereManager {
     this.bouncePool(240, GROUND_Y - 12, 220, 60, 0xffa030, 0.13, 0.18);
     this.bouncePool(640, GROUND_Y - 12, 240, 65, 0xffa030, 0.14, 0.19);
     this.bouncePool(1040, GROUND_Y - 12, 220, 60, 0xffa030, 0.13, 0.18);
+  }
+
+  /** F1 PRUEBA (features cron 2026-11-13) — 11. The Graveyard.
+   * Moonlit graveyard, built ONLY from the file's existing helpers and
+   * canvas textures (fog, beam, ray, glow, flake). No new sprites, no
+   * Phaser dynamic lights, no new emitters beyond the one dust emitter.
+   * Palette: cold moon blue-grey + faint grave green. Tints stay muted
+   * (no saturated violet wash, per the v61 rule).
+   * Layers: back fog (depth -50) + front fog wisp (depth 60, like ch5),
+   * 5 cold moonbeams, 2 moon shafts, 2 moonlight floor pools, 3 faint
+   * green grave glows, 6 wandering will-o'-wisps, ~36 slow dust motes.
+   * Budget: 36 alive particles, ~20 objects — the file's lightest preset
+   * after ch9. Everything is screen-anchored (scrollFactor 0), so the fog
+   * and wisps follow the camera down into the underground phase. */
+  private buildGraveyard() {
+    // Ground fog, two depths: slow back bank + faster front wisp.
+    const back = this.layer("atmo_fog", 0, GAME_H - 190, GAME_W, 170, -50, 0.30, 4);
+    back.setTint(0x5a5478);
+    const front = this.layer("atmo_fog", 0, GAME_H - 120, GAME_W, 130, 60, 0.12, 8);
+    front.setTint(0x38324e);
+    // Cold moonbeams through the dead trees (fewer + wider than ch2).
+    for (let i = 0; i < 5; i++) {
+      const beam = this.img("atmo_beam", 140 + i * 260, GAME_H / 2, -48);
+      beam.setTint(0xaebadd).setDisplaySize(100, GAME_H).setAlpha(0.10).setBlendMode(Phaser.BlendModes.ADD);
+      this.scene.tweens.add({ targets: beam, alpha: 0.20, duration: Phaser.Math.Between(2800, 3800), yoyo: true, repeat: -1 });
+      this.scene.tweens.add({ targets: beam, x: beam.x + 12, duration: Phaser.Math.Between(3800, 5000), yoyo: true, repeat: -1 });
+    }
+    // Moon shafts + moonlight pools on the ground.
+    this.godRay(350, 14, 90, 0xc8d4f0, 0.08, 0.13);
+    this.godRay(900, -14, 100, 0xc8d4f0, 0.08, 0.12);
+    this.bouncePool(300, GROUND_Y - 12, 280, 60, 0x9fb0d8, 0.08, 0.12);
+    this.bouncePool(900, GROUND_Y - 12, 280, 60, 0x9fb0d8, 0.08, 0.12);
+    // Faint green grave glows — soft pools low over the grave mounds.
+    this.bouncePool(180, GROUND_Y - 30, 180, 90, 0x7fb08a, 0.09, 0.14);
+    this.bouncePool(640, GROUND_Y - 30, 200, 95, 0x7fb08a, 0.09, 0.13);
+    this.bouncePool(1100, GROUND_Y - 30, 180, 90, 0x7fb08a, 0.08, 0.13);
+    // Will-o'-wisps: small pale-green glows wandering slowly, flickering.
+    for (let i = 0; i < 6; i++) {
+      const x = Phaser.Math.Between(120, GAME_W - 120);
+      const y = Phaser.Math.Between(140, GAME_H - 160);
+      const w = this.img("glow", x, y, 20);
+      w.setTint(0x9fe8b0).setDisplaySize(36, 36).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.30);
+      this.flicker(w, 0.30, 0.55, 700, 1300);
+      this.scene.tweens.add({
+        targets: w, x: x + Phaser.Math.Between(-120, 120), y: y + Phaser.Math.Between(-36, 36),
+        duration: Phaser.Math.Between(6000, 9000), yoyo: true, repeat: -1, ease: "Sine.easeInOut",
+      });
+    }
+    // Slow grey-green dust motes drifting down (~36 alive).
+    this.emit("atmo_flake", {
+      x: { min: 0, max: GAME_W }, y: { min: 40, max: GAME_H - 60 },
+      lifespan: 5000, speedY: { min: 8, max: 22 }, speedX: { min: -6, max: 6 },
+      scale: { start: 0.25, end: 0 }, alpha: { start: 0.5, end: 0 },
+      tint: 0xb8c4a8, frequency: 140, // 5000/140 = ~36 alive
+    }, -40);
   }
 
   /** 6. The Sky Tower: cloud parallax layers + ~60 sideways wind dust motes. (v60: x3) */

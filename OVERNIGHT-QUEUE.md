@@ -24,6 +24,8 @@ El loop toma el PRIMER item de esta lista en cada corrida, lo hace, lo verifica 
 ## Cola de features (nueva, Angelo 2026-11-13, voz — cron aparte 2× al día, `game-features-twice-daily`)
 - Cada corrida del cron de features toma el PRIMER item, lo prepara como PRUEBA con un GIF esquemático distinto (como el GIF de la gema 9-2), y ESPERA el veredicto/prueba de Angelo. Nada se integra sin que él diga que pasó la prueba.
 - F1. Efectos Graveyard (cap. 11): niebla, glow, polvo, luces — solo efectos Phaser por código, sin sprites nuevos.
+  - Estado: APROBADO por Angelo 2026-11-13 ~21:41 ("Si va f1") — INTEGRADO en código (patch re-aplicado, tsc 0). Va en el próximo build (v85), no en v84. El v84 que tiene Angelo NO contiene F1 (verificado por grep en el bundle).
+  - Estado 2026-11-13 noche (loop): ENVIADO en v85 (versionCode 49, commit local, APK ~/workspace/your_files/AngelysWorld-v85-TEST.apk, 208.8 MB, MD5 765168a950886262b917c2e79e41da12, ZIP OK, aapt2 vc49, bundle con buildGraveyard). Harness ?level=11-1: carga sin errores de pagina, solo warning texImage2D de SwiftShader (artefacto conocido). Gradle: los 4 intentos fallaron SOLO en extractDebugAnnotations post-packaging (lint-gradle sin red; modulo distinto cada vez: capacitor-android, capacitor-app, capacitor-cordova-android-plugins) y el -x global rompe syncDebugLibJars — el APK salio fresco de :app:packageDebug igual. Veredicto en telefono pendiente.
 - F2. Entorno destructible: bloques que se rompen (tilemap removeTileAt + partículas de escombro).
 - F3. Efecto visible de estrella en Star Shield (ver item 5 abajo).
 - F4. Barra/dial de volumen de música en el menú (ver item 3 abajo).
@@ -82,6 +84,7 @@ El loop toma el PRIMER item de esta lista en cada corrida, lo hace, lo verifica 
 - OJO: sí existe un tint arcoíris cíclico (SHIELD_TINTS, Player.ts:702) — él no lo percibe, así que no basta. Quiere un efecto de estrella visible sobre Angely durante los 15s.
 - Regla GIF primero: preparar GIF de propuesta (estrellas orbitando / destellos dorados) para su veredicto, luego integrar. No integrar sin su "sí".
 - Estado: pendiente, GIF por hacer.
+- Estado 2026-11-13 noche (loop): GIF de propuesta LISTO para veredicto — `goals/angely-s-world-game/hidden_files/overnight-loop/sweep-2026-11-13-night/star_shield_proposal.gif` (720x460, 36f, 3 fases: hoy = tint 90ms + parpadeo / propuesta = 4 estrellas orbitando + anillo dorado + destellos / caminando con escudo). Verificado en codigo: SHIELD_MS=15000 (Player.ts:72), tint cicla 6 colores cada 90ms + alpha 1<->0.45 cada 80ms (Player.ts:795-797), contador HUD ya existe (GameScene.ts:929-932). Nada integrado — espera su "si".
 
 ### 6. Sprites de nado inconsistentes — PENDIENTE VEREDICTO (reportado por Angelo 2026-11-12 21:23)
 - "Se ven como diferentes size, como diferentes character, como si fuesen diferentes personas."
@@ -107,7 +110,7 @@ El loop toma el PRIMER item de esta lista en cada corrida, lo hace, lo verifica 
 - Alcance: NO tranca los layouts actuales de ch11 — 11-1 baja por el roto del piso, 11-2 baja caminando por los bordes; las escaleras solo se usan para subir. Pero en táctil la escalera es solo-de-subida: si Angely la agarra a medio salto (JUMP mantenido = upHeld) no hay descenso controlado, solo soltarse con JUMP y caer. Cualquier layout futuro que pida bajar por escalera en el teléfono no se puede jugar.
 - GIF esquemático (no gameplay): `goals/angely-s-world-game/hidden_files/overnight-loop/sweep-2026-11-13-afternoon/ladder_touch_down_schematic.gif` (720x460, 36f). Detalle y evidencia en `sweep-log.md`.
 - DECISIÓN de Angelo 2026-11-13 (voz): la escalera se sube y se baja SOLO con el joystick — mantener el joystick hacia arriba sube la escalera completa; mantenerlo hacia abajo baja la escalera. Sin botón extra, sin ACTION. Fix: que el joystick hacia abajo alimente `downHeld` (y arriba ya alimenta `upHeld`).
-- Estado: [x] IMPLEMENTADO 2026-11-13 (tarde, main agent, no loop): `touchState.axisY` nuevo (HudScene.ts onMove: vertical del joystick, mismo dead-zone/rampa que X; onUp lo resetea a 0) alimenta `upHeld` (axisY < -0.25) y `downHeld` (axisY > 0.25) en controls.ts. JUMP mantenido sigue subiendo (comportamiento previo, no se quitó). tsc --noEmit 0, checker 22 niveles, mismos 5 issues preexistentes. Sin APK (ch11 PRUEBA, sin commit). Verificar en el teléfono de Angelo.
+- Estado: [x] IMPLEMENTADO 2026-11-13 (tarde, main agent, no loop): `touchState.axisY` nuevo (HudScene.ts onMove: vertical del joystick, mismo dead-zone/rampa que X; onUp lo resetea a 0) alimenta `upHeld` (axisY < -0.25) y `downHeld` (axisY > 0.25) en controls.ts. JUMP mantenido sigue subiendo (comportamiento previo, no se quitó). tsc --noEmit 0, checker 22 niveles, mismos 5 issues preexistentes. ENVIADO en v84 (commit 2e8e2c9, versionCode 48, APK 208.8 MB MD5 2e86a98698c205828b8de1490d04616b). Verificar en el teléfono de Angelo.
 
 ## Historial
 
