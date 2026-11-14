@@ -86,6 +86,7 @@ El loop toma el PRIMER item de esta lista en cada corrida, lo hace, lo verifica 
 - Estado: pendiente, GIF por hacer.
 - Estado 2026-11-13 noche (loop): GIF de propuesta LISTO para veredicto — `goals/angely-s-world-game/hidden_files/overnight-loop/sweep-2026-11-13-night/star_shield_proposal.gif` (720x460, 36f, 3 fases: hoy = tint 90ms + parpadeo / propuesta = 4 estrellas orbitando + anillo dorado + destellos / caminando con escudo). Verificado en codigo: SHIELD_MS=15000 (Player.ts:72), tint cicla 6 colores cada 90ms + alpha 1<->0.45 cada 80ms (Player.ts:795-797), contador HUD ya existe (GameScene.ts:929-932). Nada integrado — espera su "si".
 - Estado 2026-11-14 01:05: APROBADO ("Si"). Patch listo, tsc 0 verificado en copia aparte (`/tmp/star5`, baseline OK): `goals/angely-s-world-game/hidden_files/overnight-loop/sweep-2026-11-13-night/star_shield_item5.patch` (93 líneas, aplica limpio) — 4 estrellas "starshield" orbitando + anillo dorado + 3 destellos en Player.ts, tint viejo se queda. NO aplicado al árbol todavía: el checker de la 1am está corriendo en el mismo árbol (Player.ts). Va en el v86 junto con los 2 arreglos de la 1am.
+- Estado 2026-11-14 ~02:00: INTEGRADO en v86 (commit local ec2d981, versionCode 50, APK 208.8 MB, MD5 30a5dd3bbbb4332ddc21995a4bf7c4c6). Patch aplicado limpio sobre el árbol con el arreglo de la escalera; tsc 0, checker 22 niveles / mismos 5 issues; bundle del APK verificado (buildGraveyard + shieldStars + lógica CLIMB_FINISH). Veredicto en teléfono pendiente.
 
 ### 6. Sprites de nado inconsistentes — PENDIENTE VEREDICTO (reportado por Angelo 2026-11-12 21:23)
 - "Se ven como diferentes size, como diferentes character, como si fuesen diferentes personas."
@@ -97,7 +98,7 @@ El loop toma el PRIMER item de esta lista en cada corrida, lo hace, lo verifica 
 - "Se ve que le estoy dando al aire, pero en realidad le estoy dando al enemigo."
 - Verificado: el reach NO cambió desde v78 (130 en suelo / 120 en aire, Player.ts, git show 0d47c8c idéntico). La causa que le dijeron ("el sprite creció pero el hitbox se quedó grande") NO está verificada — no repetirla.
 - Próximo paso: medir la punta de la espada en los frames del strike (local 2–5) contra el rect de 130px, y mandar GIF antes de tocar nada.
-- Estado: pendiente, GIF por hacer.
+- Estado: MEDIDO 2026-11-14 06:18 (loop, bug CONFIRMADO) — GIF esquemático listo para veredicto: `goals/angely-s-world-game/hidden_files/overnight-loop/sweep-2026-11-14-0618/sword_hitbox_schematic.gif`. Ventana del golpe f11–13: hoja arriba (+21px, punta a -144px sobre los pies, centroide detrás de ella) mientras el hitbox cubre -20..+130px; alcance máx de la hoja en todo el slash +43px (f17, recovery, hitbox apagado). En aire igual: f32–33 punta +17/+9px vs hitbox +120px. Sin arco visual (swordHit solo rect + sonido). Detalle en `sweep-log.md`. Nada integrado — pendiente su veredicto: encoger hitbox, mover la ventana a f16–20, o rehacer el swing.
 
 ### 8. [x] Gema del spring en 9-2 fuera de pantalla — HECHO 2026-11-13 (v83)
 - 9-2 Bubble Falls (meta: 6 gemas) pone su 6ta gema en (7355, -60): 60px SOBRE la pantalla. La cámara en modo run no baja de y=0, así que no se ve. El portal exige 6/6, así que con 5/6 queda sellado sin gema visible.
