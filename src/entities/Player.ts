@@ -75,13 +75,12 @@ const COYOTE_MS = 150;
 const BUFFER_MS = 160;
 const INVULN_MS = 1100;
 const SHIELD_MS = 15000;
-const SHIELD_TINTS = [0xfff27a, 0xff6ad5, 0x7af0ff, 0xffffff, 0xb6ff6a, 0xff9a3d];
-/** Gold sparkle offsets (px from body center) for the Star Shield effect. */
-const SHIELD_SPARK_OFFSETS: Array<[number, number]> = [
-  [-14, -18],
-  [12, -30],
-  [6, 10],
-];
+/** Aura v8 (Angelo 2026-11-14, GIF aprobado): 6 estrellas doradas pequenas
+ *  en dos anillos (horizontal + vertical) que pasan por delante y por detras
+ *  de Angely; su cuerpo brilla multicolor suave (halo + brillo), SIN anillo. */
+const SHIELD_STAR_SIZE = 16;
+const SHIELD_HALO_ALPHA = 0.2;
+const SHIELD_SHEEN_ALPHA = 0.08;
 const HEIGHT = 112;
 
 type PState = "normal" | "attack" | "hurt" | "pickup" | "dead" | "celebrate" | "frozen" | "catch";
@@ -95,13 +94,13 @@ export class Player {
   readonly body: Phaser.Physics.Arcade.Body;
   readonly sprite: Phaser.GameObjects.Sprite;
   private shadow: Phaser.GameObjects.Image;
-  /** Star Shield visible effect (item 5, Angelo 2026-11-14): 4 stars
-   *  orbiting Angely + a gold ring + 3 sparkles while the 15s shield
-   *  is up. Created once, shown/hidden with the shield — the old
-   *  rainbow tint + flicker stays underneath. */
+  /** Star Shield aura v8 (Angelo 2026-11-14): 6 small gold stars orbit
+   *  Angely in two rings (horizontal + vertical), passing in front of
+   *  and behind her, while her body glows soft multicolor (halo +
+   *  sheen). Created once, shown/hidden with the shield. */
   private shieldStars: Phaser.GameObjects.Sprite[] = [];
-  private shieldRing: Phaser.GameObjects.Ellipse;
-  private shieldSparks: Phaser.GameObjects.Image[] = [];
+  private shieldHalo: Phaser.GameObjects.Sprite;
+  private shieldSheen: Phaser.GameObjects.Sprite;
   private scene: GameScene;
   private sheet?: SpriteKey;
   private scales: Record<string, number>;
@@ -200,26 +199,22 @@ export class Player {
       })
       .setDepth(61);
     this.shadow = scene.add.image(x, y, "shadow").setAlpha(0.3).setDepth(30);
-    // Star Shield effect (item 5): 4 glowing stars orbit her, a gold ring
-    // frames her body, 3 gold sparkles twinkle on her. Hidden until a
-    // shield is picked up; update() drives the orbit while shielded.
-    for (let i = 0; i < 4; i++) {
-      const star = scene.add.sprite(x, y, "starshield").setDepth(61).setVisible(false);
-      star.setScale(scaleForHeight("starshield", 30));
+    // Star Shield aura v8: 6 small gold stars orbit her (depth set per
+    // frame: front vs behind); a soft multicolor halo hugs her silhouette
+    // and a faint sheen washes her body. Hidden until a shield is picked
+    // up; sync() drives them while shielded.
+    for (let i = 0; i < 6; i++) {
+      const star = scene.add.sprite(x, y, "starshield").setVisible(false);
+      star.setScale(scaleForHeight("starshield", SHIELD_STAR_SIZE));
       star.play("starshield:glow");
       this.shieldStars.push(star);
     }
-    this.shieldRing = scene.add.ellipse(x, y, 108, 76).setStrokeStyle(3, 0xffd94a, 0.85).setDepth(59).setVisible(false);
-    for (const [dx, dy] of SHIELD_SPARK_OFFSETS) {
-      const spark = scene.add
-        .image(x + dx, y + dy, "dot")
-        .setTint(0xffd94a)
-        .setBlendMode(Phaser.BlendModes.ADD)
-        .setScale(0.5)
-        .setDepth(61)
-        .setVisible(false);
-      this.shieldSparks.push(spark);
-    }
+    this.shieldHalo = scene.add.sprite(x, y, "angely").setDepth(59).setVisible(false);
+    this.shieldSheen = scene.add
+      .sprite(x, y, "angely")
+      .setDepth(61)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setVisible(false);
     this.sprite = scene.add.sprite(x, y, "angely").setDepth(60);
     this.setAnim("angely", "idle");
   }
@@ -840,38 +835,62 @@ export class Player {
     s.setFlipX(this.facing < 0);
     if (this.shielded && this.alive) {
       this.shieldWas = true;
-      s.setTint(SHIELD_TINTS[Math.floor(time / 90) % SHIELD_TINTS.length]);
-      s.setAlpha(Math.floor(time / 80) % 2 ? 1 : 0.45);
-      // Star Shield visible effect (item 5): 4 stars orbit her body, a gold
-      // ring frames her, 3 sparkles twinkle — all ride her live position.
+      s.clearTint();
+      s.setAlpha(1);
+      // Aura v8: her body glows soft multicolor (1 s rainbow cycle, like
+      // the approved GIF) while 6 small gold stars orbit her in two rings.
       const cx = this.x;
       const cy = this.body.bottom - HEIGHT / 2;
-      const t = time / 600;
-      const starScale = scaleForHeight("starshield", 30);
-      for (let i = 0; i < 4; i++) {
-        const a = t + (i * Math.PI) / 2;
+      const hue = (time / 1000) % 1;
+      const glowColor = Phaser.Display.Color.HSVToRGB(hue, 0.9, 1).color;
+      const sheenColor = Phaser.Display.Color.HSVToRGB((hue + 0.12) % 1, 0.75, 1).color;
+      this.shieldHalo
+        .setVisible(true)
+        .setTexture(s.texture.key, s.frame.name)
+        .setPosition(s.x, s.y)
+        .setScale(base * sx * 1.08, base * sy * 1.08)
+        .setFlipX(s.flipX)
+        .setRotation(s.rotation)
+        .setTint(glowColor)
+        .setAlpha(SHIELD_HALO_ALPHA);
+      this.shieldSheen
+        .setVisible(true)
+        .setTexture(s.texture.key, s.frame.name)
+        .setPosition(s.x, s.y)
+        .setScale(base * sx, base * sy)
+        .setFlipX(s.flipX)
+        .setRotation(s.rotation)
+        .setTint(sheenColor)
+        .setAlpha(SHIELD_SHEEN_ALPHA);
+      // 3 stars on the horizontal ring (rx 58, ry 15) + 3 on the vertical
+      // ring (rx 32, ry 73); depth flips front/back as they orbit, and
+      // back stars read smaller and dimmer — same as the approved GIF.
+      const t = time / 1000;
+      const starScale = scaleForHeight("starshield", SHIELD_STAR_SIZE);
+      for (let i = 0; i < 6; i++) {
+        const ring = i < 3 ? 0 : 1;
+        const j = i % 3;
+        const a = 2 * Math.PI * t + (j * 2 * Math.PI) / 3 + (ring ? Math.PI / 3 : 0);
+        const rx = ring ? 32 : 58;
+        const ry = ring ? 73 : 15;
+        const dep = Math.sin(a);
+        const tw = 0.75 + 0.25 * Math.sin(2 * Math.PI * (t * 2 + j * 0.33 + (ring ? 0.5 : 0)));
         this.shieldStars[i]
           .setVisible(true)
-          .setPosition(cx + Math.cos(a) * 54, cy + Math.sin(a) * 36 - 6)
+          .setDepth(dep >= 0 ? 61 : 59)
+          .setPosition(cx + Math.cos(a) * rx, cy + Math.sin(a) * ry - 6)
           .setRotation(a)
-          .setScale(starScale * (1 + 0.12 * Math.sin(t * 2 + i)));
-      }
-      this.shieldRing.setVisible(true).setPosition(cx, cy - 6).setAlpha(0.55 + 0.25 * Math.sin(t * 2));
-      for (let i = 0; i < 3; i++) {
-        const [dx, dy] = SHIELD_SPARK_OFFSETS[i];
-        this.shieldSparks[i]
-          .setVisible(true)
-          .setPosition(cx + dx, cy + dy)
-          .setAlpha(0.35 + 0.55 * Math.abs(Math.sin(time / 280 + i * 2.1)));
+          .setScale(starScale * (1 + 0.12 * dep) * tw)
+          .setAlpha(0.6 + 0.4 * dep);
       }
     } else {
       if (this.shieldWas) {
         this.shieldWas = false;
         s.clearTint();
-        // Shield ended: hide the orbit effect with the tint.
+        // Shield ended: hide the aura with the tint.
         for (const star of this.shieldStars) star.setVisible(false);
-        this.shieldRing.setVisible(false);
-        for (const spark of this.shieldSparks) spark.setVisible(false);
+        this.shieldHalo.setVisible(false);
+        this.shieldSheen.setVisible(false);
       }
       s.setAlpha(this.invulnerable && this.alive && Math.floor(time / 70) % 2 ? 0.35 : 1);
     }
