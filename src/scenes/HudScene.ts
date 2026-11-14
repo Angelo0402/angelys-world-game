@@ -852,23 +852,48 @@ export class HudScene extends Phaser.Scene {
     // se veía como un cuadrito pegado. Ahora el botón ENTERO se vuelve
     // rojo cuando está en OFF (misma forma de píldora, mismo texto en
     // blanco), y en ON se ve el botón verde pintado del arte.
+    // v90: el cambio ya no es instantáneo — la píldora roja entra con un
+    // pop (escala 0.85→1, Back.easeOut) y sale encogiéndose + fundido, así
+    // el toggle se siente como un botón de verdad y no como un cambio de
+    // color pegado (Angelo 2026-11-14: "cambia de color sin animación").
     const toggleOff = (fx0: number, fx1: number, fy0: number, fy1: number, label: string) => {
       const bx = dispX + fx0 * dispW;
       const by = dispY + fy0 * dispH;
       const bw = (fx1 - fx0) * dispW;
       const bh = (fy1 - fy0) * dispH;
+      const cx = bx + bw / 2;
+      const cy = by + bh / 2;
       const g = this.add.graphics();
       // Píldora roja con borde oscuro, con inset para dejar ver el borde
-      // dorado y las gemas del botón pintado.
-      g.fillStyle(0x8f0f0f, 1).fillRoundedRect(bx + 4, by + 4, bw - 8, bh - 8, 14);
-      g.fillStyle(0xd21f2b, 1).fillRoundedRect(bx + 7, by + 7, bw - 14, bh - 14, 11);
-      g.fillStyle(0xe85a5a, 1).fillRoundedRect(bx + 7, by + 7, bw - 14, (bh - 14) / 2, { tl: 11, tr: 11, bl: 0, br: 0 });
+      // dorado y las gemas del botón pintado. Dibujada relativa al centro
+      // para que el pop de escala no la desplace.
+      g.fillStyle(0x8f0f0f, 1).fillRoundedRect(-bw / 2 + 4, -bh / 2 + 4, bw - 8, bh - 8, 14);
+      g.fillStyle(0xd21f2b, 1).fillRoundedRect(-bw / 2 + 7, -bh / 2 + 7, bw - 14, bh - 14, 11);
+      g.fillStyle(0xe85a5a, 1).fillRoundedRect(-bw / 2 + 7, -bh / 2 + 7, bw - 14, (bh - 14) / 2, { tl: 11, tr: 11, bl: 0, br: 0 });
       const t = this.add
-        .text(bx + bw / 2, by + bh / 2, label, { fontFamily: FONT, fontSize: "24px", fontStyle: "bold", color: "#ffffff", stroke: "#2a1640", strokeThickness: 5 })
+        .text(0, 0, label, { fontFamily: FONT, fontSize: "24px", fontStyle: "bold", color: "#ffffff", stroke: "#2a1640", strokeThickness: 5 })
         .setOrigin(0.5);
-      const grp = this.add.container(0, 0, [g, t]);
+      const grp = this.add.container(cx, cy, [g, t]);
       c.add(grp);
       return grp;
+    };
+    /** Anima el toggle: al apagar, la píldora roja entra con pop; al
+     *  prender, se encoge y se funde revelando el botón verde pintado. */
+    const animateToggle = (grp: Phaser.GameObjects.Container, turningOff: boolean) => {
+      this.tweens.killTweensOf(grp);
+      if (turningOff) {
+        grp.setVisible(true).setScale(0.85).setAlpha(0);
+        this.tweens.add({ targets: grp, scale: 1, alpha: 1, duration: 220, ease: "Back.easeOut" });
+      } else {
+        this.tweens.add({
+          targets: grp,
+          scale: 0.85,
+          alpha: 0,
+          duration: 180,
+          ease: "Quad.easeIn",
+          onComplete: () => grp.setVisible(false).setScale(1).setAlpha(1),
+        });
+      }
     };
     const musicOff = toggleOff(583 / 1672, 836 / 1672, 677 / 941, 742 / 941, "MUSIC OFF");
     const sfxOff = toggleOff(857 / 1672, 1106 / 1672, 677 / 941, 742 / 941, "SFX: OFF");
@@ -883,11 +908,11 @@ export class HudScene extends Phaser.Scene {
     const select = zone(845 / 1672, 1115 / 1672, 594 / 941, 652 / 941, () => this.toChapterSelect());
     const music = zone(583 / 1672, 836 / 1672, 677 / 941, 742 / 941, () => {
       Audio.setMusic(!Audio.musicOn);
-      musicOff.setVisible(!Audio.musicOn);
+      animateToggle(musicOff, !Audio.musicOn);
     });
     const sfx = zone(857 / 1672, 1106 / 1672, 677 / 941, 742 / 941, () => {
       Audio.setSfx(!Audio.sfxOn);
-      sfxOff.setVisible(!Audio.sfxOn);
+      animateToggle(sfxOff, !Audio.sfxOn);
     });
     c.setAlpha(0);
     this.tweens.add({ targets: c, alpha: 1, duration: 200 });
