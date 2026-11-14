@@ -126,6 +126,10 @@ export class GraveyardMusic {
   private paused = false;
   private destroyed = false;
 
+  /** MUSIC toggle state (v89): setOutput() stores it; start()/onResume()
+   *  respect it so a toggled-off track never comes back on its own. */
+  private outputOn = true;
+
   // FIX (review 2026-11-13): setMix() used to be silently clobbered —
   // start() and onResume() hard-coded 0.76/0.72. The mix now lives in
   // fields so a setMix() call survives pause/resume.
@@ -293,8 +297,23 @@ export class GraveyardMusic {
     );
 
     this.output.gain.setTargetAtTime(
-      this.masterLevel, now, 1.0
+      this.outputOn ? this.masterLevel : 0.0001, now, 1.0
     );
+  }
+
+  /**
+   * MUSIC toggle (v89): ramp the whole output (music + ambience) to the
+   * master level or to silence. Stores the flag first, so a toggle before
+   * start() still holds — start()/onResume() both read outputOn. No-op
+   * once stopped/destroyed: stop() owns the fade then, so a late toggle
+   * can't resurrect it.
+   */
+  setOutput(on: boolean): void {
+    this.outputOn = on;
+    if (this.destroyed || !this.started || this.paused) return;
+    try {
+      this.output.gain.setTargetAtTime(on ? this.masterLevel : 0.0001, this.ctx.currentTime, 0.2);
+    } catch {}
   }
 
   /**
@@ -816,7 +835,7 @@ export class GraveyardMusic {
       );
 
       this.output.gain.setTargetAtTime(
-        this.masterLevel, now, 1.0
+        this.outputOn ? this.masterLevel : 0.0001, now, 1.0
       );
     }).catch(() => {});
   };

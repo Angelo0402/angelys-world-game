@@ -75,12 +75,12 @@ const COYOTE_MS = 150;
 const BUFFER_MS = 160;
 const INVULN_MS = 1100;
 const SHIELD_MS = 15000;
-/** Aura v8 (Angelo 2026-11-14, GIF aprobado): 6 estrellas doradas pequenas
- *  en dos anillos (horizontal + vertical) que pasan por delante y por detras
- *  de Angely; su cuerpo brilla multicolor suave (halo + brillo), SIN anillo. */
+/** Aura v9 (Angelo 2026-11-14: v8 FAILED on his phone — the 1.08x halo copy
+ *  read as a doubled body, and 0.20/0.08 was too subtle to see). Real Phaser
+ *  postFX glow: hugs the silhouette, NO sprite copy, clearly visible. */
 const SHIELD_STAR_SIZE = 16;
-const SHIELD_HALO_ALPHA = 0.2;
-const SHIELD_SHEEN_ALPHA = 0.08;
+const SHIELD_GLOW_OUTER = 6;
+const SHIELD_GLOW_INNER = 2;
 const HEIGHT = 112;
 
 type PState = "normal" | "attack" | "hurt" | "pickup" | "dead" | "celebrate" | "frozen" | "catch";
@@ -94,13 +94,13 @@ export class Player {
   readonly body: Phaser.Physics.Arcade.Body;
   readonly sprite: Phaser.GameObjects.Sprite;
   private shadow: Phaser.GameObjects.Image;
-  /** Star Shield aura v8 (Angelo 2026-11-14): 6 small gold stars orbit
+  /** Star Shield aura v9 (Angelo 2026-11-14): 6 small gold stars orbit
    *  Angely in two rings (horizontal + vertical), passing in front of
-   *  and behind her, while her body glows soft multicolor (halo +
-   *  sheen). Created once, shown/hidden with the shield. */
+   *  and behind her, while a real Phaser postFX glow cycles rainbow
+   *  colors around her body. Created once, shown/hidden with the shield.
+   *  NO sprite copy of her body (v8's halo read as a double on phone). */
   private shieldStars: Phaser.GameObjects.Sprite[] = [];
-  private shieldHalo: Phaser.GameObjects.Sprite;
-  private shieldSheen: Phaser.GameObjects.Sprite;
+  private shieldGlow: Phaser.FX.Glow;
   private scene: GameScene;
   private sheet?: SpriteKey;
   private scales: Record<string, number>;
@@ -199,23 +199,20 @@ export class Player {
       })
       .setDepth(61);
     this.shadow = scene.add.image(x, y, "shadow").setAlpha(0.3).setDepth(30);
-    // Star Shield aura v8: 6 small gold stars orbit her (depth set per
-    // frame: front vs behind); a soft multicolor halo hugs her silhouette
-    // and a faint sheen washes her body. Hidden until a shield is picked
-    // up; sync() drives them while shielded.
+    // Star Shield aura v9: 6 small gold stars orbit her (depth set per
+    // frame: front vs behind). Hidden until a shield is picked up;
+    // sync() drives them while shielded.
     for (let i = 0; i < 6; i++) {
       const star = scene.add.sprite(x, y, "starshield").setVisible(false);
       star.setScale(scaleForHeight("starshield", SHIELD_STAR_SIZE));
       star.play("starshield:glow");
       this.shieldStars.push(star);
     }
-    this.shieldHalo = scene.add.sprite(x, y, "angely").setDepth(59).setVisible(false);
-    this.shieldSheen = scene.add
-      .sprite(x, y, "angely")
-      .setDepth(61)
-      .setBlendMode(Phaser.BlendModes.ADD)
-      .setVisible(false);
     this.sprite = scene.add.sprite(x, y, "angely").setDepth(60);
+    // Real Phaser glow on her own sprite (no body copy — v8's halo sprite
+    // read as a doubled body on the phone). Color cycles per frame in sync().
+    this.shieldGlow = this.sprite.postFX.addGlow(0xffffff, SHIELD_GLOW_OUTER, SHIELD_GLOW_INNER);
+    this.shieldGlow.active = false;
     this.setAnim("angely", "idle");
   }
 
@@ -837,31 +834,16 @@ export class Player {
       this.shieldWas = true;
       s.clearTint();
       s.setAlpha(1);
-      // Aura v8: her body glows soft multicolor (1 s rainbow cycle, like
-      // the approved GIF) while 6 small gold stars orbit her in two rings.
+      // Aura v9: real postFX glow cycles rainbow (1 s cycle, like the
+      // approved GIF v8) while 6 small gold stars orbit her in two rings.
+      // The glow hugs her silhouette — no sprite copy, no double body.
+      // Glow color IS settable per frame (Phaser.FX.Glow.color setter
+      // writes glcolor — verified in node_modules/phaser/src/fx/Glow.js).
+      const hue = (time / 1000) % 1;
+      this.shieldGlow.color = Phaser.Display.Color.HSVToRGB(hue, 0.9, 1).color;
+      this.shieldGlow.active = true;
       const cx = this.x;
       const cy = this.body.bottom - HEIGHT / 2;
-      const hue = (time / 1000) % 1;
-      const glowColor = Phaser.Display.Color.HSVToRGB(hue, 0.9, 1).color;
-      const sheenColor = Phaser.Display.Color.HSVToRGB((hue + 0.12) % 1, 0.75, 1).color;
-      this.shieldHalo
-        .setVisible(true)
-        .setTexture(s.texture.key, s.frame.name)
-        .setPosition(s.x, s.y)
-        .setScale(base * sx * 1.08, base * sy * 1.08)
-        .setFlipX(s.flipX)
-        .setRotation(s.rotation)
-        .setTint(glowColor)
-        .setAlpha(SHIELD_HALO_ALPHA);
-      this.shieldSheen
-        .setVisible(true)
-        .setTexture(s.texture.key, s.frame.name)
-        .setPosition(s.x, s.y)
-        .setScale(base * sx, base * sy)
-        .setFlipX(s.flipX)
-        .setRotation(s.rotation)
-        .setTint(sheenColor)
-        .setAlpha(SHIELD_SHEEN_ALPHA);
       // 3 stars on the horizontal ring (rx 58, ry 15) + 3 on the vertical
       // ring (rx 32, ry 73); depth flips front/back as they orbit, and
       // back stars read smaller and dimmer — same as the approved GIF.
@@ -887,10 +869,9 @@ export class Player {
       if (this.shieldWas) {
         this.shieldWas = false;
         s.clearTint();
-        // Shield ended: hide the aura with the tint.
+        // Shield ended: hide the aura.
         for (const star of this.shieldStars) star.setVisible(false);
-        this.shieldHalo.setVisible(false);
-        this.shieldSheen.setVisible(false);
+        this.shieldGlow.active = false;
       }
       s.setAlpha(this.invulnerable && this.alive && Math.floor(time / 70) % 2 ? 0.35 : 1);
     }

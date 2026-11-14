@@ -31,6 +31,7 @@ El loop toma el PRIMER item de esta lista en cada corrida, lo hace, lo verifica 
 - F3. Efecto visible de estrella en Star Shield (ver item 5 abajo).
 - F4. Barra/dial de volumen de música en el menú (ver item 3 abajo).
 - F5. Música distinta por capítulo: hoy la música es procedural (AudioManager SONGS, sin archivos) y se repite — ch5, ch10 y ch11 usan la misma `music_shadow`. Angelo 2026-11-13: "no escucho música nueva".
+  - Decisión 2026-11-14 (llamada, jugó v88): cada chapter lleva su PROPIO SONIDO AMBIENTAL, sintetizado en código como GraveyardMusic (viento, grillos, búhos en ch11), sin archivos. La música se queda pero bajita, de fondo, y el ambiental manda. Mezcla a probar: música 5, voz de Angely 50, ambiental 75 (la voz se escucha muy alta hoy). Ejemplos: ch1 bosque con pájaros, lava con madera quemándose. SFX se dejan como están, no se tocan.
 - F6. Portal que se abre por coleccionar, no solo por matar enemigos (regla Graveyard; ejemplo de Angelo pendiente — su frase quedó cortada).
 
 ## Capítulo 11 Graveyard — spec (Angelo 2026-11-13, voz; su character sheet nuevo llega primero)
@@ -90,6 +91,7 @@ El loop toma el PRIMER item de esta lista en cada corrida, lo hace, lo verifica 
 - Estado 2026-11-14 ~02:00: INTEGRADO en v86 (commit local ec2d981, versionCode 50, APK 208.8 MB, MD5 30a5dd3bbbb4332ddc21995a4bf7c4c6). Patch aplicado limpio sobre el árbol con el arreglo de la escalera; tsc 0, checker 22 niveles / mismos 5 issues; bundle del APK verificado (buildGraveyard + shieldStars + lógica CLIMB_FINISH). Veredicto en teléfono pendiente.
 - Estado 2026-11-14 (loop 14:18): AURA v4 — GIF con la spec FINAL de Angelo (voz ~06:50, supersede v1/v2): estrellas MUCHO más pequeñas (r 3–7px), SIN anillo, órbita horizontal + vertical pasando por FRENTE y por ATRÁS de Angely, 1 vuelta/segundo, sprite real del juego (angely.webp idle). `sweep-2026-11-14-1418/aura_dorada_v4.gif` (720x446, 60f, 4.1 MB). OJO: quedó a 50 fps (20ms/frame) porque el GIF no representa 16.7ms; en el juego iría a 60. Nada integrado — v88 solo si lo aprueba.
 - Estado 2026-11-14 17:33–17:40: AURA v8 — APROBADO ("Asi"). Iteración v4→v8 en la tarde: v5 (estrellas multicolor) rechazado — "No las estrellas no. Osea todo el cuerpo de angely brilla asi mientras las estrellas dan vueltas alrededor"; v6 (cuerpo multicolor, estrellas doradas) → "Menos intensidad"; v7 (mitad) → "Baja mas"; v8 (mitad otra vez: halo 0.20, brillo 0.08) → "Asi". INTEGRADO en v88 (commit local, versionCode 52, APK 208.8 MB, MD5 5118362df7e1f1b31bcf3e678bf8202a): 6 estrellas doradas pequeñas (16px, 3 anillo H + 3 anillo V, frente/atrás con profundidad 59/61), halo multicolor pegado a la silueta (tint HSV 1s + alpha 0.20) + brillo ADD sobre el cuerpo (alpha 0.08), SIN anillo, SIN destellos, SIN tint/parpadeo viejo. Verificado: tsc 0, checker 22 niveles / mismos 5 issues, bundle con shieldHalo + HSVToRGB, ring 0; harness ?level=11-1 con escudo: 6 estrellas visibles, halo/sheen visibles con alphas correctos, 0 errores. Veredicto en teléfono pendiente.
+- Estado 2026-11-14 noche (llamada, jugó v88): VEREDICTO — el aura NO se vio al coger la estrella; en su lugar se veía como el cuerpo doble, una sombra del cuerpo entero abajo. Causa: el halo implementado es una copia del sprite de Angely (shieldHalo), por eso se ve doble. Fix acordado: brillo de verdad, no copia del cuerpo. Pendiente.
 
 ### 6. Sprites de nado inconsistentes — PENDIENTE VEREDICTO (reportado por Angelo 2026-11-12 21:23)
 - "Se ven como diferentes size, como diferentes character, como si fuesen diferentes personas."
@@ -116,6 +118,11 @@ El loop toma el PRIMER item de esta lista en cada corrida, lo hace, lo verifica 
 - GIF esquemático (no gameplay): `goals/angely-s-world-game/hidden_files/overnight-loop/sweep-2026-11-13-afternoon/ladder_touch_down_schematic.gif` (720x460, 36f). Detalle y evidencia en `sweep-log.md`.
 - DECISIÓN de Angelo 2026-11-13 (voz): la escalera se sube y se baja SOLO con el joystick — mantener el joystick hacia arriba sube la escalera completa; mantenerlo hacia abajo baja la escalera. Sin botón extra, sin ACTION. Fix: que el joystick hacia abajo alimente `downHeld` (y arriba ya alimenta `upHeld`).
 - Estado: [x] IMPLEMENTADO 2026-11-13 (tarde, main agent, no loop): `touchState.axisY` nuevo (HudScene.ts onMove: vertical del joystick, mismo dead-zone/rampa que X; onUp lo resetea a 0) alimenta `upHeld` (axisY < -0.25) y `downHeld` (axisY > 0.25) en controls.ts. JUMP mantenido sigue subiendo (comportamiento previo, no se quitó). tsc --noEmit 0, checker 22 niveles, mismos 5 issues preexistentes. ENVIADO en v84 (commit 2e8e2c9, versionCode 48, APK 208.8 MB MD5 2e86a98698c205828b8de1490d04616b). Verificar en el teléfono de Angelo.
+
+### 10. Botones de pausa MUSIC / SFX: OFF debe verse ROJO, ON verde, mismo estilo — reportado por Angelo 2026-11-14 (llamada, jugó v88)
+- La función SÍ funciona (la música apaga y prende). El problema es solo visual: el estado OFF se ve como un cuadrito verde pegado encima que no concuerda con el estilo del botón de abajo.
+- Fix acordado: mismo estilo de botón, rojo cuando está OFF y verde cuando está ON (aplica a MUSIC y a SFX).
+- Estado: pendiente de implementar. Screenshot: `~/workspace/user/files/101591_1_gbcy.jpg` (pantalla PAUSED).
 
 ## Historial
 

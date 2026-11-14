@@ -777,8 +777,8 @@ export class HudScene extends Phaser.Scene {
     // porque el arte 16:9 no llena el cuadro 1280x576) +
     // zonas invisibles sobre los 5 botones pintados, como el game-over art.
     // Los toggles MUSIC/SFX son la única excepción visual: cuando están en
-    // OFF, un parche pequeño tapa solo la palabra ON con OFF (en ON, la
-    // imagen es exactamente la enviada).
+    // OFF, el botón entero se vuelve rojo (misma forma, texto OFF en
+    // blanco); en ON, la imagen es exactamente la enviada.
     resetTouch();
     this.joyId = this.jumpId = this.attackId = -1;
     this.resetJoy();
@@ -847,21 +847,31 @@ export class HudScene extends Phaser.Scene {
         },
       };
     };
-    // Parches OFF: tapan solo la palabra ON del botón verde (medido del arte).
-    const offPatch = (fx: number, fy: number) => {
-      const px = dispX + fx * dispW;
-      const py = dispY + fy * dispH;
+    // Toggles OFF en ROJO (Angelo 2026-11-14, v89): el parche verde viejo
+    // tapaba solo la palabra ON y su verde no coincidía con el botón —
+    // se veía como un cuadrito pegado. Ahora el botón ENTERO se vuelve
+    // rojo cuando está en OFF (misma forma de píldora, mismo texto en
+    // blanco), y en ON se ve el botón verde pintado del arte.
+    const toggleOff = (fx0: number, fx1: number, fy0: number, fy1: number, label: string) => {
+      const bx = dispX + fx0 * dispW;
+      const by = dispY + fy0 * dispH;
+      const bw = (fx1 - fx0) * dispW;
+      const bh = (fy1 - fy0) * dispH;
       const g = this.add.graphics();
-      g.fillStyle(0x0c7c37, 1).fillRoundedRect(px - 25, py - 13, 50, 26, 8);
+      // Píldora roja con borde oscuro, con inset para dejar ver el borde
+      // dorado y las gemas del botón pintado.
+      g.fillStyle(0x8f0f0f, 1).fillRoundedRect(bx + 4, by + 4, bw - 8, bh - 8, 14);
+      g.fillStyle(0xd21f2b, 1).fillRoundedRect(bx + 7, by + 7, bw - 14, bh - 14, 11);
+      g.fillStyle(0xe85a5a, 1).fillRoundedRect(bx + 7, by + 7, bw - 14, (bh - 14) / 2, { tl: 11, tr: 11, bl: 0, br: 0 });
       const t = this.add
-        .text(px, py, "OFF", { fontFamily: FONT, fontSize: "20px", fontStyle: "bold", color: "#ffffff", stroke: "#2a1640", strokeThickness: 4 })
+        .text(bx + bw / 2, by + bh / 2, label, { fontFamily: FONT, fontSize: "24px", fontStyle: "bold", color: "#ffffff", stroke: "#2a1640", strokeThickness: 5 })
         .setOrigin(0.5);
       const grp = this.add.container(0, 0, [g, t]);
       c.add(grp);
       return grp;
     };
-    const musicOff = offPatch(754.5 / 1672, 710 / 941);
-    const sfxOff = offPatch(1017 / 1672, 710 / 941);
+    const musicOff = toggleOff(583 / 1672, 836 / 1672, 677 / 941, 742 / 941, "MUSIC OFF");
+    const sfxOff = toggleOff(857 / 1672, 1106 / 1672, 677 / 941, 742 / 941, "SFX: OFF");
     musicOff.setVisible(!Audio.musicOn);
     sfxOff.setVisible(!Audio.sfxOn);
     const resume = zone(610 / 1672, 1076 / 1672, 498 / 941, 570 / 941, () => {

@@ -4,6 +4,7 @@ import { PROPS, SPRITES, type SpriteKey } from "../assets/sprites.gen";
 import { Audio } from "../audio/AudioManager";
 import type { SfxName } from "../audio/manifest";
 import { GraveyardMusic } from "../audio/GraveyardMusic";
+import { ChapterAmbience } from "../audio/ChapterAmbience";
 import { Barks, ENTRY_BARKS, HURT_BARKS, SIGHT_BARKS, STOMP_BARKS } from "../audio/barks";
 import {
   BG11_FG, BG11_MID, BG11_SKY, CHAPTERS, FONT, GAME_H, GAME_W, GROUND_Y, LAST_LEVEL, LEVELS, MAX_HEARTS, WEAPON_NAMES, WEAPON_ORDER, levelLabel, weaponsBefore,
@@ -156,6 +157,8 @@ export class GameScene extends Phaser.Scene {
   private downArrow?: Phaser.GameObjects.Container;
   /** PRUEBA ch11: GraveyardMusic instance — chapter 11 ONLY, replaces Audio.music. */
   private graveyardMusic?: GraveyardMusic;
+  /** v89: per-chapter procedural ambience — chapters 1–10 (ch11 uses GraveyardMusic). */
+  private ambience?: ChapterAmbience;
   private downArrowX = 0;
   private shieldShown = -1;
   private checkpoints: { spot: Spot; sprite: Phaser.GameObjects.Sprite; active: boolean }[] = [];
@@ -400,8 +403,12 @@ export class GameScene extends Phaser.Scene {
     if (this.chapter.id === 11) {
       Audio.stopMusic();
       this.graveyardMusic = new GraveyardMusic(this);
+      Audio.setAmbienceOutput(this.graveyardMusic);
     } else {
       Audio.music(this.chapter.music);
+      // v89: per-chapter ambient (music 0.05 underneath, ambient 0.75).
+      this.ambience = new ChapterAmbience(this, this.chapter.id);
+      Audio.setAmbienceOutput(this.ambience);
     }
     Audio.duck(false);
 
@@ -1857,15 +1864,19 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * PRUEBA ch11: stop GraveyardMusic whenever the game switches music
-   * while the Game scene stays alive (victory / game over / boss
-   * intro-outro). Level transitions and restarts shut the scene down,
-   * and GraveyardMusic destroys itself on shutdown — no call needed
-   * there. Safe no-op in every other chapter (field is undefined).
+   * Stop chapter audio (GraveyardMusic ch11 / ChapterAmbience ch1–10)
+   * whenever the game switches music while the Game scene stays alive
+   * (victory / game over / boss intro-outro). Level transitions and
+   * restarts shut the scene down, and both classes destroy themselves
+   * on shutdown — no call needed there. Safe no-op when a field is
+   * undefined. Also unregisters the MUSIC-toggle hook.
    */
-  private stopGraveyardMusic(): void {
+  private stopChapterAudio(): void {
     this.graveyardMusic?.stop();
     this.graveyardMusic = undefined;
+    this.ambience?.stop();
+    this.ambience = undefined;
+    Audio.setAmbienceOutput(null);
   }
 
   private enterPortal() {
@@ -1890,7 +1901,7 @@ export class GameScene extends Phaser.Scene {
       } else {
         updateSave({ cleared: true });
         this.cameras.main.flash(600, 255, 255, 255);
-        this.stopGraveyardMusic();
+        this.stopChapterAudio();
         Audio.music("music_victory");
         this.game.events.emit("hud:victory");
       }
@@ -1908,7 +1919,7 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(animated ? 1400 : 700, () => {
       this.physics.pause();
       Barks.play(this, ["angely_bark_05"], 1, true);
-      this.stopGraveyardMusic();
+      this.stopChapterAudio();
       Audio.music("music_game_over");
       // Feel package 2026-10-26: the retry screen shows boss progress on
       // the final boss only; other chapters get the plain game-over flow.
@@ -2020,7 +2031,7 @@ export class GameScene extends Phaser.Scene {
     this.cinema(false, 500);
     this.registry.set("boss", { name: WORM_NAME, hp: worm.hp, max: worm.maxHp });
     this.game.events.emit("hud:banner", WORM_NAME);
-    this.stopGraveyardMusic();
+    this.stopChapterAudio();
     Audio.music("music_boss");
     worm.begin();
     this.cutscene = false;
@@ -2040,7 +2051,7 @@ export class GameScene extends Phaser.Scene {
     this.portal.appear();
     this.portal.open();
     Audio.sfx("portal_unlock");
-    this.stopGraveyardMusic();
+    this.stopChapterAudio();
     Audio.music("music_title");
     this.cinema(false, 500);
     this.game.events.emit("hud:banner", "TO THE SQUISHY VALLEY!");
@@ -2095,7 +2106,7 @@ export class GameScene extends Phaser.Scene {
       Audio.sfx("ground_slam");
       await this.wait(900);
       this.veilEntryDone = true;
-      this.stopGraveyardMusic();
+      this.stopChapterAudio();
       Audio.music("music_boss");
       boss.begin();
       this.veilState = "fight";
@@ -2157,7 +2168,7 @@ export class GameScene extends Phaser.Scene {
       // No hud:cinema false here: the THE END screen owns the HUD
       // now, and the touch controls stay hidden behind it.
       this.cameras.main.flash(600, 255, 255, 255);
-      this.stopGraveyardMusic();
+      this.stopChapterAudio();
       Audio.music("music_victory");
       this.game.events.emit("hud:victory");
       console.log("[veilOutro] victory shown");
@@ -2178,7 +2189,7 @@ export class GameScene extends Phaser.Scene {
         console.warn("[veilOutro] updateSave failed:", saveError);
       }
       this.cameras.main.flash(600, 255, 255, 255);
-      this.stopGraveyardMusic();
+      this.stopChapterAudio();
       Audio.music("music_victory");
       this.game.events.emit("hud:victory");
       console.log("[veilOutro] victory shown (fallback)");
@@ -2236,7 +2247,7 @@ export class GameScene extends Phaser.Scene {
     this.cinema(false, 600);
     this.registry.set("boss", { name: BOSS_NAME, hp: boss.hp, max: boss.maxHp });
     this.game.events.emit("hud:banner", BOSS_NAME);
-    this.stopGraveyardMusic();
+    this.stopChapterAudio();
     Audio.music("music_boss");
     this.tweens.killTweensOf(boss);
     boss.begin();
@@ -2282,7 +2293,7 @@ export class GameScene extends Phaser.Scene {
     this.cinema(false, 600);
     this.registry.set("boss", { name: BOSS_NAME, hp: boss.hp, max: boss.maxHp });
     this.game.events.emit("hud:banner", BOSS_NAME);
-    this.stopGraveyardMusic();
+    this.stopChapterAudio();
     Audio.music("music_boss");
     this.tweens.killTweensOf(boss);
     boss.begin();
@@ -2440,7 +2451,7 @@ export class GameScene extends Phaser.Scene {
     this.portal.appear();
     this.portal.open();
     Audio.sfx("portal_unlock");
-    this.stopGraveyardMusic();
+    this.stopChapterAudio();
     Audio.music("music_title");
     this.game.events.emit("hud:banner", "TO THE SKY TOWER!");
     this.cutscene = false;

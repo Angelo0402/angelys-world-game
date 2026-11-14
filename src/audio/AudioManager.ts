@@ -195,6 +195,17 @@ class AudioManagerImpl {
     updateSave({ music: on });
     if (this.musicBus && this.ctx) this.musicBus.gain.setTargetAtTime(on ? this.musicLevel() : 0, this.ctx.currentTime, 0.1);
     if (this.fileMusic) (this.fileMusic as Phaser.Sound.WebAudioSound).setMute?.(!on);
+    // Chapter ambience (and ch11 GraveyardMusic) follow the MUSIC toggle.
+    this.ambienceOutput?.setOutput(on);
+  }
+
+  /** Chapter audio output (ChapterAmbience / GraveyardMusic) — follows the
+   *  MUSIC toggle, not SFX. GameScene registers the live instance; the
+   *  hook applies the current toggle state immediately on registration. */
+  private ambienceOutput: { setOutput(on: boolean): void } | null = null;
+  setAmbienceOutput(t: { setOutput(on: boolean): void } | null) {
+    this.ambienceOutput = t;
+    if (t) t.setOutput(this.musicOn);
   }
 
   setSfx(on: boolean) {
@@ -209,8 +220,16 @@ class AudioManagerImpl {
     if (this.fileMusic) (this.fileMusic as Phaser.Sound.WebAudioSound).setVolume?.(on ? 0.35 : 1);
   }
 
+  /** Mix v89 (Angelo 2026-11-14): music 5 (0.05) — barely there, the
+   *  per-chapter ambient (0.75) carries the scene. Was 0.5. */
   private musicLevel() {
-    return (this.ducked ? 0.35 : 1) * 0.5;
+    return (this.ducked ? 0.35 : 1) * 0.05;
+  }
+
+  /** Mix v89 (Angelo 2026-11-14): Angely's voice at 50 — present but
+   *  under the 75 ambient, never shouting over it. Was full volume (1). */
+  private voiceLevel() {
+    return 0.5;
   }
 
   private ensureCtx() {
@@ -262,6 +281,7 @@ class AudioManagerImpl {
     this.voiceSound = undefined;
     if (this.hasVoice(name) && this.game) {
       const s = this.game.sound.add(name);
+      (s as Phaser.Sound.WebAudioSound).setVolume?.(this.voiceLevel());
       s.play();
       this.voiceSound = s;
     }
