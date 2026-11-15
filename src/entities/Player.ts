@@ -153,6 +153,12 @@ export class Player {
   private attackScale: { sx: number; sy: number } | null = null;
   /** Armed while running; disarmed when the stop settle fires. */
   private stopArmed = false;
+  /** v91 walk/run smoothing: current ground locomotion anim (hysteresis at
+   *  the walk<->run switch) and the lerped playback rate (stored here
+   *  because pickAnim resets the sprite's timeScale to 1 at the top of
+   *  every call). */
+  private locoAnim: "idle" | "walk" | "run" = "idle";
+  private locoTimeScale = 1;
   private lastWalkDust = 0;
   private recoilVx = 0;
   private recoilUntil = 0;
@@ -446,7 +452,7 @@ export class Player {
         this.swimUpdate(time, input.jumpHeld);
         if (input.attackPressed && this.weapon && this.state === "normal") this.startAttack(time);
         if (this.state === "attack") this.attackUpdate(time);
-        this.pickAnim(time, input.axis);
+        this.pickAnim(time, dt, input.axis);
         this.sync(time);
         return;
       }
@@ -466,7 +472,7 @@ export class Player {
 
     if (this.state === "attack") this.attackUpdate(time);
 
-    this.pickAnim(time, input.axis);
+    this.pickAnim(time, dt, input.axis);
     this.sync(time);
   }
 
@@ -626,7 +632,7 @@ export class Player {
     this.setAnim("angely_wand", "cast", true);
   }
 
-  private pickAnim(time: number, axis: number) {
+  private pickAnim(time: number, dt: number, axis: number) {
     this.sprite.anims.timeScale = 1;
     if (this.state === "attack" || this.state === "catch") return;
     const sword = this.hasSword;
@@ -679,13 +685,30 @@ export class Player {
     }
     const speed = Math.abs(body.velocity.x);
     // start/stop transition anims removed at Angelo's direction (2026-10-22).
-    if (speed > 225) {
+    // v91 (Angelo 2026-11-15, Blend Tree sample 3 "Me gusta"): smooth the
+    // walk/run rate — lerp the rate toward its target instead of snapping
+    // it, with hysteresis at the walk<->run switch (enter run above 225,
+    // drop back to walk only below 205). Single sprite only: the crossfade
+    // (two overlapping sprites) read as a double body and was rejected.
+    // The rate lives in locoTimeScale because pickAnim resets the sprite's
+    // timeScale to 1 at the top of every call; idle target is 1.0, never
+    // the walk clamp floor (that was a cosmetic bug in the demo).
+    const runThreshold = this.locoAnim === "run" ? 205 : 225;
+    let target = 1;
+    if (speed > runThreshold) {
+      this.locoAnim = "run";
       this.setAnim("angely", "run");
-      this.sprite.anims.timeScale = Phaser.Math.Clamp(speed / RUN_ANIM_SPEED, 0.7, 1.3);
+      target = Phaser.Math.Clamp(speed / RUN_ANIM_SPEED, 0.7, 1.3);
     } else if (speed > 15) {
+      this.locoAnim = "walk";
       this.setAnim("angely", "walk");
-      this.sprite.anims.timeScale = Phaser.Math.Clamp(speed / WALK_ANIM_SPEED, 0.6, 1.4);
-    } else this.setAnim(sword ? "angely_sword" : "angely", "idle");
+      target = Phaser.Math.Clamp(speed / WALK_ANIM_SPEED, 0.6, 1.4);
+    } else {
+      this.locoAnim = "idle";
+      this.setAnim(sword ? "angely_sword" : "angely", "idle");
+    }
+    this.locoTimeScale += (target - this.locoTimeScale) * Math.min(1, 8 * dt);
+    this.sprite.anims.timeScale = this.locoTimeScale;
   }
 
   stompBounce(jumpHeld: boolean) {
