@@ -245,8 +245,8 @@ export type PieceKind =
  * swim   underwater: JUMP swims upward, gravity is light
  */
 export type LevelMode = "run" | "chase" | "climb" | "swim";
-/** kills: defeat N enemies; gems: collect N star gems; reach: the portal is open, get there; boss. */
-type GoalKind = "kills" | "gems" | "reach" | "boss";
+/** kills: defeat N enemies; gems: collect N star gems; coins: collect N coins from broken chests (ch11 only, F6 stand-in for the collectible Angelo will name); reach: the portal is open, get there; boss. */
+type GoalKind = "kills" | "gems" | "coins" | "reach" | "boss";
 /** flat ground, rolling hills (low terraces) or cliffs (tall terraces). */
 type Terrain = "flat" | "hills" | "cliffs";
 
@@ -295,9 +295,9 @@ export const LEVELS: LevelInfo[] = [
   { chapter: 9, stage: 2, name: "Bubble Falls", mode: "run", goal: "gems", need: 6, terrain: "cliffs", seed: 127, pieces: ["hops", "movingBridge", "breakWall", "crumble", "spring", "spikes", "steps"], tip: "Bounce the springs and find every star gem" },
   { chapter: 10, stage: 1, name: "Shattered Causeway", mode: "run", goal: "kills", need: 12, terrain: "cliffs", seed: 149, pieces: ["hops", "steps", "breakWall", "crumble", "crateWall", "movingBridge", "spring", "target", "lift", "breakWall"], tip: "Smash the cracked crystal walls with your hammer. Clear twelve guardians to reach the crown." },
   { chapter: 10, stage: 2, name: "The Veil Crown", mode: "run", goal: "boss", need: 0, terrain: "flat", seed: 151, pieces: [], boss: true, splash: "splash_veilcrown", tip: "Watch the pink warnings. Two forms, one crown — strike the core after each attack." },
-  // PRUEBA ch11 (2026-11-13): custom-built by buildGraveyard() in world/level.ts — pieces: [] is intentional, the layout is hand-laid. Goal gems need 6 is the placeholder for the collectible Angelo will name; the portal does NOT open by kills in ch11.
-  { chapter: 11, stage: 1, name: "The Graveyard", mode: "run", goal: "gems", need: 6, terrain: "cliffs", seed: 157, pieces: [], tip: "Smash the cracked floor with the HAMMER and go down. Climb the ladder back up!" },
-  { chapter: 11, stage: 2, name: "Graveyard Depths", mode: "run", goal: "gems", need: 6, terrain: "cliffs", seed: 163, pieces: [], tip: "Down, up, down, up — break the chests and grab the coins!" },
+  // PRUEBA ch11 (2026-11-13): custom-built by buildGraveyard() in world/level.ts — pieces: [] is intentional, the layout is hand-laid. Goal coins (F6, 2026-11-15): the portal opens by collecting coins from broken chests — 3 coins per chest, 3 chests = 9 in 11-1, 4 chests = 12 in 11-2. STAND-IN for the collectible Angelo will name (his example is still pending); the old 6 star gems were the placeholder and are gone from ch11. The portal does NOT open by kills in ch11.
+  { chapter: 11, stage: 1, name: "The Graveyard", mode: "run", goal: "coins", need: 9, terrain: "cliffs", seed: 157, pieces: [], tip: "Smash the cracked floor with the HAMMER and go down. Break the chests and grab the coins!" },
+  { chapter: 11, stage: 2, name: "Graveyard Depths", mode: "run", goal: "coins", need: 12, terrain: "cliffs", seed: 163, pieces: [], tip: "Down, up, down, up — break the chests and grab the coins!" },
 ].map((l, i) => L(l as Omit<LevelInfo, "index">, i));
 
 export const LAST_LEVEL = LEVELS.length - 1;

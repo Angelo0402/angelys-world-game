@@ -387,11 +387,8 @@ function buildGraveyard(info: LevelInfo, _r: () => number): LevelDef {
     g(14420, 17500, GY_SURF);
     L.portal = { x: 17000, y: GY_SURF };
     L.width = 17700;
-    L.gems = [
-      { x: 2000, y: GY_SURF - 120 }, { x: 4500, y: GY_SURF - 120 },
-      { x: 8000, y: GY_UNDER - 100 }, { x: 11000, y: GY_UNDER - 100 },
-      { x: 11800, y: GY_UNDER - 100 }, { x: 16200, y: GY_SURF - 100 },
-    ];
+    // F6 (PRUEBA): no star gems in ch11 — the portal opens by collecting
+    // coins from broken chests instead (see config: goal "coins").
     L.chests = [{ x: 4800, y: GY_SURF }, { x: 9000, y: GY_UNDER }, { x: 12500, y: GY_UNDER }];
     L.checkpoints = [{ x: 3000, y: GY_SURF }, { x: 10000, y: GY_UNDER }];
     L.hearts = [
@@ -428,11 +425,8 @@ function buildGraveyard(info: LevelInfo, _r: () => number): LevelDef {
     g(17520, 19500, GY_SURF); // S5 high, portal here
     L.portal = { x: 19000, y: GY_SURF };
     L.width = 19700;
-    L.gems = [
-      { x: 1500, y: GY_SURF - 100 }, { x: 5500, y: GY_UNDER - 100 },
-      { x: 8000, y: GY_UNDER - 100 }, { x: 10500, y: GY_SURF - 100 },
-      { x: 15000, y: GY_UNDER - 100 }, { x: 18500, y: GY_SURF - 100 },
-    ];
+    // F6 (PRUEBA): no star gems in ch11 — the portal opens by collecting
+    // coins from broken chests instead (see config: goal "coins").
     L.chests = [
       { x: 3000, y: GY_SURF }, { x: 6500, y: GY_UNDER },
       { x: 11500, y: GY_SURF }, { x: 15500, y: GY_UNDER },

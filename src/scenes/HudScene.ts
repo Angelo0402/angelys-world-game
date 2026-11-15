@@ -24,7 +24,7 @@ const ATTACK = { x: GAME_W - 238, y: GAME_H - 82, r: 50 };
 const SPECIAL_BAR = { x: GAME_W / 2, y: 100, w: 340, h: 20 };
 
 interface GoalState {
-  kind: "kills" | "gems" | "reach" | "boss";
+  kind: "kills" | "gems" | "coins" | "reach" | "boss";
   have: number;
   need: number;
 }
@@ -501,7 +501,7 @@ export class HudScene extends Phaser.Scene {
       return;
     }
     this.killText.setFontSize(26).setX(GAME_W / 2 + 18).setColor("#fff4d6");
-    this.killText.setText(`${g.kind === "gems" ? "GEMS" : "ENEMIES"} ${String(shown).padStart(2, "0")} / ${g.need}`);
+    this.killText.setText(`${g.kind === "gems" ? "GEMS" : g.kind === "coins" ? "COINS" : "ENEMIES"} ${String(shown).padStart(2, "0")} / ${g.need}`);
     const k = g.have;
     const goal = g.need;
     if (k < goal) {
@@ -1079,7 +1079,7 @@ export class HudScene extends Phaser.Scene {
               ? "The Crystal Veil is still standing. Try again, Angely!"
               : "Queen Umbra is waiting... don't give up, Angely!"
           : g.kind === "reach" ? "So close! Try again, Angely!"
-            : `${g.kind === "gems" ? "Star gems" : "Enemies defeated"}: ${Math.min(g.have, g.need)} / ${g.need}`;
+            : `${g.kind === "gems" ? "Star gems" : g.kind === "coins" ? "Coins collected" : "Enemies defeated"}: ${Math.min(g.have, g.need)} / ${g.need}`;
       c.add(this.add.text(GAME_W / 2, top + 200, line, { fontFamily: FONT, fontSize: "21px", fontStyle: "bold", color: "#9ff5ff" }).setOrigin(0.5));
       // Feel package 2026-10-26: final-boss retry progress. No damage stats,
       // no DPS, no floating numbers — just how far into the fight she got.

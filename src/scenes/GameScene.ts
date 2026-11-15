@@ -668,7 +668,10 @@ export class GameScene extends Phaser.Scene {
 
     this.portal = new Portal(this, L.portal.x, !this.info.boss, L.portal.y);
     if (this.info.goal === "reach") this.portal.open(true);
-    else this.portal.setRemaining(this.info.goal === "gems" ? L.gems.length : this.info.need, this.info.goal === "gems" ? "gems" : "left");
+    else {
+      const word = this.info.goal === "gems" ? "gems" : this.info.goal === "coins" ? "coins" : "left";
+      this.portal.setRemaining(this.info.goal === "gems" ? L.gems.length : this.info.need, word);
+    }
     this.buildPortalArrow();
   }
 
@@ -1079,7 +1082,8 @@ export class GameScene extends Phaser.Scene {
     this.goal.have = have;
     this.registry.set("goal", { ...this.goal });
     const left = this.goal.need - have;
-    this.portal.setRemaining(left, this.goal.kind === "gems" ? "gems" : "left");
+    const word = this.goal.kind === "gems" ? "gems" : this.goal.kind === "coins" ? "coins" : "left";
+    this.portal.setRemaining(left, word);
     if (left <= 0 && !this.portal.isOpen) {
       if (this.goal.need > 0) Barks.play(this, ["bark_rx_gems"], 1, true);
       this.openPortal();
@@ -1148,6 +1152,14 @@ export class GameScene extends Phaser.Scene {
       this.coinsTotal += 1;
       addCoins(1);
       this.registry.set("coins", this.coinsTotal);
+      // F6 (PRUEBA): in ch11 the portal opens by collecting coins from
+      // broken chests. Only coins picked up THIS level count — the banked
+      // save total never feeds the goal.
+      if (this.goal.kind === "coins") {
+        const have = this.goal.have + 1;
+        this.setGoal(have);
+        if (have < this.goal.need) this.toast(`Coin ${have} / ${this.goal.need}`);
+      }
       Audio.sfx("gem");
       this.tweens.killTweensOf(c.sprite);
       this.tweens.add({ targets: c.sprite, scale: 1.2, alpha: 0, y: c.sprite.y - 30, duration: 300, onComplete: () => c.sprite.destroy() });
@@ -1186,7 +1198,13 @@ export class GameScene extends Phaser.Scene {
       else if (time - this.lastPortalHint > 3000) {
         this.lastPortalHint = time;
         const left = this.goal.need - this.goal.have;
-        this.toast(this.goal.kind === "gems" ? `The portal is sealed. Find ${left} more star gem${left === 1 ? "" : "s"}!` : `The portal is sealed. Defeat ${left} more enemies!`);
+        this.toast(
+          this.goal.kind === "gems"
+            ? `The portal is sealed. Find ${left} more star gem${left === 1 ? "" : "s"}!`
+            : this.goal.kind === "coins"
+              ? `The portal is sealed. Find ${left} more coin${left === 1 ? "" : "s"} in the chests!`
+              : `The portal is sealed. Defeat ${left} more enemies!`,
+        );
       }
     }
   }
