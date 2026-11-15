@@ -30,10 +30,22 @@ const BG11_FILES: Record<string, string> = {
   bg11_fg: "assets/runtime/backdrops/bg11_fg.webp",
 };
 
+// ch11 chest + coin (v93, approved 2026-11-15): real ChatGPT art, replacing
+// the code-drawn stand-ins. Loaded explicitly here, same pattern as
+// WALLBLOCK_FILES, so sprites.gen.ts stays generator-owned. Keys "chest" /
+// "coin" match the GameScene texture keys; ensureChestTexture /
+// ensureCoinTexture in GameScene remain as fallbacks if the files ever
+// fail to load.
+const CH11_FILES: Record<string, string> = {
+  chest: "assets/runtime/props/chest_11.png",
+  coin: "assets/runtime/props/coin_11.png",
+};
+
 export function queueAssets(load: Phaser.Loader.LoaderPlugin) {
   queueHudIcons(load);
   for (const [key, url] of Object.entries(BACKDROPS)) load.image(key, url);
   for (const [key, file] of Object.entries(BG11_FILES)) load.image(key, file);
+  for (const [key, file] of Object.entries(CH11_FILES)) load.image(key, file);
   for (const [key, meta] of Object.entries(SPRITES)) {
     load.spritesheet(key, meta.file, { frameWidth: meta.frameWidth, frameHeight: meta.frameHeight });
   }

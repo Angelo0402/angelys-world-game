@@ -91,7 +91,7 @@ const VARIED_SFX: ReadonlySet<SfxName> = new Set([
   "fall", "low_health", "bow_shoot", "arrow_hit",
   "hammer_swing", "hammer_smash", "wall_break",
   "tok", "crunch", "crate_push", "spring", "crumble", "target_hit",
-  "gem", "swim", "cog", "ray", "wand_charge", "wand_cast",
+  "gem", "coin", "swim", "cog", "ray", "wand_charge", "wand_cast",
   "boss_cast", "boss_hit", "boss_swoop",
 ]);
 
@@ -374,6 +374,9 @@ class AudioManagerImpl {
       case "voice_umbra": this.tone(t, 150 + Math.random() * 40, 0.08, "sawtooth", 0.05, 120); break;
       case "voice_angely": this.tone(t, 620 + Math.random() * 120, 0.06, "triangle", 0.06, 700); break;
       case "gem": [0, 7, 12].forEach((n, i) => this.tone(t + i * 0.05, midi(84 + n), 0.18, "triangle", 0.18)); break;
+      // v93: gold coin ding — two-note chime (E6 -> B6) + high sparkle.
+      // In VARIED_SFX (same repeated-pickup family as "gem").
+      case "coin": [88, 95].forEach((n, i) => this.tone(t + i * 0.07, midi(n), 0.22, "triangle", 0.18)); this.tone(t + 0.14, midi(100), 0.18, "sine", 0.1); break;
       case "swim": this.noise(t, 0.18, 0.12, 900, "bandpass", 2400); this.tone(t, 500, 0.08, "sine", 0.06, 900); break;
       case "cog": this.tone(t, 180, 0.12, "square", 0.16, 90); this.noise(t, 0.16, 0.22, 1400, "bandpass", 2200); break;
       case "ray": this.tone(t, 880, 0.08, "square", 0.12, 1400); this.tone(t, 1320, 0.1, "sine", 0.08, 600); break;

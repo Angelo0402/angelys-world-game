@@ -73,6 +73,8 @@ interface Pickup {
   sprite: Phaser.GameObjects.Sprite;
   baseY: number;
   taken: boolean;
+  /** v93: pulsing gold glow behind a spinning coin (destroyed on collect). */
+  glow?: Phaser.GameObjects.Image;
 }
 
 interface Goal {
@@ -690,7 +692,8 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  /** PRUEBA ch11: hammer-breakable chests (code-drawn texture, no art yet).
+  /** PRUEBA ch11: hammer-breakable chests (v93 real art: chest_11.png,
+   *  156x120 shown at 78x60 — same size/position/collision as before).
    *  Breaking one drops 3 coins — future shop currency. */
   private buildChests() {
     ensureChestTexture(this);
@@ -1146,6 +1149,8 @@ export class GameScene extends Phaser.Scene {
     // PRUEBA ch11: coins from broken chests — banked into the save (future shop currency).
     for (const c of this.coinPickups) {
       if (c.taken) continue;
+      // v93: the glow rides the coin while it bobs/spins.
+      if (c.glow) c.glow.setPosition(c.sprite.x, c.sprite.y);
       const cb = new Phaser.Geom.Rectangle(c.sprite.x - 18, c.sprite.y - 18, 36, 36);
       if (!Phaser.Geom.Rectangle.Overlaps(pb, cb)) continue;
       c.taken = true;
@@ -1160,8 +1165,13 @@ export class GameScene extends Phaser.Scene {
         this.setGoal(have);
         if (have < this.goal.need) this.toast(`Coin ${have} / ${this.goal.need}`);
       }
-      Audio.sfx("gem");
+      Audio.sfx("coin");
       this.tweens.killTweensOf(c.sprite);
+      if (c.glow) {
+        this.tweens.killTweensOf(c.glow);
+        c.glow.destroy();
+        c.glow = undefined;
+      }
       this.tweens.add({ targets: c.sprite, scale: 1.2, alpha: 0, y: c.sprite.y - 30, duration: 300, onComplete: () => c.sprite.destroy() });
       this.fx("fx_spark", "hit", c.sprite.x, c.sprite.y, 0.3, 0xffd75a);
     }
@@ -1481,11 +1491,17 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  /** PRUEBA ch11: one bobbing coin pickup (code-drawn texture). */
+  /** PRUEBA ch11: one spinning coin pickup (v93 real art: coin_11.png,
+   *  96x96 shown at ~30px). Spins 360 in the air — scaleX narrows to an
+   *  edge and back (cos), one full turn per ~1.7s — with a gentle bob and
+   *  a pulsing gold glow behind it, like the preview GIF. */
   private addCoin(x: number, y: number): Pickup {
-    const spr = this.add.sprite(x, y, "coin").setDepth(50).setScale(0.62);
+    const glow = this.add.image(x, y, "glow").setTint(0xffd75a).setBlendMode(Phaser.BlendModes.ADD).setDisplaySize(64, 64).setDepth(49).setAlpha(0.25);
+    this.tweens.add({ targets: glow, alpha: 0.5, duration: 500, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+    const spr = this.add.sprite(x, y, "coin").setDepth(50).setScale(0.31);
     this.tweens.add({ targets: spr, y: y - 10, duration: 650, yoyo: true, repeat: -1, ease: "Sine.inOut" });
-    const p: Pickup = { sprite: spr, baseY: y, taken: false };
+    this.tweens.add({ targets: spr, scaleX: 0.02, duration: 850, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+    const p: Pickup = { sprite: spr, baseY: y, taken: false, glow };
     this.coinPickups.push(p);
     return p;
   }
@@ -3006,8 +3022,9 @@ class GrayScalePipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPipeline {
 }
 
 /**
- * PRUEBA ch11: code-drawn chest texture (no art yet — Angelo delivers the
- * real chest look later). Brown box, darker lid, gold trim + lock.
+ * PRUEBA ch11: code-drawn chest texture — FALLBACK only. v93 loads the real
+ * art (chest_11.png) in BootScene, so this returns early when it exists.
+ * Kept so a missing file degrades to a brown chest instead of a crash.
  */
 function ensureChestTexture(scene: Phaser.Scene) {
   if (scene.textures.exists("chest")) return;
@@ -3031,8 +3048,8 @@ function ensureChestTexture(scene: Phaser.Scene) {
 }
 
 /**
- * PRUEBA ch11: code-drawn coin texture (no art yet). Gold disc, darker
- * inner ring, bright star — same gold family as the SPECIAL meter.
+ * PRUEBA ch11: code-drawn coin texture — FALLBACK only. v93 loads the real
+ * art (coin_11.png) in BootScene, so this returns early when it exists.
  */
 function ensureCoinTexture(scene: Phaser.Scene) {
   if (scene.textures.exists("coin")) return;
