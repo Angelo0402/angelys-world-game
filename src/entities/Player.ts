@@ -7,6 +7,7 @@ import { Barks } from "../audio/barks";
 import { MAX_HEARTS, WEAPON_ORDER, type WeaponId } from "../config";
 import type { FrameInput } from "../input/controls";
 import type { GameScene } from "../scenes/GameScene";
+import type { LadderDef } from "../world/level";
 import { MotionPolish } from "./motionPolish";
 
 /**
@@ -34,21 +35,28 @@ interface AttackTiming {
 
 const ATTACK_TIMING: Record<WeaponId, AttackTiming> & { sword_air: AttackTiming } = {
   // Slash — ORIGINAL v65 timing (11f @34fps values; 2x strip is 22f, plays cut short).
-  sword: { windupEnd: 2, strikeEnd: 5, windupScale: 0.55, strikeScale: 1.5, recoveryScale: 0.8, stateMs: 410 },
+  sword: { windupEnd: 2, strikeEnd: 5, windupScale: 0.55, strikeScale: 1.5, recoveryScale: 0.8, stateMs: 290 },
   // Air slash — ORIGINAL v65 timing (4f @14fps values; 2x strip is 8f).
-  sword_air: { windupEnd: 1, strikeEnd: 3, windupScale: 0.8, strikeScale: 1.4, recoveryScale: 0.9, stateMs: 360 },
+  sword_air: { windupEnd: 1, strikeEnd: 3, windupScale: 0.8, strikeScale: 1.4, recoveryScale: 0.9, stateMs: 250 },
   // Smash 24f @27fps (2x strips, v66 — KEPT per Angelo 2026-11-07: he likes the smash).
-  hammer: { windupEnd: 11, strikeEnd: 13, release: 12, windupScale: 0.7, strikeScale: 0.5, recoveryScale: 0.85, stateMs: 1220 },
+  hammer: { windupEnd: 11, strikeEnd: 13, release: 12, windupScale: 0.7, strikeScale: 0.5, recoveryScale: 0.85, stateMs: 850 },
   // Shoot 24f @40fps (2x strips, v66 — KEPT per Angelo 2026-11-07: he likes the shoot).
-  bow: { windupEnd: 11, strikeEnd: 13, release: 12, windupScale: 0.65, strikeScale: 1.3, recoveryScale: 0.8, stateMs: 815 },
+  bow: { windupEnd: 11, strikeEnd: 13, release: 12, windupScale: 0.65, strikeScale: 1.3, recoveryScale: 0.8, stateMs: 570 },
   // Cast — ORIGINAL v65 timing (9f @29fps values; 2x strip is 18f).
-  wand: { windupEnd: 2, strikeEnd: 3, release: 3, windupScale: 0.7, strikeScale: 1.5, recoveryScale: 0.85, stateMs: 380 },
+  wand: { windupEnd: 2, strikeEnd: 3, release: 3, windupScale: 0.7, strikeScale: 1.5, recoveryScale: 0.85, stateMs: 270 },
   // Shoot — ORIGINAL v65 timing (10f @25fps values; 2x strip is 20f).
-  ray: { windupEnd: 2, strikeEnd: 5, release: 3, windupScale: 0.75, strikeScale: 1.3, recoveryScale: 0.85, stateMs: 445 },
+  ray: { windupEnd: 2, strikeEnd: 5, release: 3, windupScale: 0.75, strikeScale: 1.3, recoveryScale: 0.85, stateMs: 310 },
 };
 
 const SPEED = 350;
 export const PUSH_SPEED = 140;
+/** PRUEBA ch11 ladder climb speed (px/s). */
+const CLIMB_SPEED = 150;
+/** PRUEBA ch11 fix (2026-11-14, phone bug 2): if Angely stops this close to a
+ *  ladder end, finish the climb for her (see the climbing branch below).
+ *  48px covers the freeze the phone showed (feet on the platform face,
+ *  ~38px below the top) while a mid-ladder stop still holds the pose. */
+const CLIMB_FINISH = 48;
 const SWIM_SPEED = 230;
 const SWIM_STROKE = 430;
 const SWIM_GRAVITY = 420;
@@ -67,7 +75,12 @@ const COYOTE_MS = 150;
 const BUFFER_MS = 160;
 const INVULN_MS = 1100;
 const SHIELD_MS = 15000;
-const SHIELD_TINTS = [0xfff27a, 0xff6ad5, 0x7af0ff, 0xffffff, 0xb6ff6a, 0xff9a3d];
+/** Aura v9 (Angelo 2026-11-14: v8 FAILED on his phone — the 1.08x halo copy
+ *  read as a doubled body, and 0.20/0.08 was too subtle to see). Real Phaser
+ *  Phaser 4 Filters glow: hugs the silhouette, NO sprite copy, clearly visible. */
+const SHIELD_STAR_SIZE = 16;
+const SHIELD_GLOW_OUTER = 6;
+const SHIELD_GLOW_INNER = 2;
 const HEIGHT = 112;
 
 type PState = "normal" | "attack" | "hurt" | "pickup" | "dead" | "celebrate" | "frozen" | "catch";
@@ -81,6 +94,16 @@ export class Player {
   readonly body: Phaser.Physics.Arcade.Body;
   readonly sprite: Phaser.GameObjects.Sprite;
   private shadow: Phaser.GameObjects.Image;
+  /** Star Shield aura v9 (Angelo 2026-11-14): 6 small gold stars orbit
+   *  Angely in two rings (horizontal + vertical), passing in front of
+   *  and behind her, while a real Phaser 4 Filters glow cycles rainbow
+   *  colors around her body. Created lazily on the first star pickup and
+   *  REMOVED when the shield ends — never in the constructor: Phaser 4
+   *  Filters ignores `active=false` (same as Phaser 3 PostFX), so a glow
+   *  created at spawn rendered white from frame one. NO sprite copy of
+   *  her body (v8's halo read as a double on phone). */
+  private shieldStars: Phaser.GameObjects.Sprite[] = [];
+  private shieldGlow: Phaser.Filters.Glow | null = null;
   private scene: GameScene;
   private sheet?: SpriteKey;
   private scales: Record<string, number>;
@@ -95,6 +118,13 @@ export class Player {
   pushing = false;
   /** Underwater: JUMP is a swim stroke usable anytime and gravity is light. */
   swim = false;
+  /** PRUEBA ch11: ladders the scene hands over (empty everywhere else). */
+  ladders: LadderDef[] = [];
+  /** True while climbing a ladder (gravity off, vertical input moves her). */
+  climbing = false;
+  private climbLadder?: LadderDef;
+  /** PRUEBA ch11: hold the climb-top crouch pose until this time. */
+  private climbCrouchUntil = 0;
   private lastStroke = 0;
   private nextBreath = 0;
   private nextTrail = 0;
@@ -126,6 +156,12 @@ export class Player {
   private attackScale: { sx: number; sy: number } | null = null;
   /** Armed while running; disarmed when the stop settle fires. */
   private stopArmed = false;
+  /** v91 walk/run smoothing: current ground locomotion anim (hysteresis at
+   *  the walk<->run switch) and the lerped playback rate (stored here
+   *  because pickAnim resets the sprite's timeScale to 1 at the top of
+   *  every call). */
+  private locoAnim: "idle" | "walk" | "run" = "idle";
+  private locoTimeScale = 1;
   private lastWalkDust = 0;
   private recoilVx = 0;
   private recoilUntil = 0;
@@ -158,6 +194,7 @@ export class Player {
       angely_ray: scaleForHeight("angely", HEIGHT, "idle"),
       angely_swim: scaleForHeight("angely", HEIGHT, "idle"),
       angely_got: scaleForHeight("angely", HEIGHT, "idle"),
+      angely_climb: scaleForHeight("angely", HEIGHT, "idle"),
     };
     this.bubbles = scene.add
       .particles(0, 0, "bubble", {
@@ -171,7 +208,19 @@ export class Player {
       })
       .setDepth(61);
     this.shadow = scene.add.image(x, y, "shadow").setAlpha(0.3).setDepth(30);
+    // Star Shield aura v9: 6 small gold stars orbit her (depth set per
+    // frame: front vs behind). Hidden until a shield is picked up;
+    // sync() drives them while shielded.
+    for (let i = 0; i < 6; i++) {
+      const star = scene.add.sprite(x, y, "starshield").setVisible(false);
+      star.setScale(scaleForHeight("starshield", SHIELD_STAR_SIZE));
+      star.play("starshield:glow");
+      this.shieldStars.push(star);
+    }
     this.sprite = scene.add.sprite(x, y, "angely").setDepth(60);
+    // No shield glow here: it is created lazily in grantShield() (see the
+    // field comment — PostFX `active=false` cannot hide it, so creating
+    // it at spawn showed a white halo from frame one).
     this.setAnim("angely", "idle");
   }
 
@@ -192,6 +241,15 @@ export class Player {
   }
   /** Star Shield: nothing can take a heart for 15 seconds. Picking another one refreshes it. */
   grantShield() {
+    // Lazy glow: creating it here — and removing it when the shield ends
+    // — is the only way to keep it off before the first star pickup
+    // (Filters `active=false` is a no-op; see the field comment).
+    // Phaser 4: enableFilters() first (filters is null until then),
+    // then filters.internal.addGlow — postFX is gone in Phaser 4.
+    if (!this.shieldGlow) {
+      this.sprite.enableFilters();
+      this.shieldGlow = this.sprite.filters!.internal.addGlow(0xffffff, SHIELD_GLOW_OUTER, SHIELD_GLOW_INNER);
+    }
     this.shieldUntil = this.scene.time.now + SHIELD_MS;
     return SHIELD_MS;
   }
@@ -225,8 +283,40 @@ export class Player {
     this.jumpBufferedAt = -1000;
   }
 
+  /** Instant jump (v78): launch fires on the press, exactly like v76.
+   *  The v77 0.18s pre-launch wind-up is gone (Angelo: the jump felt too
+   *  slow). jumpStart = time, so the crouch frames still flash for the
+   *  first 75ms after launch, as they did in v76. */
+  private launchJump(time: number): void {
+    const body = this.body;
+    body.setVelocityY(-JUMP_V);
+    this.jumpStart = time;
+    this.motion.jump(time);
+    this.jumpBufferedAt = -1000;
+    this.lastGrounded = -1000;
+    Audio.sfx("jump");
+    if (this.scene.info.chapter === 9) Barks.play(this.scene, ["bark_sq_bounce", "angely_bark_02"], 0.12);
+    else Barks.play(this.scene, ["angely_bark_02"], 0.1);
+    this.scene.fx("fx_dust", "puff", this.x, body.bottom, 0.2);
+    this.scene.vfx.jumpPoof(this.x, body.bottom);
+  }
+
   bounds() {
     return new Phaser.Geom.Rectangle(this.body.x, this.body.y, this.body.width, this.body.height);
+  }
+
+  /** PRUEBA ch11: the ladder Angely overlaps, if any. */
+  private ladderAt(): LadderDef | undefined {
+    return this.ladders.find(
+      (l) => Math.abs(this.x - l.x) < 36 && this.body.bottom >= l.yTop - 30 && this.body.top <= l.yBottom + 30,
+    );
+  }
+
+  /** PRUEBA ch11: leave the ladder, gravity back on. */
+  private exitClimb() {
+    this.climbing = false;
+    this.climbLadder = undefined;
+    this.body.setAllowGravity(true);
   }
 
   private setAnim(sheet: SpriteKey, anim: string, restart = false) {
@@ -247,7 +337,8 @@ export class Player {
       this.jumpCut = false;
       if (!this.wasGrounded && body.velocity.y >= 0) {
         this.motion.land(time);
-        this.scene.fx("fx_dust", "puff", this.x, body.bottom, 0.22);
+        // v78: only the new v77 soft dust (landDust) — the old fx_dust puff
+        // is gone, so landing shows 9 soft puffs + 4 specks, nothing else.
         this.scene.vfx.landDust(this.x, body.bottom);
         // Big drops (not ordinary jumps, which land near ~840) get a small
         // camera kick. Guarded off during cutscenes.
@@ -269,6 +360,75 @@ export class Player {
 
     if (this.state === "hurt" && time > this.stateUntil) this.state = "normal";
     if (this.state === "attack" && time > this.stateUntil) this.state = "normal";
+
+    // --- Ladder (PRUEBA ch11) ---
+    // Climbing: gravity off, up/down moves her along the ladder, JUMP lets
+    // go (the jump buffer below then fires the jump). Entering needs overlap
+    // + up/down held; rising fast past a ladder does NOT grab it, so a jump
+    // held on touch doesn't snap her onto a ladder mid-leap.
+    if (this.climbing) {
+      const lad = this.climbLadder!;
+      if (input.jumpPressed) {
+        this.exitClimb();
+      } else {
+        let vy = input.upHeld ? -CLIMB_SPEED : input.downHeld ? CLIMB_SPEED : 0;
+        // PRUEBA ch11 fix (2026-11-14, phone bug 2): releasing UP just below
+        // the top froze her there forever — climbing=true, climb anim paused
+        // on the back-view frame, feet on the platform face — because both
+        // exits needed her moving (vy<0 / vy>0). If she stopped within a
+        // short step of either end, finish the climb for her so the normal
+        // top/bottom exit fires. A mid-ladder stop still holds the pose.
+        if (vy === 0 && body.bottom <= lad.yTop + CLIMB_FINISH) vy = -CLIMB_SPEED;
+        else if (vy === 0 && body.bottom >= lad.yBottom - CLIMB_FINISH) vy = CLIMB_SPEED;
+        body.setVelocityX(0);
+        body.setVelocityY(vy);
+        body.x = lad.x - body.width / 2;
+        if (vy < 0 && body.bottom <= lad.yTop + 6) {
+          // Reached the top: stand on the floor / one-way platform above,
+          // crouch to get up (climb strip frame 8), then idle. The crouch
+          // holds 1200ms so the beat reads — at 450ms it flashed by.
+          body.y = lad.yTop - body.height;
+          body.setVelocity(0, 0);
+          this.exitClimb();
+          this.setAnim("angely_climb", "crouch");
+          this.climbCrouchUntil = time + 1200;
+          this.sync(time);
+          return;
+        }
+        if (vy > 0 && body.bottom >= lad.yBottom) {
+          body.y = lad.yBottom - body.height;
+          body.setVelocity(0, 0);
+          this.exitClimb();
+          this.setAnim("angely", "idle");
+          this.sync(time);
+          return;
+        }
+        // Real climb anim (angely_climb sheet, 8f @ 10fps). Hold the pose
+        // when she stops mid-ladder instead of climbing in place.
+        this.setAnim("angely_climb", "climb");
+        if (vy !== 0) this.sprite.anims.resume();
+        else this.sprite.anims.pause();
+        this.sync(time);
+        return;
+      }
+    } else if (this.state === "normal" && !this.swim) {
+      const lad = this.ladderAt();
+      if (lad && (input.upHeld || input.downHeld) && body.velocity.y > -100) {
+        const atTop = this.grounded && body.bottom <= lad.yTop + 8;
+        const atBottom = this.grounded && body.bottom >= lad.yBottom - 8;
+        const blocked = (atTop && input.upHeld && !input.downHeld) || (atBottom && input.downHeld && !input.upHeld);
+        if (!blocked) {
+          this.climbing = true;
+          this.climbLadder = lad;
+          body.setAllowGravity(false);
+          body.setVelocity(0, 0);
+          body.x = lad.x - body.width / 2;
+          this.setAnim("angely", "idle");
+          this.sync(time);
+          return;
+        }
+      }
+    }
 
     if (input.jumpPressed) this.jumpBufferedAt = time;
     if (input.attackPressed) this.attackBufferedAt = time;
@@ -303,22 +463,14 @@ export class Player {
         this.swimUpdate(time, input.jumpHeld);
         if (input.attackPressed && this.weapon && this.state === "normal") this.startAttack(time);
         if (this.state === "attack") this.attackUpdate(time);
-        this.pickAnim(time, input.axis);
+        this.pickAnim(time, dt, input.axis);
         this.sync(time);
         return;
       }
       const canJump = time - this.lastGrounded < COYOTE_MS;
       if (time - this.jumpBufferedAt < BUFFER_MS && canJump) {
-        body.setVelocityY(-JUMP_V);
-        this.jumpStart = time;
-        this.motion.jump(time);
-        this.jumpBufferedAt = -1000;
-        this.lastGrounded = -1000;
-        Audio.sfx("jump");
-        if (this.scene.info.chapter === 9) Barks.play(this.scene, ["bark_sq_bounce", "angely_bark_02"], 0.12);
-        else Barks.play(this.scene, ["angely_bark_02"], 0.1);
-        this.scene.fx("fx_dust", "puff", this.x, body.bottom, 0.2);
-        this.scene.vfx.jumpPoof(this.x, body.bottom);
+        // Instant jump (v78, like v76): launch on the press, no wind-up.
+        this.launchJump(time);
       }
       if (body.velocity.y >= 0) this.boosted = false;
       if (this.boosted) body.setGravityY(0);
@@ -331,7 +483,7 @@ export class Player {
 
     if (this.state === "attack") this.attackUpdate(time);
 
-    this.pickAnim(time, input.axis);
+    this.pickAnim(time, dt, input.axis);
     this.sync(time);
   }
 
@@ -491,7 +643,7 @@ export class Player {
     this.setAnim("angely_wand", "cast", true);
   }
 
-  private pickAnim(time: number, axis: number) {
+  private pickAnim(time: number, dt: number, axis: number) {
     this.sprite.anims.timeScale = 1;
     if (this.state === "attack" || this.state === "catch") return;
     const sword = this.hasSword;
@@ -507,6 +659,12 @@ export class Player {
     }
     if (this.state === "hurt") {
       this.setAnim(sword ? "angely_sword" : "angely", "hurt");
+      return;
+    }
+    // PRUEBA ch11: hold the climb-top crouch briefly after reaching a
+    // ladder top (physics keeps running; only the pose is held).
+    if (time < this.climbCrouchUntil) {
+      this.setAnim("angely_climb", "crouch");
       return;
     }
     const body = this.body;
@@ -538,13 +696,30 @@ export class Player {
     }
     const speed = Math.abs(body.velocity.x);
     // start/stop transition anims removed at Angelo's direction (2026-10-22).
-    if (speed > 225) {
+    // v91 (Angelo 2026-11-15, Blend Tree sample 3 "Me gusta"): smooth the
+    // walk/run rate — lerp the rate toward its target instead of snapping
+    // it, with hysteresis at the walk<->run switch (enter run above 225,
+    // drop back to walk only below 205). Single sprite only: the crossfade
+    // (two overlapping sprites) read as a double body and was rejected.
+    // The rate lives in locoTimeScale because pickAnim resets the sprite's
+    // timeScale to 1 at the top of every call; idle target is 1.0, never
+    // the walk clamp floor (that was a cosmetic bug in the demo).
+    const runThreshold = this.locoAnim === "run" ? 205 : 225;
+    let target = 1;
+    if (speed > runThreshold) {
+      this.locoAnim = "run";
       this.setAnim("angely", "run");
-      this.sprite.anims.timeScale = Phaser.Math.Clamp(speed / RUN_ANIM_SPEED, 0.7, 1.3);
+      target = Phaser.Math.Clamp(speed / RUN_ANIM_SPEED, 0.7, 1.3);
     } else if (speed > 15) {
+      this.locoAnim = "walk";
       this.setAnim("angely", "walk");
-      this.sprite.anims.timeScale = Phaser.Math.Clamp(speed / WALK_ANIM_SPEED, 0.6, 1.4);
-    } else this.setAnim(sword ? "angely_sword" : "angely", "idle");
+      target = Phaser.Math.Clamp(speed / WALK_ANIM_SPEED, 0.6, 1.4);
+    } else {
+      this.locoAnim = "idle";
+      this.setAnim(sword ? "angely_sword" : "angely", "idle");
+    }
+    this.locoTimeScale += (target - this.locoTimeScale) * Math.min(1, 8 * dt);
+    this.sprite.anims.timeScale = this.locoTimeScale;
   }
 
   stompBounce(jumpHeld: boolean) {
@@ -558,6 +733,7 @@ export class Player {
    *  `pool` lets the caller pick a context bark (e.g. squishy attack) over the default hurt pool. */
   hurt(fromX: number, pool?: SfxName[]): boolean {
     if (!this.alive || this.invulnerable || this.state === "celebrate" || this.state === "pickup") return false;
+    if (this.climbing) this.exitClimb();
     this.hearts = Math.max(0, this.hearts - 1);
     this.scene.onHeartsChanged(this.hearts);
     Audio.sfx("player_hurt");
@@ -590,6 +766,7 @@ export class Player {
   /** Pit or lava: lose one heart and return to the checkpoint. A Star Shield skips the heart. */
   fall(respawnX: number, respawnY: number) {
     if (!this.alive) return;
+    if (this.climbing) this.exitClimb();
     if (this.shielded) {
       this.body.reset(respawnX, respawnY);
       this.body.setVelocity(0, 0);
@@ -616,6 +793,7 @@ export class Player {
   }
 
   private die() {
+    if (this.climbing) this.exitClimb();
     this.state = "dead";
     Audio.sfx("player_defeat");
     this.body.setVelocity(-this.facing * 120, -260);
@@ -688,12 +866,51 @@ export class Player {
     s.setFlipX(this.facing < 0);
     if (this.shielded && this.alive) {
       this.shieldWas = true;
-      s.setTint(SHIELD_TINTS[Math.floor(time / 90) % SHIELD_TINTS.length]);
-      s.setAlpha(Math.floor(time / 80) % 2 ? 1 : 0.45);
+      s.clearTint();
+      s.setAlpha(1);
+      // Aura v9: real Phaser 4 Filters glow cycles rainbow (1 s cycle,
+      // like the approved GIF v8) while 6 small gold stars orbit her in
+      // two rings. The glow hugs her silhouette — no sprite copy, no
+      // double body. Glow color IS settable per frame
+      // (Phaser.Filters.Glow.color setter writes glcolor).
+      const hue = (time / 1000) % 1;
+      if (this.shieldGlow) {
+        this.shieldGlow.color = Phaser.Display.Color.HSVToRGB(hue, 0.9, 1).color;
+      }
+      const cx = this.x;
+      const cy = this.body.bottom - HEIGHT / 2;
+      // 3 stars on the horizontal ring (rx 58, ry 15) + 3 on the vertical
+      // ring (rx 32, ry 73); depth flips front/back as they orbit, and
+      // back stars read smaller and dimmer — same as the approved GIF.
+      const t = time / 1000;
+      const starScale = scaleForHeight("starshield", SHIELD_STAR_SIZE);
+      for (let i = 0; i < 6; i++) {
+        const ring = i < 3 ? 0 : 1;
+        const j = i % 3;
+        const a = 2 * Math.PI * t + (j * 2 * Math.PI) / 3 + (ring ? Math.PI / 3 : 0);
+        const rx = ring ? 32 : 58;
+        const ry = ring ? 73 : 15;
+        const dep = Math.sin(a);
+        const tw = 0.75 + 0.25 * Math.sin(2 * Math.PI * (t * 2 + j * 0.33 + (ring ? 0.5 : 0)));
+        this.shieldStars[i]
+          .setVisible(true)
+          .setDepth(dep >= 0 ? 61 : 59)
+          .setPosition(cx + Math.cos(a) * rx, cy + Math.sin(a) * ry - 6)
+          .setRotation(a)
+          .setScale(starScale * (1 + 0.12 * dep) * tw)
+          .setAlpha(0.6 + 0.4 * dep);
+      }
     } else {
       if (this.shieldWas) {
         this.shieldWas = false;
         s.clearTint();
+        // Shield ended: hide the aura. Filters `active=false` cannot hide
+        // the glow, so remove it outright (recreated on the next pickup).
+        for (const star of this.shieldStars) star.setVisible(false);
+        if (this.shieldGlow) {
+          s.filters!.internal.remove(this.shieldGlow);
+          this.shieldGlow = null;
+        }
       }
       s.setAlpha(this.invulnerable && this.alive && Math.floor(time / 70) % 2 ? 0.35 : 1);
     }

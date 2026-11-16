@@ -24,7 +24,7 @@ const ATTACK = { x: GAME_W - 238, y: GAME_H - 82, r: 50 };
 const SPECIAL_BAR = { x: GAME_W / 2, y: 100, w: 340, h: 20 };
 
 interface GoalState {
-  kind: "kills" | "gems" | "reach" | "boss";
+  kind: "kills" | "gems" | "coins" | "reach" | "boss";
   have: number;
   need: number;
 }
@@ -37,6 +37,9 @@ export class HudScene extends Phaser.Scene {
   private killPanel!: Phaser.GameObjects.Container;
   private killText!: Phaser.GameObjects.Text;
   private lockIcon!: Phaser.GameObjects.Graphics;
+  /** PRUEBA ch11: coin counter (top-right) — banked coins, future shop currency. */
+  private coinIcon!: Phaser.GameObjects.Graphics;
+  private coinText!: Phaser.GameObjects.Text;
   private bossPanel!: Phaser.GameObjects.Container;
   private bossFill!: Phaser.GameObjects.Rectangle;
   private bossChip!: Phaser.GameObjects.Rectangle;
@@ -72,7 +75,7 @@ export class HudScene extends Phaser.Scene {
   /** SPECIAL meter bar (v60, Angelo 2026-11-06): horizontal fill bar, top-center.
    * Replaces the old right-side circular button, which blocked incoming enemies. */
   private specialBar!: Phaser.GameObjects.Container;
-  private specialFill!: Phaser.GameObjects.Rectangle;
+  private specialFill!: Phaser.GameObjects.Graphics;
   private specialGlow!: Phaser.GameObjects.Graphics;
   private specialStars: Phaser.GameObjects.Text[] = [];
   private specialLabel!: Phaser.GameObjects.Text;
@@ -85,6 +88,13 @@ export class HudScene extends Phaser.Scene {
   private attackId = -1;
   private showTouch = false;
   private lowPulse?: Phaser.Tweens.Tween;
+  /** v94 PRUEBA: reactive HUD portrait (Angelo 2026-11-15) — circular
+   *  frame top-left, next to the hearts. neutral default; hurt briefly on
+   *  damage (with a jolt), scared while at 1 heart, happy briefly on heal
+   *  back to full. Hearts keep their exact sprites/spacing. */
+  private portraitImg?: Phaser.GameObjects.Image;
+  private portraitTimer?: Phaser.Time.TimerEvent;
+  private lastHearts = MAX_HEARTS;
   private cinemaTop: (Phaser.GameObjects.GameObject & Phaser.GameObjects.Components.Visible)[] = [];
   /** Perf overlay (v63 test build, DEBUG-ONLY): null when the flag in src/debug/PerfOverlay.ts is off. */
   private perfOverlay: PerfOverlay | null = null;
@@ -128,6 +138,7 @@ export class HudScene extends Phaser.Scene {
     const onData = (_p: unknown, key: string, value: unknown) => {
       if (key === "hearts") this.setHearts(value as number);
       if (key === "goal") this.setGoal(value as GoalState);
+      if (key === "coins") this.setCoins(value as number);
       if (key === "weapon" || key === "weapons") this.refreshWeapon();
       if (key === "boss") this.setBoss(value as { name: string; hp: number; max: number; veilPhase?: number } | null);
       if (key === "shield") this.setShield(value as number);
@@ -137,6 +148,7 @@ export class HudScene extends Phaser.Scene {
     const ge = this.game.events;
     const handlers: Record<string, (...a: never[]) => void> = {
       "hud:toast": (t: string) => this.toast(t),
+      "hud:toast-hide": () => this.hideToast(),
       "hud:banner": (t: string) => this.banner(t),
       "hud:paused": () => this.showPause(),
       "hud:gameover": (d: { level: number; goal: GoalState; bossHp?: number; bossMax?: number; bossPhase?: number }) => this.showGameOver(d),
@@ -161,9 +173,13 @@ export class HudScene extends Phaser.Scene {
     });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, offPad);
 
+    // v94: seed lastHearts before the first setHearts so a level start at
+    // full hearts does not read as a heal (no happy flash on every load).
+    this.lastHearts = (this.registry.get("hearts") as number) ?? MAX_HEARTS;
     this.setHearts(this.registry.get("hearts") ?? MAX_HEARTS);
     this.setShield(this.registry.get("shield") ?? 0);
     this.setGoal(this.registry.get("goal") ?? { kind: "kills", have: 0, need: 0 });
+    this.setCoins(this.registry.get("coins") ?? 0);
     this.setBoss(this.registry.get("boss") ?? null);
     this.refreshWeapon();
     this.setSpecial(this.registry.get("special") ?? 0);
@@ -192,15 +208,32 @@ export class HudScene extends Phaser.Scene {
   // ---------------------------------------------------------------- top bar
 
   private buildTopBar() {
-    this.add.image(129, 100, "hud_hearts_panel").setDisplaySize(222, 52);
+    // v94 PRUEBA: reactive portrait, circular frame top-left next to the
+    // hearts (portrait 8..72, hearts panel 82..304). Ring + dark backing,
+    // image clipped by a circular geometry mask. Hearts keep their exact
+    // sprites and spacing — the whole group shifts right 64px to make room.
+    const px = 40, py = 100, pr = 32;
+    if (this.textures.exists("hud_portrait_neutral")) {
+      const ring = this.add.graphics();
+      ring.fillStyle(0x1a0b33, 1).fillCircle(px, py, pr + 3);
+      ring.lineStyle(4, 0xffd75a, 1).strokeCircle(px, py, pr + 3);
+      this.portraitImg = this.add.image(px, py, "hud_portrait_neutral").setDisplaySize(pr * 2, pr * 2);
+      // Phaser 4 (Beam): GeometryMask is Canvas-only and no-ops under
+      // WebGL — same as the Portal fix: Mask filter instead. The shape
+      // is NOT added to the display list; the filter captures it directly.
+      const maskShape = this.make.graphics().fillStyle(0xffffff, 1).fillCircle(px, py, pr);
+      this.portraitImg.enableFilters();
+      this.portraitImg.filters!.internal.addMask(maskShape);
+    }
+    this.add.image(193, 100, "hud_hearts_panel").setDisplaySize(222, 52);
     for (let i = 0; i < MAX_HEARTS; i++) {
-      const h = this.add.sprite(46 + i * 42, 102, "heart", SPRITES.heart.anims.glow.start);
+      const h = this.add.sprite(110 + i * 42, 102, "heart", SPRITES.heart.anims.glow.start);
       h.setScale(scaleForHeight("heart", 30));
       applyOrigin(h, "heart");
       this.hearts.push(h);
     }
     this.shieldText = this.add
-      .text(254, 102, "", { fontFamily: FONT, fontSize: "15px", fontStyle: "bold", color: "#fff27a", stroke: "#2a1640", strokeThickness: 4 })
+      .text(318, 102, "", { fontFamily: FONT, fontSize: "15px", fontStyle: "bold", color: "#fff27a", stroke: "#2a1640", strokeThickness: 4 })
       .setOrigin(0, 0.5)
       .setVisible(false);
 
@@ -216,6 +249,16 @@ export class HudScene extends Phaser.Scene {
       .setOrigin(0.5, 0);
     this.gemIcon = this.add.image(GAME_W / 2 - 122, 39, "hud_gem").setDisplaySize(44, 54).setVisible(false);
     this.killPanel = this.add.container(0, 0, [kp, this.killText, this.lockIcon, this.gemIcon, lvl]);
+
+    // PRUEBA ch11: coin counter, top-right (nothing else lives there). Gold
+    // disc drawn in code + count. Joins cinemaTop via buildTopBar order.
+    this.coinIcon = this.add.graphics();
+    this.coinIcon.fillStyle(0xffd75a, 1).fillCircle(GAME_W - 130, 39, 15);
+    this.coinIcon.fillStyle(0xffb52e, 1).fillCircle(GAME_W - 130, 39, 11);
+    this.coinIcon.fillStyle(0xffe27a, 1).fillCircle(GAME_W - 130, 39, 7);
+    this.coinText = this.add
+      .text(GAME_W - 108, 39, "0", { fontFamily: FONT, fontSize: "24px", fontStyle: "bold", color: "#ffd75a", stroke: "#2a1640", strokeThickness: 5 })
+      .setOrigin(0, 0.5);
 
     const pause = this.add.container(78, 40);
     pause.add(hudDisc(this, "hud_pause", 28)).setSize(64, 64).setInteractive({ useHandCursor: true });
@@ -244,34 +287,55 @@ export class HudScene extends Phaser.Scene {
   }
 
   /**
-   * SPECIAL meter bar (v60, Angelo 2026-11-06): horizontal fill bar, top-center,
-   * just under the goal panel (y 90..110 -- clear of the panel, the level label
-   * and the toast, and far above the enemies at ground level). Violet fill with
-   * a little gold star pinned at each end; when FULL the whole bar glows bright
-   * and the stars twinkle. Tapping the bar fires the SPECIAL when full.
-   * Built here (not in touchUi) so the meter is visible on desktop too, and so
-   * it joins cinemaTop and hides during cutscenes like the rest of the top bar.
+   * SPECIAL meter bar (v78 redesign, Angelo 2026-11-12: "más bonita"): gold
+   * gradient fill with a top sheen, rounded bar, gold frame, gold glow pulse
+   * when FULL, gold stars at each end. Same position/size as v60 (top-center,
+   * y 90..110) — HUD layout untouched. Tapping the bar fires the SPECIAL
+   * when full. Built here (not in touchUi) so the meter is visible on
+   * desktop too, and so it joins cinemaTop and hides during cutscenes like
+   * the rest of the top bar.
    */
   private buildSpecialBar() {
     const { x, y, w, h } = SPECIAL_BAR;
-    const pad = 3;
     const g = this.add.graphics();
     g.fillStyle(0x1b0f2e, 0.85).fillRoundedRect(-w / 2, -h / 2, w, h, 10);
-    g.lineStyle(2, 0x8b5cf6, 1).strokeRoundedRect(-w / 2, -h / 2, w, h, 10);
-    this.specialFill = this.add.rectangle(-w / 2 + pad, 0, 0, h - pad * 2, 0x8b5cf6).setOrigin(0, 0.5);
+    g.lineStyle(2, 0xffd75a, 1).strokeRoundedRect(-w / 2, -h / 2, w, h, 10);
+    this.specialFill = this.add.graphics();
     this.specialGlow = this.add.graphics();
-    this.specialGlow.fillStyle(0xc9a8ff, 1).fillRoundedRect(-w / 2, -h / 2, w, h, 10);
+    this.specialGlow.fillStyle(0xffd75a, 1).fillRoundedRect(-w / 2, -h / 2, w, h, 10);
     this.specialGlow.setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
     // Two gold stars, one at each end -- the "SPECIAL" label sits in the middle.
     this.specialStars = [-1, 1].map((k) =>
       this.add
-        .text(k * (w / 2 - 16), 0, "★", { fontFamily: FONT, fontSize: "15px", color: "#ffd75a", stroke: "#2a1640", strokeThickness: 3 })
+        .text(k * (w / 2 - 16), 0, "★", { fontFamily: FONT, fontSize: "16px", color: "#ffd75a", stroke: "#2a1640", strokeThickness: 3 })
         .setOrigin(0.5),
     );
     this.specialLabel = this.add
-      .text(0, 0, "SPECIAL", { fontFamily: FONT, fontSize: "12px", fontStyle: "bold", color: "#fff4d6", stroke: "#2a1640", strokeThickness: 3 })
+      .text(0, 0, "SPECIAL", { fontFamily: FONT, fontSize: "12px", fontStyle: "bold", color: "#ffe9a8", stroke: "#2a1640", strokeThickness: 3 })
       .setOrigin(0.5);
     this.specialBar = this.add.container(x, y, [g, this.specialFill, this.specialGlow, ...this.specialStars, this.specialLabel]);
+  }
+
+  /** Gold gradient fill for the SPECIAL meter (v78): vertical gold gradient
+   * (light top -> deep gold bottom) + a lighter top sheen, rounded to the
+   * bar. Redrawn only when the charge changes. */
+  private drawSpecialFill(charge: number) {
+    const { w, h } = SPECIAL_BAR;
+    const pad = 3;
+    const inner = w - pad * 2;
+    const fw = Math.max(0, inner * Phaser.Math.Clamp(charge / 8, 0, 1));
+    const g = this.specialFill;
+    g.clear();
+    if (fw <= 0) return;
+    const fh = h - pad * 2;
+    const r = Math.min(7, fw / 2, fh / 2);
+    const x = -w / 2 + pad;
+    const y = -fh / 2;
+    g.fillGradientStyle(0xffe27a, 0xffe27a, 0xffb52e, 0xffb52e, 1);
+    g.fillRoundedRect(x, y, fw, fh, r);
+    const sh = Math.max(2, fh * 0.38);
+    g.fillStyle(0xfff6c9, 0.55);
+    g.fillRoundedRect(x + 1, y + 1, Math.max(0, fw - 2), sh, { tl: r, tr: r, bl: 0, br: 0 });
   }
 
   private buildBossBar() {
@@ -422,6 +486,8 @@ export class HudScene extends Phaser.Scene {
   }
 
   private setHearts(n: number) {
+    const prev = this.lastHearts;
+    this.lastHearts = n;
     this.hearts.forEach((h, i) => {
       const full = i < n;
       h.setTint(full ? 0xffffff : 0x3a3450).setAlpha(full ? 1 : 0.6);
@@ -436,6 +502,37 @@ export class HudScene extends Phaser.Scene {
     if (n === 1) {
       this.lowPulse = this.tweens.add({ targets: this.hearts[0], scale: base * 1.25, duration: 350, yoyo: true, repeat: -1 });
     }
+    // v94 PRUEBA: reactive portrait — damage / 1-heart fear / full-heal joy.
+    // Hooks the existing hearts registry event only; no new damage logic.
+    if (n < prev) {
+      if (n === 1) this.setPortrait("scared");
+      else this.setPortrait("hurt", true);
+    } else if (n > prev) {
+      if (n === MAX_HEARTS) this.setPortrait("happy", true);
+      else this.setPortrait("neutral");
+    } else if (n === 1) {
+      this.setPortrait("scared");
+    }
+  }
+
+  /** v94 PRUEBA: swap the HUD portrait. `brief` states (hurt/happy) return
+   *  to neutral on a timer — unless hearts are still at 1, where scared
+   *  stays. The hurt jolt shakes the image inside its fixed circular mask. */
+  private setPortrait(state: "neutral" | "hurt" | "scared" | "happy", brief = false) {
+    if (!this.portraitImg) return;
+    this.portraitTimer?.remove(false);
+    this.portraitTimer = undefined;
+    this.portraitImg.setX(40).setTexture(`hud_portrait_${state}`);
+    if (state === "hurt") {
+      this.tweens.killTweensOf(this.portraitImg);
+      this.tweens.add({ targets: this.portraitImg, x: "+=5", duration: 70, yoyo: true, repeat: 1 });
+    }
+    if (brief) {
+      this.portraitTimer = this.time.delayedCall(state === "hurt" ? 900 : 1400, () => {
+        if (this.lastHearts === 1) this.setPortrait("scared");
+        else this.setPortrait("neutral");
+      });
+    }
   }
 
   private setShield(seconds: number) {
@@ -444,6 +541,11 @@ export class HudScene extends Phaser.Scene {
     if (!on) return;
     const colors = ["#fff27a", "#ff6ad5", "#7af0ff", "#ffffff", "#b6ff6a"];
     this.shieldText.setText(`★ ${seconds}s`).setColor(colors[seconds % colors.length]);
+  }
+
+  /** PRUEBA ch11: banked coin count (top-right). */
+  private setCoins(n: number) {
+    this.coinText.setText(String(Math.max(0, n)));
   }
 
   private setGoal(g: GoalState) {
@@ -459,7 +561,7 @@ export class HudScene extends Phaser.Scene {
       return;
     }
     this.killText.setFontSize(26).setX(GAME_W / 2 + 18).setColor("#fff4d6");
-    this.killText.setText(`${g.kind === "gems" ? "GEMS" : "ENEMIES"} ${String(shown).padStart(2, "0")} / ${g.need}`);
+    this.killText.setText(`${g.kind === "gems" ? "GEMS" : g.kind === "coins" ? "COINS" : "ENEMIES"} ${String(shown).padStart(2, "0")} / ${g.need}`);
     const k = g.have;
     const goal = g.need;
     if (k < goal) {
@@ -504,16 +606,13 @@ export class HudScene extends Phaser.Scene {
     this.attackBtn.setVisible(!!w);
   }
 
-  /** SPECIAL meter bar: violet fill grows with charge; when FULL the whole bar
-   * glows bright and the two gold stars twinkle (v60, Angelo 2026-11-06). */
+  /** SPECIAL meter bar: gold gradient fill grows with charge; when FULL the
+   * whole bar glows gold and the two gold stars twinkle (v78 redesign). */
   private setSpecial(charge: number) {
     this.specialCharge = charge;
     const full = charge >= 8;
-    const { w } = SPECIAL_BAR;
-    const pad = 3;
-    const inner = w - pad * 2;
-    this.specialFill.width = Math.max(0, inner * Phaser.Math.Clamp(charge / 8, 0, 1));
-    this.specialLabel.setColor(full ? "#ffe27a" : "#fff4d6");
+    this.drawSpecialFill(charge);
+    this.specialLabel.setColor(full ? "#ffe27a" : "#ffe9a8");
     if (full && !this.specialPulse) {
       this.specialPulse = this.tweens.add({ targets: this.specialBar, scale: { from: 1, to: 1.05 }, duration: 320, yoyo: true, repeat: -1, ease: "Sine.inOut" });
       this.specialGlowTween = this.tweens.add({ targets: this.specialGlow, alpha: { from: 0.25, to: 0.65 }, duration: 420, yoyo: true, repeat: -1, ease: "Sine.inOut" });
@@ -635,12 +734,18 @@ export class HudScene extends Phaser.Scene {
     const ax = Phaser.Math.Clamp(dx / JOY_R, -1, 1);
     const mag = Math.abs(ax) < DEAD_ZONE ? 0 : Math.min(1, (Math.abs(ax) - DEAD_ZONE) / 0.5);
     touchState.axis = Math.sign(ax) * (mag === 0 ? 0 : 0.45 + 0.55 * mag);
+    // PRUEBA ch11: joystick vertical drives the ladder (hold up to climb the
+    // whole ladder, hold down to come back down). Same dead-zone/ramp as X.
+    const ay = Phaser.Math.Clamp(dy / JOY_R, -1, 1);
+    const magY = Math.abs(ay) < DEAD_ZONE ? 0 : Math.min(1, (Math.abs(ay) - DEAD_ZONE) / 0.5);
+    touchState.axisY = Math.sign(ay) * (magY === 0 ? 0 : 0.45 + 0.55 * magY);
   }
 
   private onUp(p: Phaser.Input.Pointer) {
     if (p.id === this.joyId) {
       this.joyId = -1;
       touchState.axis = 0;
+      touchState.axisY = 0;
       this.resetJoy();
     }
     if (p.id === this.jumpId) {
@@ -685,6 +790,12 @@ export class HudScene extends Phaser.Scene {
     this.tweens.add({ targets: this.toastText, alpha: 0, delay: 2600, duration: 400 });
   }
 
+  /** v81: hide the yellow hint box immediately (crate push). */
+  private hideToast() {
+    this.tweens.killTweensOf(this.toastText);
+    this.toastText.setAlpha(0);
+  }
+
   private banner(text: string) {
     this.tweens.killTweensOf(this.bannerText);
     this.bannerText.setText(text).setAlpha(1).setScale(0.3);
@@ -726,8 +837,8 @@ export class HudScene extends Phaser.Scene {
     // porque el arte 16:9 no llena el cuadro 1280x576) +
     // zonas invisibles sobre los 5 botones pintados, como el game-over art.
     // Los toggles MUSIC/SFX son la única excepción visual: cuando están en
-    // OFF, un parche pequeño tapa solo la palabra ON con OFF (en ON, la
-    // imagen es exactamente la enviada).
+    // OFF, el botón entero se vuelve rojo (misma forma, texto OFF en
+    // blanco); en ON, la imagen es exactamente la enviada.
     resetTouch();
     this.joyId = this.jumpId = this.attackId = -1;
     this.resetJoy();
@@ -796,21 +907,56 @@ export class HudScene extends Phaser.Scene {
         },
       };
     };
-    // Parches OFF: tapan solo la palabra ON del botón verde (medido del arte).
-    const offPatch = (fx: number, fy: number) => {
-      const px = dispX + fx * dispW;
-      const py = dispY + fy * dispH;
+    // Toggles OFF en ROJO (Angelo 2026-11-14, v89): el parche verde viejo
+    // tapaba solo la palabra ON y su verde no coincidía con el botón —
+    // se veía como un cuadrito pegado. Ahora el botón ENTERO se vuelve
+    // rojo cuando está en OFF (misma forma de píldora, mismo texto en
+    // blanco), y en ON se ve el botón verde pintado del arte.
+    // v90: el cambio ya no es instantáneo — la píldora roja entra con un
+    // pop (escala 0.85→1, Back.easeOut) y sale encogiéndose + fundido, así
+    // el toggle se siente como un botón de verdad y no como un cambio de
+    // color pegado (Angelo 2026-11-14: "cambia de color sin animación").
+    const toggleOff = (fx0: number, fx1: number, fy0: number, fy1: number, label: string) => {
+      const bx = dispX + fx0 * dispW;
+      const by = dispY + fy0 * dispH;
+      const bw = (fx1 - fx0) * dispW;
+      const bh = (fy1 - fy0) * dispH;
+      const cx = bx + bw / 2;
+      const cy = by + bh / 2;
       const g = this.add.graphics();
-      g.fillStyle(0x0c7c37, 1).fillRoundedRect(px - 25, py - 13, 50, 26, 8);
+      // Píldora roja con borde oscuro, con inset para dejar ver el borde
+      // dorado y las gemas del botón pintado. Dibujada relativa al centro
+      // para que el pop de escala no la desplace.
+      g.fillStyle(0x8f0f0f, 1).fillRoundedRect(-bw / 2 + 4, -bh / 2 + 4, bw - 8, bh - 8, 14);
+      g.fillStyle(0xd21f2b, 1).fillRoundedRect(-bw / 2 + 7, -bh / 2 + 7, bw - 14, bh - 14, 11);
+      g.fillStyle(0xe85a5a, 1).fillRoundedRect(-bw / 2 + 7, -bh / 2 + 7, bw - 14, (bh - 14) / 2, { tl: 11, tr: 11, bl: 0, br: 0 });
       const t = this.add
-        .text(px, py, "OFF", { fontFamily: FONT, fontSize: "20px", fontStyle: "bold", color: "#ffffff", stroke: "#2a1640", strokeThickness: 4 })
+        .text(0, 0, label, { fontFamily: FONT, fontSize: "24px", fontStyle: "bold", color: "#ffffff", stroke: "#2a1640", strokeThickness: 5 })
         .setOrigin(0.5);
-      const grp = this.add.container(0, 0, [g, t]);
+      const grp = this.add.container(cx, cy, [g, t]);
       c.add(grp);
       return grp;
     };
-    const musicOff = offPatch(754.5 / 1672, 710 / 941);
-    const sfxOff = offPatch(1017 / 1672, 710 / 941);
+    /** Anima el toggle: al apagar, la píldora roja entra con pop; al
+     *  prender, se encoge y se funde revelando el botón verde pintado. */
+    const animateToggle = (grp: Phaser.GameObjects.Container, turningOff: boolean) => {
+      this.tweens.killTweensOf(grp);
+      if (turningOff) {
+        grp.setVisible(true).setScale(0.85).setAlpha(0);
+        this.tweens.add({ targets: grp, scale: 1, alpha: 1, duration: 220, ease: "Back.easeOut" });
+      } else {
+        this.tweens.add({
+          targets: grp,
+          scale: 0.85,
+          alpha: 0,
+          duration: 180,
+          ease: "Quad.easeIn",
+          onComplete: () => grp.setVisible(false).setScale(1).setAlpha(1),
+        });
+      }
+    };
+    const musicOff = toggleOff(583 / 1672, 836 / 1672, 677 / 941, 742 / 941, "MUSIC OFF");
+    const sfxOff = toggleOff(857 / 1672, 1106 / 1672, 677 / 941, 742 / 941, "SFX: OFF");
     musicOff.setVisible(!Audio.musicOn);
     sfxOff.setVisible(!Audio.sfxOn);
     const resume = zone(610 / 1672, 1076 / 1672, 498 / 941, 570 / 941, () => {
@@ -822,11 +968,11 @@ export class HudScene extends Phaser.Scene {
     const select = zone(845 / 1672, 1115 / 1672, 594 / 941, 652 / 941, () => this.toChapterSelect());
     const music = zone(583 / 1672, 836 / 1672, 677 / 941, 742 / 941, () => {
       Audio.setMusic(!Audio.musicOn);
-      musicOff.setVisible(!Audio.musicOn);
+      animateToggle(musicOff, !Audio.musicOn);
     });
     const sfx = zone(857 / 1672, 1106 / 1672, 677 / 941, 742 / 941, () => {
       Audio.setSfx(!Audio.sfxOn);
-      sfxOff.setVisible(!Audio.sfxOn);
+      animateToggle(sfxOff, !Audio.sfxOn);
     });
     c.setAlpha(0);
     this.tweens.add({ targets: c, alpha: 1, duration: 200 });
@@ -993,7 +1139,7 @@ export class HudScene extends Phaser.Scene {
               ? "The Crystal Veil is still standing. Try again, Angely!"
               : "Queen Umbra is waiting... don't give up, Angely!"
           : g.kind === "reach" ? "So close! Try again, Angely!"
-            : `${g.kind === "gems" ? "Star gems" : "Enemies defeated"}: ${Math.min(g.have, g.need)} / ${g.need}`;
+            : `${g.kind === "gems" ? "Star gems" : g.kind === "coins" ? "Coins collected" : "Enemies defeated"}: ${Math.min(g.have, g.need)} / ${g.need}`;
       c.add(this.add.text(GAME_W / 2, top + 200, line, { fontFamily: FONT, fontSize: "21px", fontStyle: "bold", color: "#9ff5ff" }).setOrigin(0.5));
       // Feel package 2026-10-26: final-boss retry progress. No damage stats,
       // no DPS, no floating numbers — just how far into the fight she got.

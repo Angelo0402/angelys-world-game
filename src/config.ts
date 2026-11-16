@@ -3,6 +3,26 @@ export const GAME_H = 576;
 export const GROUND_Y = 500;
 export const MAX_HEARTS = 5;
 
+/** bg11 (ch11 The Graveyard, Option A "Moonlit Graveyard Ruins", approved 2026-11-13).
+ * Exact display sizes, derived from the drift math in GameScene.placeScreenLayers:
+ * a layer drifts (displayWidth - GAME_W) px across the whole level, so its
+ * effective parallax factor is drift / span, span = level.width - GAME_W
+ * (11-1: 16,420; 11-2: 18,420). Display width = GAME_W + f * 18,420 (worst
+ * case, 11-2) — the same files serve both levels, so the factor is exact in
+ * 11-2 and slightly higher in 11-1. ChatGPT's factors (sky 0.05-0.12, mid
+ * 0.25-0.40, fg 0.70-0.90) are NOT all reachable: f=0.70 needs a 14,174px
+ * image (8.5x upscale, past the 4096px mobile texture cap); f=0.30 needs
+ * 6,806px (past the cap too). Envelope used: sky f=0.08 (in ChatGPT's range),
+ * mid f=0.12, fg f=0.14 — still clearly separated. Sources were 1672x941,
+ * scaled aspect-preserving (never stretched): sky 1.65x, mid 2.09x, fg 2.30x.
+ * ty picks the visible 576px band of each image (the engine shows one fixed
+ * band, it does not scroll vertically with the camera): sky 0.05 -> moon +
+ * cathedral, mid 0.15 -> abbey + twisted trees, fg 0.55 -> crypt arch +
+ * candles + cross. Underground dimming (tint 0x565678) applies to all three. */
+export const BG11_SKY = { w: 2754, h: 1550, ty: 0.05 };
+export const BG11_MID = { w: 3490, h: 1964, ty: 0.15 };
+export const BG11_FG = { w: 3840, h: 2161, ty: 0.55 };
+
 export type ChapterId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
 export const LAST_CHAPTER: ChapterId = 10;
 export type MusicTrack =
@@ -186,16 +206,19 @@ export const CHAPTERS: Record<ChapterId, ChapterDef> = {
   },
   11: {
     id: 11,
-    name: "The Final Horizon",
+    name: "The Graveyard",
+    // PRUEBA ch11 (2026-11-13): bg11 integrated (Option A, Moonlit Graveyard
+    // Ruins, 3 parallax layers — see BG11_* above). splash10 still PLACEHOLDER.
     splash: "splash10",
-    background: "bg10",
+    background: "bg11_sky",
     music: "music_shadow",
-    enemies: [],
-    maxAlive: 0,
-    spawnEvery: 999,
+    // PLACEHOLDER ch11 — Angelo delivers zombie/skeleton/bat sprites. Skeleton + ghost are existing types reused as stand-ins.
+    enemies: ["skeleton", "ghost"],
+    maxAlive: 4,
+    spawnEvery: 2.0,
     pitKind: "pit",
     grip: 1,
-    ambient: { color: 0xb7a6ff, count: 0 },
+    ambient: { color: 0x9fb8a0, count: 90 },
   },
 };
 
@@ -222,8 +245,8 @@ export type PieceKind =
  * swim   underwater: JUMP swims upward, gravity is light
  */
 export type LevelMode = "run" | "chase" | "climb" | "swim";
-/** kills: defeat N enemies; gems: collect N star gems; reach: the portal is open, get there; boss. */
-type GoalKind = "kills" | "gems" | "reach" | "boss";
+/** kills: defeat N enemies; gems: collect N star gems; coins: collect N coins from broken chests (ch11 only, F6 stand-in for the collectible Angelo will name); reach: the portal is open, get there; boss. */
+type GoalKind = "kills" | "gems" | "coins" | "reach" | "boss";
 /** flat ground, rolling hills (low terraces) or cliffs (tall terraces). */
 type Terrain = "flat" | "hills" | "cliffs";
 
@@ -272,6 +295,9 @@ export const LEVELS: LevelInfo[] = [
   { chapter: 9, stage: 2, name: "Bubble Falls", mode: "run", goal: "gems", need: 6, terrain: "cliffs", seed: 127, pieces: ["hops", "movingBridge", "breakWall", "crumble", "spring", "spikes", "steps"], tip: "Bounce the springs and find every star gem" },
   { chapter: 10, stage: 1, name: "Shattered Causeway", mode: "run", goal: "kills", need: 12, terrain: "cliffs", seed: 149, pieces: ["hops", "steps", "breakWall", "crumble", "crateWall", "movingBridge", "spring", "target", "lift", "breakWall"], tip: "Smash the cracked crystal walls with your hammer. Clear twelve guardians to reach the crown." },
   { chapter: 10, stage: 2, name: "The Veil Crown", mode: "run", goal: "boss", need: 0, terrain: "flat", seed: 151, pieces: [], boss: true, splash: "splash_veilcrown", tip: "Watch the pink warnings. Two forms, one crown — strike the core after each attack." },
+  // PRUEBA ch11 (2026-11-13): custom-built by buildGraveyard() in world/level.ts — pieces: [] is intentional, the layout is hand-laid. Goal coins (F6, 2026-11-15): the portal opens by collecting coins from broken chests — 3 coins per chest, 3 chests = 9 in 11-1, 4 chests = 12 in 11-2. STAND-IN for the collectible Angelo will name (his example is still pending); the old 6 star gems were the placeholder and are gone from ch11. The portal does NOT open by kills in ch11.
+  { chapter: 11, stage: 1, name: "The Graveyard", mode: "run", goal: "coins", need: 9, terrain: "cliffs", seed: 157, pieces: [], tip: "Smash the cracked floor with the HAMMER and go down. Break the chests and grab the coins!" },
+  { chapter: 11, stage: 2, name: "Graveyard Depths", mode: "run", goal: "coins", need: 12, terrain: "cliffs", seed: 163, pieces: [], tip: "Down, up, down, up — break the chests and grab the coins!" },
 ].map((l, i) => L(l as Omit<LevelInfo, "index">, i));
 
 export const LAST_LEVEL = LEVELS.length - 1;

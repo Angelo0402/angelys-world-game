@@ -28,7 +28,8 @@ export class SplashScene extends Phaser.Scene {
     const what =
       info.goal === "kills" ? `Defeat ${info.need} enemies to unlock the portal`
         : info.goal === "gems" ? `Collect ${info.need} star gems to unlock the portal`
-          : info.mode === "climb" ? "Climb the tower to the portal at the top"
+          : info.goal === "coins" ? `Break the chests and grab ${info.need} coins to unlock the portal`
+            : info.mode === "climb" ? "Climb the tower to the portal at the top"
             : info.mode === "chase" ? "Outrun the danger and reach the portal"
               : "Reach the portal";
     const goal = info.boss

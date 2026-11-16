@@ -13,13 +13,15 @@ interface SaveData {
   cleared: boolean;
   /** Both Angelo and Angely have crossed the final blue portal. */
   finaleSeen: boolean;
+  /** Coins collected from chests (PRUEBA ch11) — future shop currency. */
+  coins: number;
   /** The opening story video has played once (it opens level 1-1). */
   introSeen: boolean;
   music: boolean;
   sfx: boolean;
 }
 
-const DEFAULTS: SaveData = { level: LAST_LEVEL, chapterLayoutVersion: CHAPTER_LAYOUT_VERSION, weapons: ["sword", "bow", "hammer", "wand", "ray"], cleared: false, finaleSeen: false, introSeen: false, music: true, sfx: true };
+const DEFAULTS: SaveData = { level: LAST_LEVEL, chapterLayoutVersion: CHAPTER_LAYOUT_VERSION, weapons: ["sword", "bow", "hammer", "wand", "ray"], cleared: false, finaleSeen: false, coins: 0, introSeen: false, music: true, sfx: true };
 
 let cache: SaveData | null = null;
 
@@ -28,6 +30,7 @@ function normalize(out: SaveData): SaveData {
     chapterLayoutVersion: CHAPTER_LAYOUT_VERSION,
     level: Number.isFinite(out.level) ? Math.max(0, Math.min(LAST_LEVEL, Math.floor(out.level))) : 0,
     weapons: WEAPON_ORDER.filter(w => out.weapons.includes(w)),
+    coins: Number.isFinite(out.coins) ? Math.max(0, Math.floor(out.coins)) : 0,
     finaleSeen: out.finaleSeen === true,
     introSeen: out.introSeen === true,
   };
@@ -81,4 +84,9 @@ export function addWeapon(w: WeaponId) {
   const have = new Set(loadSave().weapons);
   have.add(w);
   updateSave({ weapons: WEAPON_ORDER.filter((x) => have.has(x)) });
+}
+
+/** PRUEBA ch11: bank coins from chests into the save (future shop currency). */
+export function addCoins(n: number) {
+  updateSave({ coins: loadSave().coins + n });
 }

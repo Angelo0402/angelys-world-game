@@ -318,7 +318,7 @@ export class TitleScene extends Phaser.Scene {
           g.lineStyle(focus ? 4 : 2, focus ? 0xfff4a8 : open ? gold : 0x4a4460, 1).strokeRoundedRect(-pw / 2, -ph / 2, pw, ph, 14);
         };
         draw(false);
-        const kind = l.boss ? "BOSS" : l.mode === "climb" ? "VERTICAL" : l.mode === "swim" ? "SWIM" : l.goal === "gems" ? "GEMS" : "";
+        const kind = l.boss ? "BOSS" : l.mode === "climb" ? "VERTICAL" : l.mode === "swim" ? "SWIM" : l.goal === "gems" ? "GEMS" : l.goal === "coins" ? "COINS" : "";
         const label = this.add.text(0, -12, levelLabel(l), {
           fontFamily: FONT, fontSize: "18px", fontStyle: "bold",
           color: open ? (l.boss ? "#e0b8ff" : "#ffe08a") : "#aaa2c0", stroke: "#241a36", strokeThickness: 3,
@@ -330,7 +330,7 @@ export class TitleScene extends Phaser.Scene {
         // Kind tag as a small corner chip (reference style), not inline text.
         const chipParts: Phaser.GameObjects.GameObject[] = [];
         if (kind) {
-          const chipColor = l.boss ? 0x8a3fd1 : l.goal === "gems" ? 0xc79a1d : 0x1d7a8a;
+          const chipColor = l.boss ? 0x8a3fd1 : l.goal === "gems" || l.goal === "coins" ? 0xc79a1d : 0x1d7a8a;
           const chipW = kind.length * 9 + 14;
           const chip = this.add.graphics();
           chip.fillStyle(chipColor, 1).fillRoundedRect(pw / 2 - chipW - 6, -ph / 2 + 5, chipW, 18, 8);

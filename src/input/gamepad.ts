@@ -179,6 +179,16 @@ class GamepadInput {
     return this.isDown(PAD.A);
   }
 
+  /** PRUEBA ch11: d-pad up / left-stick up (held, no repeat). */
+  get upHeld() {
+    return this.navHeld === "up";
+  }
+
+  /** PRUEBA ch11: d-pad down / left-stick down (held, no repeat). */
+  get downHeld() {
+    return this.navHeld === "down";
+  }
+
   get attackPressed() {
     return this.justPressed(PAD.X) || this.justPressed(PAD.B) || this.justPressed(PAD.RT) || this.justPressed(PAD.RB);
   }

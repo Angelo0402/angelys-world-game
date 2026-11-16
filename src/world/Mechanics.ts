@@ -20,6 +20,9 @@ interface Wall {
   /** Pulsing gold glint overlay, alive until the first hit. */
   glint?: Phaser.GameObjects.Graphics;
   glintTween?: Phaser.Tweens.Tween;
+  /** v79: per-block crack/shard overlays (non-breakable walls only). Kept
+   *  OUT of `parts` — wallHit/breakWall call setTexture on parts. */
+  dressing?: Phaser.GameObjects.Graphics[];
 }
 
 /** Breakable-wall block stage textures (baked cracks, approved sprites). */
@@ -34,6 +37,12 @@ interface Crate {
   lastSfx: number;
   /** Last push-dust burst (own timer — dust runs ~200ms, sfx stays 260ms). */
   lastDust: number;
+  /** v79: moving-box dressing — gold glow outline + travel chevrons. */
+  boxGlow: Phaser.GameObjects.Graphics;
+  boxArrows: Phaser.GameObjects.Graphics;
+  boxPhase: number;
+  /** Last push direction (1 = right, -1 = left); chevrons point this way. */
+  lastPush: 1 | -1;
 }
 
 interface Mine {
@@ -73,6 +82,7 @@ interface Hint {
   text: string | (() => string);
   shown: boolean;
   when?: () => boolean;
+  id?: string;
 }
 
 const PLATFORM_ART: Record<PlatformDef["prop"], "plat_l" | "plat_m" | "plat_s"> = {
@@ -104,6 +114,8 @@ export class Mechanics {
   private crumbles: Crumble[] = [];
   private targets: Target[] = [];
   private hints: Hint[] = [];
+  /** True while the yellow crate-push hint toast is on screen (v81). */
+  private crateHintVisible = false;
   private swordWarned = false;
   private moverClock = 0;
   /** Landing-on-crate detection. Player has no public landed hook (its
@@ -138,7 +150,8 @@ export class Mechanics {
   }
 
   private prop(name: string) {
-    return `${name}_${this.chapter.id}`;
+    // PRUEBA ch11: no *_11 art exists yet — use ch10's as placeholder (Angelo delivers art).
+    return `${name}_${this.chapter.id === 11 ? 10 : this.chapter.id}`;
   }
 
   // ----------------------------------------------------------------- build
@@ -149,6 +162,7 @@ export class Mechanics {
     const body = this.scene.add.rectangle(def.x, def.y + (dir * h) / 2, BLOCK_W, h).setVisible(false);
     this.wallGroup.add(body);
     const parts: Phaser.GameObjects.GameObject[] = [];
+    const dressing: Phaser.GameObjects.Graphics[] = [];
     const glint = def.breakable ? this.scene.add.graphics().setDepth(13.6).setAlpha(0.15) : undefined;
     for (let i = 0; i < def.blocks; i++) {
       const y = def.y + dir * BLOCK_H * (i + 0.5);
@@ -162,6 +176,41 @@ export class Mechanics {
       // cool ice-blue tint as ch4 crumbles (0xdfe9ff) to read as ice with
       // the existing art. A true snow-designed set still needs Angelo's art.
       if (def.breakable && this.chapter.id === 4) img.setTint(0xdfe9ff);
+      // v79: a stack of identical blocks reads as one design pasted 3x.
+      // Non-breakable blocks each get their own look — tint, size, offset
+      // and a code-drawn crack — seeded from the wall position + block
+      // index so the look is stable across restarts. VISUAL ONLY: the
+      // physics body is the same BLOCK_W x BLOCK_H stack.
+      if (!def.breakable) {
+        const seed = def.x * 31 + i * 17;
+        const rnd = (n: number) => {
+          const s = Math.sin(seed * 12.9898 + n * 78.233) * 43758.5453;
+          return s - Math.floor(s);
+        };
+        const tints = [0xe8f2ff, 0xcfe4ff, 0xf4fbff, 0xd6e9ff];
+        // Consecutive palette entries per block: every block in a stack
+        // gets a DIFFERENT tint (no two share one).
+        const tintBase = Math.floor(rnd(1) * tints.length);
+        img.setTint(tints[(tintBase + i) % tints.length]);
+        img.setDisplaySize(BLOCK_W + 6 + (rnd(2) - 0.5) * 8, BLOCK_H + 8 + (rnd(3) - 0.5) * 6);
+        const dx = (rnd(4) - 0.5) * 10;
+        img.setX(def.x + dx);
+        img.setFlipX(rnd(5) < 0.5);
+        const crack = this.scene.add.graphics().setDepth(13.05 + i * 0.01);
+        const cx = def.x + dx;
+        crack.lineStyle(2, 0x9fc4e8, 0.85);
+        crack.beginPath();
+        const shape = Math.floor(rnd(6) * 3);
+        if (shape === 0) crack.moveTo(cx - 18, y - 22).lineTo(cx - 2, y - 4).lineTo(cx - 14, y + 12).lineTo(cx + 4, y + 24);
+        else if (shape === 1) crack.moveTo(cx + 16, y - 24).lineTo(cx + 2, y - 2).lineTo(cx + 12, y + 10).lineTo(cx - 4, y + 22);
+        else crack.moveTo(cx - 20, y + 2).lineTo(cx - 4, y - 8).lineTo(cx + 8, y + 4).lineTo(cx + 20, y - 6);
+        crack.strokePath();
+        crack.lineStyle(2, 0xffffff, 0.5);
+        crack.beginPath();
+        const hx = rnd(7) < 0.5 ? cx - 24 : cx + 10;
+        crack.moveTo(hx, y - 18).lineTo(hx + 12, y - 2).strokePath();
+        dressing.push(crack);
+      }
       parts.push(img);
       if (def.breakable) {
         const cx = def.x + (i % 2 ? 8 : -6);
@@ -170,7 +219,7 @@ export class Mechanics {
         glint!.beginPath().moveTo(cx - 4, y - BLOCK_H / 2 + 6).lineTo(cx + 8, y - 8).lineTo(cx - 6, y + 6).lineTo(cx + 4, y + BLOCK_H / 2 - 6).strokePath();
       }
     }
-    const wall: Wall = { def, body, parts, broken: false, hits: 0, glint };
+    const wall: Wall = { def, body, parts, broken: false, hits: 0, glint, dressing };
     if (glint) {
       wall.glintTween = this.scene.tweens.add({ targets: glint, alpha: { from: 0.15, to: 0.5 }, duration: 900, yoyo: true, repeat: -1, ease: "Sine.inOut" });
     }
@@ -187,7 +236,7 @@ export class Mechanics {
     } else if (def.blocks === 2) {
       // Low wall under a gate.
     } else if (def.blocks === 3) {
-      this.hints.push({ x: def.x - 520, text: "Too tall to jump! Push the crate against the wall and climb", shown: false });
+      this.hints.push({ x: def.x - 520, text: "Too tall to jump! Push the crate against the wall and climb", shown: false, id: "crate-push" });
     } else if (def.blocks === 4) {
       this.hints.push({ x: def.x - 360, text: "Bounce on the spring to clear the wall!", shown: false });
     } else {
@@ -212,13 +261,45 @@ export class Mechanics {
     body.setCollideWorldBounds(true);
     body.setMaxVelocity(400, 1100);
     const img = this.scene.add.image(x, rect.y, this.prop("crate")).setDisplaySize(CRATE_SIZE + 6, CRATE_SIZE + 6).setDepth(14);
-    // v61: one crate texture per chapter reads as identical boxes, so vary
-    // each crate (mirror + cool/warm tint) to break the repetition without new art.
-    const ci = this.crates.length;
-    if (ci % 2) img.setFlipX(true);
-    if (ci % 3 === 1) img.setTint(0xdfe9ff);
-    else if (ci % 3 === 2) img.setTint(0xfff2d9);
-    this.crates.push({ rect, body, img, home, lastSfx: 0, lastDust: 0 });
+    // v79: the pushable crate is the level's MOVING BOX — it must read as
+    // one, not as another ice block. Warm amber/gold (vs the cold ice blue),
+    // a pulsing gold glow outline, and animated chevrons that point along
+    // the ground. Code-drawn overlays only; the crate texture, collision
+    // and push feel are untouched.
+    img.setTint(0xffd98a);
+    const boxGlow = this.scene.add.graphics().setDepth(14.1);
+    const boxArrows = this.scene.add.graphics().setDepth(14.2);
+    const boxPhase = Phaser.Math.Between(0, 628) / 100;
+    this.crates.push({ rect, body, img, home, lastSfx: 0, lastDust: 0, boxGlow, boxArrows, boxPhase, lastPush: 1 });
+  }
+
+  /** v79: redraw one crate's moving-box dressing (gold glow + travel chevrons). */
+  private drawCrateBox(c: Crate, time: number) {
+    const cx = c.img.x;
+    const cy = c.img.y;
+    const s = CRATE_SIZE + 6;
+    const half = s / 2;
+    const pulse = 0.55 + 0.25 * Math.sin(time / 300 + c.boxPhase);
+    c.boxGlow.clear();
+    c.boxGlow.lineStyle(3, 0xffc94d, pulse);
+    c.boxGlow.strokeRoundedRect(cx - half - 3, cy - half - 3, s + 6, s + 6, 8);
+    c.boxGlow.lineStyle(1, 0xfff3c4, pulse * 0.8);
+    c.boxGlow.strokeRoundedRect(cx - half - 6, cy - half - 6, s + 12, s + 12, 10);
+    // Chevrons march in the last push direction: they light up in sequence
+    // and drift a few px, so the box reads as something that travels.
+    const dir = c.lastPush;
+    const slide = Math.sin(time / 500 + c.boxPhase) * 4 * dir;
+    c.boxArrows.clear();
+    for (let k = 0; k < 2; k++) {
+      const a = 0.45 + 0.45 * Math.sin(time / 240 + c.boxPhase + k * Math.PI);
+      const ox = cx + slide + dir * (k * 16 - 8);
+      c.boxArrows.lineStyle(4, 0xffe9a8, Math.max(0.15, a));
+      c.boxArrows.beginPath();
+      c.boxArrows.moveTo(ox - dir * 7, cy - 10);
+      c.boxArrows.lineTo(ox + dir * 5, cy);
+      c.boxArrows.lineTo(ox - dir * 7, cy + 10);
+      c.boxArrows.strokePath();
+    }
   }
 
   private addSpring({ x, y }: Spot) {
@@ -333,6 +414,14 @@ export class Mechanics {
       }
       if (push) {
         pushing = true;
+        // v81: the moment she starts pushing the crate, the yellow hint box
+        // goes away (Angelo 2026-11-12) — she already knows what to do.
+        if (this.crateHintVisible) {
+          this.crateHintVisible = false;
+          this.scene.game.events.emit("hud:toast-hide");
+        }
+        // v79: chevrons point the way the crate was last pushed.
+        c.lastPush = push > 0 ? 1 : -1;
         cb.setVelocityX(push * PUSH_SPEED * Math.abs(axis));
         const now = this.scene.time.now;
         const moving = Math.abs(cb.velocity.x) > 20;
@@ -419,6 +508,8 @@ export class Mechanics {
 
     for (const c of this.crates) {
       c.img.setPosition(c.rect.x, c.rect.y);
+      // v79: keep the moving-box dressing glued to the crate.
+      this.drawCrateBox(c, time);
       if (c.body.top > GAME_H + 60) {
         c.body.reset(c.home.x, c.home.y - CRATE_SIZE / 2 - 40);
         this.scene.fx("fx_dust", "puff", c.home.x, c.home.y, 0.4);
@@ -481,6 +572,7 @@ export class Mechanics {
       if (h.shown || (h.when && !h.when())) continue;
       if (player.x > h.x && player.x < h.x + 420 && (h.y === undefined || Math.abs(player.body.bottom - h.y) < 300)) {
         h.shown = true;
+        if (h.id === "crate-push") this.crateHintVisible = true;
         this.scene.toast(typeof h.text === "function" ? h.text() : h.text);
       }
     }
@@ -510,6 +602,12 @@ export class Mechanics {
   /** True when x is inside a standing wall (no ground spawns there). */
   blocked(x: number, margin = 60) {
     return this.walls.some((w) => !w.broken && !w.def.hang && Math.abs(w.def.x - x) < BLOCK_W / 2 + margin);
+  }
+
+  /** PRUEBA ch11: true once the breakable wall near x has been smashed (used
+   *  to hide the down-arrow over the underground entrance). */
+  wallBrokenAt(x: number): boolean {
+    return this.walls.some((w) => w.def.breakable && Math.abs(w.def.x - x) < 80 && w.broken);
   }
 
   // ---------------------------------------------------------------- weapons

@@ -91,7 +91,7 @@ const VARIED_SFX: ReadonlySet<SfxName> = new Set([
   "fall", "low_health", "bow_shoot", "arrow_hit",
   "hammer_swing", "hammer_smash", "wall_break",
   "tok", "crunch", "crate_push", "spring", "crumble", "target_hit",
-  "gem", "swim", "cog", "ray", "wand_charge", "wand_cast",
+  "gem", "coin", "swim", "cog", "ray", "wand_charge", "wand_cast",
   "boss_cast", "boss_hit", "boss_swoop",
 ]);
 
@@ -141,6 +141,11 @@ class AudioManagerImpl {
 
   private backgrounded = false;
 
+  /** Phaser's WebAudio context — GraveyardMusic schedules on it directly. */
+  private phaserCtx(): AudioContext | undefined {
+    return (this.game?.sound as unknown as { context?: AudioContext })?.context;
+  }
+
   /** Mute everything when the app goes to background; restore on return. */
   private setBackground(hidden: boolean) {
     if (hidden === this.backgrounded) return;
@@ -155,11 +160,17 @@ class AudioManagerImpl {
       }
       // Suspend audio context (stops all Web Audio)
       this.ctx?.suspend();
+      // FIX (Angelo 2026-11-14): GraveyardMusic runs on PHASER's WebAudio
+      // context, not this one — suspending only this ctx left the ch11
+      // music playing after the app went to background. Suspend Phaser's
+      // context too (its scheduler just freezes and resumes cleanly).
+      void this.phaserCtx()?.suspend();
       // Also pause Phaser sound manager
       this.game?.sound.pauseAll();
     } else {
       // Resume audio context
       this.ctx?.resume();
+      void this.phaserCtx()?.resume();
       // Resume Phaser sounds
       this.game?.sound.resumeAll();
       // Resume file music if it was playing
@@ -184,6 +195,17 @@ class AudioManagerImpl {
     updateSave({ music: on });
     if (this.musicBus && this.ctx) this.musicBus.gain.setTargetAtTime(on ? this.musicLevel() : 0, this.ctx.currentTime, 0.1);
     if (this.fileMusic) (this.fileMusic as Phaser.Sound.WebAudioSound).setMute?.(!on);
+    // Chapter ambience (and ch11 GraveyardMusic) follow the MUSIC toggle.
+    this.ambienceOutput?.setOutput(on);
+  }
+
+  /** Chapter audio output (ChapterAmbience / GraveyardMusic) — follows the
+   *  MUSIC toggle, not SFX. GameScene registers the live instance; the
+   *  hook applies the current toggle state immediately on registration. */
+  private ambienceOutput: { setOutput(on: boolean): void } | null = null;
+  setAmbienceOutput(t: { setOutput(on: boolean): void } | null) {
+    this.ambienceOutput = t;
+    if (t) t.setOutput(this.musicOn);
   }
 
   setSfx(on: boolean) {
@@ -198,8 +220,16 @@ class AudioManagerImpl {
     if (this.fileMusic) (this.fileMusic as Phaser.Sound.WebAudioSound).setVolume?.(on ? 0.35 : 1);
   }
 
+  /** Mix v89 (Angelo 2026-11-14): music 5 (0.05) — barely there, the
+   *  per-chapter ambient (0.75) carries the scene. Was 0.5. */
   private musicLevel() {
-    return (this.ducked ? 0.35 : 1) * 0.5;
+    return (this.ducked ? 0.35 : 1) * 0.05;
+  }
+
+  /** Mix v89 (Angelo 2026-11-14): Angely's voice at 50 — present but
+   *  under the 75 ambient, never shouting over it. Was full volume (1). */
+  private voiceLevel() {
+    return 0.5;
   }
 
   private ensureCtx() {
@@ -251,6 +281,7 @@ class AudioManagerImpl {
     this.voiceSound = undefined;
     if (this.hasVoice(name) && this.game) {
       const s = this.game.sound.add(name);
+      (s as Phaser.Sound.WebAudioSound).setVolume?.(this.voiceLevel());
       s.play();
       this.voiceSound = s;
     }
@@ -309,6 +340,10 @@ class AudioManagerImpl {
       case "ground_slam": this.tone(t, 90, 0.35, "sine", 0.5, 40); this.noise(t, 0.3, 0.3, 400, "lowpass"); break;
       case "player_hurt": this.tone(t, 520, 0.22, "sawtooth", 0.22, 180); break;
       case "heart_pickup": [0, 4, 7, 12].forEach((n, i) => this.tone(t + i * 0.06, midi(76 + n), 0.14, "triangle", 0.2)); break;
+      // v80 heal (Angelo's pick 2026-11-12: "B2 Arpegio bajo"): soft sine
+      // G4 -> C5 -> E5, slow 50ms attack, low volume. NOT in VARIED_SFX —
+      // the chord must stay in tune. Replaces heart_pickup on a real heal.
+      case "heal": [67, 72, 76].forEach((n, i) => this.tone(t + i * 0.12, midi(n), 0.7, "sine", 0.12, undefined, undefined, 0.05)); break;
       case "sword_pickup": [0, 4, 7, 12, 16].forEach((n, i) => this.tone(t + i * 0.09, midi(67 + n), 0.3, "square", 0.14)); break;
       case "checkpoint": this.tone(t, midi(72), 0.12, "triangle", 0.2); this.tone(t + 0.12, midi(79), 0.25, "triangle", 0.2); break;
       case "portal_unlock": [0, 7, 12, 16, 19, 24].forEach((n, i) => this.tone(t + i * 0.07, midi(64 + n), 0.5, "sine", 0.16)); break;
@@ -339,6 +374,9 @@ class AudioManagerImpl {
       case "voice_umbra": this.tone(t, 150 + Math.random() * 40, 0.08, "sawtooth", 0.05, 120); break;
       case "voice_angely": this.tone(t, 620 + Math.random() * 120, 0.06, "triangle", 0.06, 700); break;
       case "gem": [0, 7, 12].forEach((n, i) => this.tone(t + i * 0.05, midi(84 + n), 0.18, "triangle", 0.18)); break;
+      // v93: gold coin ding — two-note chime (E6 -> B6) + high sparkle.
+      // In VARIED_SFX (same repeated-pickup family as "gem").
+      case "coin": [88, 95].forEach((n, i) => this.tone(t + i * 0.07, midi(n), 0.22, "triangle", 0.18)); this.tone(t + 0.14, midi(100), 0.18, "sine", 0.1); break;
       case "swim": this.noise(t, 0.18, 0.12, 900, "bandpass", 2400); this.tone(t, 500, 0.08, "sine", 0.06, 900); break;
       case "cog": this.tone(t, 180, 0.12, "square", 0.16, 90); this.noise(t, 0.16, 0.22, 1400, "bandpass", 2200); break;
       case "ray": this.tone(t, 880, 0.08, "square", 0.12, 1400); this.tone(t, 1320, 0.1, "sine", 0.08, 600); break;
@@ -349,7 +387,7 @@ class AudioManagerImpl {
     }
   }
 
-  private tone(t: number, f: number, dur: number, type: OscillatorType, vol: number, slideTo?: number, bus?: GainNode) {
+  private tone(t: number, f: number, dur: number, type: OscillatorType, vol: number, slideTo?: number, bus?: GainNode, attack = 0.01) {
     const ctx = this.ctx!;
     const o = ctx.createOscillator();
     const g = ctx.createGain();
@@ -360,7 +398,7 @@ class AudioManagerImpl {
     o.frequency.setValueAtTime(f * pitch, t);
     if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo * pitch, t + dur);
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(vol, t + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(g).connect(bus ?? this.sfxBus!);
     o.start(t);

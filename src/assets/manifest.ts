@@ -20,9 +20,43 @@ const BUTTERFLY_FILES: Record<string, string> = {
   atmo_butterfly_pink: "assets/runtime/atmo_butterfly_pink.webp",
 };
 
+// bg11 (ch11 Graveyard, Option A, approved 2026-11-13). Loaded explicitly
+// here, same pattern as WALLBLOCK_FILES, so sprites.gen.ts stays
+// generator-owned. Sky is opaque JPEG; mid/fg are WebP (alpha preserved,
+// ~3x smaller than PNG at these sizes).
+const BG11_FILES: Record<string, string> = {
+  bg11_sky: "assets/runtime/backdrops/bg11_sky.jpg",
+  bg11_mid: "assets/runtime/backdrops/bg11_mid.webp",
+  bg11_fg: "assets/runtime/backdrops/bg11_fg.webp",
+};
+
+// ch11 chest + coin (v93, approved 2026-11-15): real ChatGPT art, replacing
+// the code-drawn stand-ins. Loaded explicitly here, same pattern as
+// WALLBLOCK_FILES, so sprites.gen.ts stays generator-owned. Keys "chest" /
+// "coin" match the GameScene texture keys; ensureChestTexture /
+// ensureCoinTexture in GameScene remain as fallbacks if the files ever
+// fail to load.
+const CH11_FILES: Record<string, string> = {
+  chest: "assets/runtime/props/chest_11.png",
+  coin: "assets/runtime/props/coin_11.png",
+};
+
+// v94 PRUEBA: reactive HUD portraits (Angelo 2026-11-15, approved) —
+// ChatGPT art, same Angely in all 4 states. Loaded explicitly here, same
+// pattern as CH11_FILES, so sprites.gen.ts stays generator-owned.
+const HUD_PORTRAIT_FILES: Record<string, string> = {
+  hud_portrait_neutral: "assets/runtime/hud_portrait_neutral.png",
+  hud_portrait_hurt: "assets/runtime/hud_portrait_hurt.png",
+  hud_portrait_scared: "assets/runtime/hud_portrait_scared.png",
+  hud_portrait_happy: "assets/runtime/hud_portrait_happy.png",
+};
+
 export function queueAssets(load: Phaser.Loader.LoaderPlugin) {
   queueHudIcons(load);
   for (const [key, url] of Object.entries(BACKDROPS)) load.image(key, url);
+  for (const [key, file] of Object.entries(BG11_FILES)) load.image(key, file);
+  for (const [key, file] of Object.entries(CH11_FILES)) load.image(key, file);
+  for (const [key, file] of Object.entries(HUD_PORTRAIT_FILES)) load.image(key, file);
   for (const [key, meta] of Object.entries(SPRITES)) {
     load.spritesheet(key, meta.file, { frameWidth: meta.frameWidth, frameHeight: meta.frameHeight });
   }
@@ -107,6 +141,15 @@ export function buildSharedTextures(scene: Phaser.Scene) {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 128, 128);
     tex.refresh();
+  }
+  if (!scene.textures.exists("heal_plus")) {
+    // White plus (tinted mint at spawn) for the heal burst — v80.
+    const g = scene.make.graphics({ x: 0, y: 0 }, false);
+    g.fillStyle(0xffffff, 1);
+    g.fillRoundedRect(12, 2, 8, 28, 4);
+    g.fillRoundedRect(2, 12, 28, 8, 4);
+    g.generateTexture("heal_plus", 32, 32);
+    g.destroy();
   }
   if (!scene.textures.exists("vignette")) {
     const tex = scene.textures.createCanvas("vignette", 256, 144)!;

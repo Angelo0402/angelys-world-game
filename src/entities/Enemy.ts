@@ -6,7 +6,7 @@ import { HURT_BARKS } from "../audio/barks";
 import type { GameScene } from "../scenes/GameScene";
 import type { EnemyType } from "./enemyTypes";
 
-export type DamageKind = "stomp" | "sword" | "arrow" | "hammer";
+export type DamageKind = "stomp" | "sword" | "arrow" | "hammer" | "shield";
 
 /**
  * Yeti per-animation fit (v62, measured from yeti_v2.webp's alpha pixels):
