@@ -41,11 +41,22 @@ const CH11_FILES: Record<string, string> = {
   coin: "assets/runtime/props/coin_11.png",
 };
 
+// v94 PRUEBA: reactive HUD portraits (Angelo 2026-11-15, approved) —
+// ChatGPT art, same Angely in all 4 states. Loaded explicitly here, same
+// pattern as CH11_FILES, so sprites.gen.ts stays generator-owned.
+const HUD_PORTRAIT_FILES: Record<string, string> = {
+  hud_portrait_neutral: "assets/runtime/hud_portrait_neutral.png",
+  hud_portrait_hurt: "assets/runtime/hud_portrait_hurt.png",
+  hud_portrait_scared: "assets/runtime/hud_portrait_scared.png",
+  hud_portrait_happy: "assets/runtime/hud_portrait_happy.png",
+};
+
 export function queueAssets(load: Phaser.Loader.LoaderPlugin) {
   queueHudIcons(load);
   for (const [key, url] of Object.entries(BACKDROPS)) load.image(key, url);
   for (const [key, file] of Object.entries(BG11_FILES)) load.image(key, file);
   for (const [key, file] of Object.entries(CH11_FILES)) load.image(key, file);
+  for (const [key, file] of Object.entries(HUD_PORTRAIT_FILES)) load.image(key, file);
   for (const [key, meta] of Object.entries(SPRITES)) {
     load.spritesheet(key, meta.file, { frameWidth: meta.frameWidth, frameHeight: meta.frameHeight });
   }

@@ -88,6 +88,13 @@ export class HudScene extends Phaser.Scene {
   private attackId = -1;
   private showTouch = false;
   private lowPulse?: Phaser.Tweens.Tween;
+  /** v94 PRUEBA: reactive HUD portrait (Angelo 2026-11-15) — circular
+   *  frame top-left, next to the hearts. neutral default; hurt briefly on
+   *  damage (with a jolt), scared while at 1 heart, happy briefly on heal
+   *  back to full. Hearts keep their exact sprites/spacing. */
+  private portraitImg?: Phaser.GameObjects.Image;
+  private portraitTimer?: Phaser.Time.TimerEvent;
+  private lastHearts = MAX_HEARTS;
   private cinemaTop: (Phaser.GameObjects.GameObject & Phaser.GameObjects.Components.Visible)[] = [];
   /** Perf overlay (v63 test build, DEBUG-ONLY): null when the flag in src/debug/PerfOverlay.ts is off. */
   private perfOverlay: PerfOverlay | null = null;
@@ -166,6 +173,9 @@ export class HudScene extends Phaser.Scene {
     });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, offPad);
 
+    // v94: seed lastHearts before the first setHearts so a level start at
+    // full hearts does not read as a heal (no happy flash on every load).
+    this.lastHearts = (this.registry.get("hearts") as number) ?? MAX_HEARTS;
     this.setHearts(this.registry.get("hearts") ?? MAX_HEARTS);
     this.setShield(this.registry.get("shield") ?? 0);
     this.setGoal(this.registry.get("goal") ?? { kind: "kills", have: 0, need: 0 });
@@ -198,15 +208,28 @@ export class HudScene extends Phaser.Scene {
   // ---------------------------------------------------------------- top bar
 
   private buildTopBar() {
-    this.add.image(129, 100, "hud_hearts_panel").setDisplaySize(222, 52);
+    // v94 PRUEBA: reactive portrait, circular frame top-left next to the
+    // hearts (portrait 8..72, hearts panel 82..304). Ring + dark backing,
+    // image clipped by a circular geometry mask. Hearts keep their exact
+    // sprites and spacing — the whole group shifts right 64px to make room.
+    const px = 40, py = 100, pr = 32;
+    if (this.textures.exists("hud_portrait_neutral")) {
+      const ring = this.add.graphics();
+      ring.fillStyle(0x1a0b33, 1).fillCircle(px, py, pr + 3);
+      ring.lineStyle(4, 0xffd75a, 1).strokeCircle(px, py, pr + 3);
+      this.portraitImg = this.add.image(px, py, "hud_portrait_neutral").setDisplaySize(pr * 2, pr * 2);
+      const maskShape = this.make.graphics().fillStyle(0xffffff, 1).fillCircle(px, py, pr);
+      this.portraitImg.setMask(maskShape.createGeometryMask());
+    }
+    this.add.image(193, 100, "hud_hearts_panel").setDisplaySize(222, 52);
     for (let i = 0; i < MAX_HEARTS; i++) {
-      const h = this.add.sprite(46 + i * 42, 102, "heart", SPRITES.heart.anims.glow.start);
+      const h = this.add.sprite(110 + i * 42, 102, "heart", SPRITES.heart.anims.glow.start);
       h.setScale(scaleForHeight("heart", 30));
       applyOrigin(h, "heart");
       this.hearts.push(h);
     }
     this.shieldText = this.add
-      .text(254, 102, "", { fontFamily: FONT, fontSize: "15px", fontStyle: "bold", color: "#fff27a", stroke: "#2a1640", strokeThickness: 4 })
+      .text(318, 102, "", { fontFamily: FONT, fontSize: "15px", fontStyle: "bold", color: "#fff27a", stroke: "#2a1640", strokeThickness: 4 })
       .setOrigin(0, 0.5)
       .setVisible(false);
 
@@ -459,6 +482,8 @@ export class HudScene extends Phaser.Scene {
   }
 
   private setHearts(n: number) {
+    const prev = this.lastHearts;
+    this.lastHearts = n;
     this.hearts.forEach((h, i) => {
       const full = i < n;
       h.setTint(full ? 0xffffff : 0x3a3450).setAlpha(full ? 1 : 0.6);
@@ -472,6 +497,37 @@ export class HudScene extends Phaser.Scene {
     this.hearts.forEach((h) => h.setScale(base));
     if (n === 1) {
       this.lowPulse = this.tweens.add({ targets: this.hearts[0], scale: base * 1.25, duration: 350, yoyo: true, repeat: -1 });
+    }
+    // v94 PRUEBA: reactive portrait — damage / 1-heart fear / full-heal joy.
+    // Hooks the existing hearts registry event only; no new damage logic.
+    if (n < prev) {
+      if (n === 1) this.setPortrait("scared");
+      else this.setPortrait("hurt", true);
+    } else if (n > prev) {
+      if (n === MAX_HEARTS) this.setPortrait("happy", true);
+      else this.setPortrait("neutral");
+    } else if (n === 1) {
+      this.setPortrait("scared");
+    }
+  }
+
+  /** v94 PRUEBA: swap the HUD portrait. `brief` states (hurt/happy) return
+   *  to neutral on a timer — unless hearts are still at 1, where scared
+   *  stays. The hurt jolt shakes the image inside its fixed circular mask. */
+  private setPortrait(state: "neutral" | "hurt" | "scared" | "happy", brief = false) {
+    if (!this.portraitImg) return;
+    this.portraitTimer?.remove(false);
+    this.portraitTimer = undefined;
+    this.portraitImg.setX(40).setTexture(`hud_portrait_${state}`);
+    if (state === "hurt") {
+      this.tweens.killTweensOf(this.portraitImg);
+      this.tweens.add({ targets: this.portraitImg, x: "+=5", duration: 70, yoyo: true, repeat: 1 });
+    }
+    if (brief) {
+      this.portraitTimer = this.time.delayedCall(state === "hurt" ? 900 : 1400, () => {
+        if (this.lastHearts === 1) this.setPortrait("scared");
+        else this.setPortrait("neutral");
+      });
     }
   }
 
