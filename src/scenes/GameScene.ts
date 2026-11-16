@@ -542,13 +542,14 @@ export class GameScene extends Phaser.Scene {
 
   private buildGround() {
     const c = this.chapter.id;
-    // PRUEBA ch11: no ground_11 texture exists — use ch10's (Angelo delivers art).
-    const art = c === 11 ? 10 : c;
+    // v95 ch11: ground_11 exists now (grass strip from the clean Graveyard
+    // photo) — stop falling back to ch10's grey blocks for ch11.
+    const art = c;
     const key = `ground_${art}`;
     const meta = PROPS[key as keyof typeof PROPS];
     const fill = ({
       1: 0x3b2414, 2: 0x2a2d3c, 3: 0x1d1418, 4: 0x2c3a52, 5: 0x1c1230, 6: 0xd8dcef, 7: 0x1d4a5a,
-      8: 0x3a2a14, 9: 0x6a1878, 10: 0x0d0724, 11: 0x1a1438, 12: 0x1d1418, 13: 0x0d3048,
+      8: 0x3a2a14, 9: 0x6a1878, 10: 0x0d0724, 11: 0x110e3b, 12: 0x1d1418, 13: 0x0d3048,
     } as Record<number, number>)[c] ?? 0x1b0f2e;
     const ground = this.level.ground;
     for (const seg of ground) {
@@ -573,6 +574,22 @@ export class GameScene extends Phaser.Scene {
           .setTint(0x6f87b0);
         face.tileScaleX = meta.width / 1280;
         face.tileScaleY = meta.height / 120;
+      }
+      // v95 ch11: the underground "ceiling void" was a flat dark fill mass.
+      // Tile the dirt/stone face below the grass strip (depth 9, behind the
+      // strip's depth 10) so the cave roof reads as stone, same pattern as
+      // the ch4 terrace face above. Starts at the same `top` as the strip;
+      // the top 219 px hide behind the strip, the rest textures the fill.
+      if (c === 11) {
+        const faceMeta = PROPS["ground_11_face" as keyof typeof PROPS];
+        const faceSrc = this.textures.get("ground_11_face").getSourceImage() as HTMLImageElement | null;
+        const faceH = faceSrc?.height ?? faceMeta.height;
+        const face = this.add
+          .tileSprite(seg.x0 + len / 2, top, len - 6, GAME_H + 200, "ground_11_face")
+          .setOrigin(0.5, 0)
+          .setDepth(9);
+        face.tileScaleX = faceMeta.width / 1280;
+        face.tileScaleY = faceMeta.height / faceH;
       }
       // v64 (Angelo, 2026-11-06 playtest): the 4-2 blurry block. The old
       // strip squeezed ONE full 1280px texture into every segment -- a
@@ -646,7 +663,12 @@ export class GameScene extends Phaser.Scene {
     for (const s of L.spikes) {
       const w = spikes.width * 0.8;
       const h = spikes.height * 0.8;
-      this.add.image(s.x, s.y + 4, spikesKey).setOrigin(0.5, 1).setDisplaySize(w, h).setDepth(14);
+      // v95 ch11: spikes_10's visible art ends at source row 299/406, so at
+      // 0.8 scale the visible base floated ~3 px above the ground. Lower the
+      // image 7 px (ch11 only — other chapters keep their own tuning) so the
+      // visible base tucks ~4 px into the grass. Hazard zone unchanged.
+      const imgY = this.chapter.id === 11 ? s.y + 11 : s.y + 4;
+      this.add.image(s.x, imgY, spikesKey).setOrigin(0.5, 1).setDisplaySize(w, h).setDepth(14);
       const zone = this.add.rectangle(s.x, s.y - Math.min(h, 50) / 2, w * 0.75, Math.min(h, 50)).setVisible(false);
       this.hazards.add(zone);
     }
@@ -700,19 +722,31 @@ export class GameScene extends Phaser.Scene {
     ensureCoinTexture(this);
     this.chestGroup = this.physics.add.staticGroup();
     for (const c of this.level.chests) {
-      const body = this.add.rectangle(c.x, c.y - 38, 72, 76).setVisible(false);
+      // v95: chest_11.png's visible art ends at source row 104/120, so at
+      // 78x60 display the visible base sat 16 px ABOVE seg.y (measured
+      // from the texture alpha + confirmed 17 px in the 2026-11-15 audit
+      // screenshot). Lower image + body 20 px so the visible base tucks
+      // 4 px into the grass band (base at seg.y + 4). The body is also
+      // shortened to the VISIBLE chest (72x42, top at seg.y - 39): the old
+      // 76-tall body stuck 17 px above the visible lid, so Angely floated
+      // above the chest when standing on it. Sides still fully blocked.
+      const body = this.add.rectangle(c.x, c.y - 18, 72, 42).setVisible(false);
       this.chestGroup.add(body);
-      const img = this.add.image(c.x, c.y - 38, "chest").setDisplaySize(78, 60).setDepth(14);
+      const img = this.add.image(c.x, c.y - 18, "chest").setDisplaySize(78, 60).setDepth(14);
       this.chests.push({ x: c.x, y: c.y, img, body, broken: false });
     }
     this.chestGroup.refresh();
   }
 
   /** PRUEBA ch11: decorative tombstones (ch10 block texture, grey tint).
-   *  No physics — they never block Angely or the enemies. */
+   *  No physics — they never block Angely or the enemies.
+   *  v95: block_10's visible art ends at source row 279/375, so at 64x76
+   *  display the visible base floated ~15 px above the ground. Lower 19 px
+   *  so the visible base tucks ~4 px into the grass band (base at seg.y+4).
+   *  Still a dark cube — a real tombstone shape needs new art (flagged). */
   private buildGraves() {
     for (const gr of this.level.graves) {
-      this.add.image(gr.x, gr.y - 34, "block_10").setDisplaySize(64, 76).setDepth(11).setTint(0x9aa0b8);
+      this.add.image(gr.x, gr.y - 15, "block_10").setDisplaySize(64, 76).setDepth(11).setTint(0x9aa0b8);
     }
   }
 

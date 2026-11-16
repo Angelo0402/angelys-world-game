@@ -4121,6 +4121,28 @@ export const PROPS = {
     "height": 92.7,
     "surface": 0.0267
   },
+  // v95 ch11 grass ground (HAND-ADDED 2026-11-16 — the sprite generator
+  // only knows atlas props; ground_11/ground_11_face are standalone PNGs
+  // sliced from the clean Graveyard photo). width 1280 makes the existing
+  // buildGround tileScaleX formula (meta.width/1280) come out 1:1, so one
+  // texture repeat = 3692 world px. surface 0.0: the strip's top row IS
+  // the walkable grass edge, so top = seg.y exactly.
+  "ground_11": {
+    "file": "assets/runtime/props/ground_11.png",
+    "width": 1280,
+    "height": 219,
+    "surface": 0.0
+  },
+  // v95 ch11 underground ceiling face (dirt/stone, 1846x100, tiles
+  // vertically below the ground strip at depth 9 — same pattern as the
+  // ch4 terrace face). Not perfectly seamless vertically (wrap diff ~33),
+  // dark stone under dim light reads as rock variation.
+  "ground_11_face": {
+    "file": "assets/runtime/props/ground_11_face.png",
+    "width": 1846,
+    "height": 100,
+    "surface": 0.0
+  },
   "plat_l_10": {
     "file": "assets/runtime/props/plat_l_10.webp",
     "width": 210,

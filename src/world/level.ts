@@ -383,6 +383,12 @@ function buildGraveyard(info: LevelInfo, _r: () => number): LevelDef {
     // the top catches Angely, then a short hop right onto surface B.
     L.ladders.push({ x: 14200, yTop: GY_SURF, yBottom: GY_UNDER });
     L.platforms.push({ x: 14200, y: GY_SURF, prop: "plat_float" });
+    // v95 (audit cause 4): the ladder-top platform ended 148 px short of
+    // surface B, so the hop read as a floating gap. A second plat_float
+    // 144 px right puts the two one-way bodies exactly adjacent
+    // (14272–14416) with only a 4 px step onto surface B at 14420 — a
+    // flat walk at ground height, same y, no jump needed.
+    L.platforms.push({ x: 14344, y: GY_SURF, prop: "plat_float" });
     // Surface B: 2-3 enemies, last gem, portal on top.
     g(14420, 17500, GY_SURF);
     L.portal = { x: 17000, y: GY_SURF };
@@ -418,10 +424,15 @@ function buildGraveyard(info: LevelInfo, _r: () => number): LevelDef {
     g(4000, 9000, GY_UNDER); // S2 low
     L.ladders.push({ x: 8800, yTop: GY_SURF, yBottom: GY_UNDER });
     L.platforms.push({ x: 8800, y: GY_SURF, prop: "plat_float" });
+    // v95 (audit cause 4): bridge the 148 px gap to S3 the same way as 11-1
+    // (second platform 144 px right; bodies adjacent, 4 px step onto S3).
+    L.platforms.push({ x: 8944, y: GY_SURF, prop: "plat_float" });
     g(9020, 13500, GY_SURF); // S3 high
     g(13500, 17500, GY_UNDER); // S4 low
     L.ladders.push({ x: 17300, yTop: GY_SURF, yBottom: GY_UNDER });
     L.platforms.push({ x: 17300, y: GY_SURF, prop: "plat_float" });
+    // v95 (audit cause 4): bridge the gap to S5 the same way.
+    L.platforms.push({ x: 17444, y: GY_SURF, prop: "plat_float" });
     g(17520, 19500, GY_SURF); // S5 high, portal here
     L.portal = { x: 19000, y: GY_SURF };
     L.width = 19700;

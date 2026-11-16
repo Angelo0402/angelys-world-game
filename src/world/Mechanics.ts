@@ -164,13 +164,15 @@ export class Mechanics {
     const parts: Phaser.GameObjects.GameObject[] = [];
     const dressing: Phaser.GameObjects.Graphics[] = [];
     const glint = def.breakable ? this.scene.add.graphics().setDepth(13.6).setAlpha(0.15) : undefined;
+    // v95 ch11: uniform-column flag (see the v79 block below).
+    const ch11 = this.chapter.id === 11;
     for (let i = 0; i < def.blocks; i++) {
       const y = def.y + dir * BLOCK_H * (i + 0.5);
       // Breakable walls use the approved stage sprites (baked cracks); all
       // other walls keep their chapter block texture.
       const tex = def.breakable ? WALLBLOCK_STAGE[0] : this.prop("block");
       const img = this.scene.add.image(def.x, y, tex).setDisplaySize(BLOCK_W + 6, BLOCK_H + 8).setDepth(13 + i * 0.01);
-      if (i % 2) img.setFlipX(true);
+      if (i % 2 && !ch11) img.setFlipX(true);
       // v63: ch4 has NO snow-designed wallblock set — WALLBLOCK_STAGE is one
       // shared texture for all chapters — so breakable walls get the same
       // cool ice-blue tint as ch4 crumbles (0xdfe9ff) to read as ice with
@@ -181,6 +183,22 @@ export class Mechanics {
       // and a code-drawn crack — seeded from the wall position + block
       // index so the look is stable across restarts. VISUAL ONLY: the
       // physics body is the same BLOCK_W x BLOCK_H stack.
+      // v95 ch11: that per-block variation is exactly what made the 2-block
+      // Graveyard columns read as two separate floating cubes (different
+      // tint + size + x-offset per block, audit cause 3). For ch11 the
+      // stack shares ONE tint, ONE size and NO x-offset, so the column
+      // reads as a single stone column with a mortar line. Crack colour
+      // goes purple-grey for ch11.
+      // v95 ch11 (geometry): block_10's visible art is only the middle
+      // 60% of its frame (alpha rows 54-279 of 375, cols 49-276 of 340),
+      // so the stock 86x78 render left a ~25 px sky gap between the two
+      // visible blocks AND floated the visible base ~18 px above the
+      // ground (the audit's "embedded 4 px" was the invisible image
+      // bottom, not the visible base). Scale ~1.5x (120x123) and shift
+      // (+3 x, +9 y) so the VISIBLE art exactly fills the 80x70
+      // collision cell: visible top = body top, visible base = seg.y + 4,
+      // 4 px overlap between blocks. A true one-piece wall_11 sprite
+      // still needs new art (flagged) — this only joins the existing art.
       if (!def.breakable) {
         const seed = def.x * 31 + i * 17;
         const rnd = (n: number) => {
@@ -189,26 +207,30 @@ export class Mechanics {
         };
         const tints = [0xe8f2ff, 0xcfe4ff, 0xf4fbff, 0xd6e9ff];
         // Consecutive palette entries per block: every block in a stack
-        // gets a DIFFERENT tint (no two share one).
+        // gets a DIFFERENT tint (no two share one) — except ch11, where
+        // the whole stack shares the wall's own tint (see above).
         const tintBase = Math.floor(rnd(1) * tints.length);
-        img.setTint(tints[(tintBase + i) % tints.length]);
-        img.setDisplaySize(BLOCK_W + 6 + (rnd(2) - 0.5) * 8, BLOCK_H + 8 + (rnd(3) - 0.5) * 6);
-        const dx = (rnd(4) - 0.5) * 10;
-        img.setX(def.x + dx);
-        img.setFlipX(rnd(5) < 0.5);
+        img.setTint(ch11 ? tints[Math.abs(def.x) % tints.length] : tints[(tintBase + i) % tints.length]);
+        if (ch11) img.setDisplaySize(120, 123);
+        else img.setDisplaySize(BLOCK_W + 6 + (rnd(2) - 0.5) * 8, BLOCK_H + 8 + (rnd(3) - 0.5) * 6);
+        const dx = ch11 ? 0 : (rnd(4) - 0.5) * 10;
+        img.setX((ch11 ? def.x + 3 : def.x) + dx);
+        if (ch11) img.setY(y + 9);
+        if (!ch11) img.setFlipX(rnd(5) < 0.5);
         const crack = this.scene.add.graphics().setDepth(13.05 + i * 0.01);
-        const cx = def.x + dx;
-        crack.lineStyle(2, 0x9fc4e8, 0.85);
+        const cx = (ch11 ? def.x + 3 : def.x) + dx;
+        const cy = ch11 ? y + 9 : y;
+        crack.lineStyle(2, ch11 ? 0x6a5a98 : 0x9fc4e8, 0.85);
         crack.beginPath();
         const shape = Math.floor(rnd(6) * 3);
-        if (shape === 0) crack.moveTo(cx - 18, y - 22).lineTo(cx - 2, y - 4).lineTo(cx - 14, y + 12).lineTo(cx + 4, y + 24);
-        else if (shape === 1) crack.moveTo(cx + 16, y - 24).lineTo(cx + 2, y - 2).lineTo(cx + 12, y + 10).lineTo(cx - 4, y + 22);
-        else crack.moveTo(cx - 20, y + 2).lineTo(cx - 4, y - 8).lineTo(cx + 8, y + 4).lineTo(cx + 20, y - 6);
+        if (shape === 0) crack.moveTo(cx - 18, cy - 22).lineTo(cx - 2, cy - 4).lineTo(cx - 14, cy + 12).lineTo(cx + 4, cy + 24);
+        else if (shape === 1) crack.moveTo(cx + 16, cy - 24).lineTo(cx + 2, cy - 2).lineTo(cx + 12, cy + 10).lineTo(cx - 4, cy + 22);
+        else crack.moveTo(cx - 20, cy + 2).lineTo(cx - 4, cy - 8).lineTo(cx + 8, cy + 4).lineTo(cx + 20, cy - 6);
         crack.strokePath();
-        crack.lineStyle(2, 0xffffff, 0.5);
+        crack.lineStyle(2, ch11 ? 0xcfc4e8 : 0xffffff, 0.5);
         crack.beginPath();
         const hx = rnd(7) < 0.5 ? cx - 24 : cx + 10;
-        crack.moveTo(hx, y - 18).lineTo(hx + 12, y - 2).strokePath();
+        crack.moveTo(hx, cy - 18).lineTo(hx + 12, cy - 2).strokePath();
         dressing.push(crack);
       }
       parts.push(img);
