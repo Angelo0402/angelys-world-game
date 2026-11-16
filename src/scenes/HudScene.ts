@@ -1198,6 +1198,29 @@ export class HudScene extends Phaser.Scene {
     // interactive object, so no sort can misroute the tap. Fall-through is
     // harmless: Hud.onDown guards on overlay/cinema and Game has no
     // interactive objects or scene input handlers.
+    // CORRECTION (2026-11-16, v98, item 14): that theory was WRONG — the
+    // render list is only used to SORT hits, never to exclude them, and the
+    // art was never the problem. The button is NOT hittable until the next
+    // game step after showVictory(), for TWO reasons (both verified in the
+    // harness + Phaser 4.2.1 source: InputManager.inputCandidate,
+    // InputPlugin queueForInsertion, Alpha setter):
+    //  1) Alpha gate: c.setAlpha(0) clears renderFlags bit 2, so
+    //     willRender(camera) is false for the container, and inputCandidate
+    //     rejects the button because it checks every parentContainer too.
+    //  2) Registration gate: setInteractive() only queues the button in
+    //     InputPlugin._pendingInsertion; it joins the hit-test list _list
+    //     in preUpdate, i.e. on the next game step.
+    // A tap landing in that first-step window (easy on the phone: the finger
+    // is already coming down as THE END appears, and video teardown can
+    // stall the first frames) died silently.
+    // Fix, two parts: (a) start the fade at alpha 0.01, not 0, so the
+    // container renders (and the button is hittable) from creation — the
+    // fade still looks identical; (b) a scene-level pointerdown catch that
+    // activates the button when the tap lands inside its bounds while this
+    // overlay is up — the plugin-level POINTER_DOWN fires even when no
+    // object was hit, so it covers the pre-registration window. The
+    // button's own handler runs first on settled taps; the overlay===c
+    // guard stops a double fire.
     const art = this.add.image(GAME_W/2,0,"the_end_art").setOrigin(0.5,0).setDisplaySize(GAME_W,720);
     c.add(art);
     const levels = new Button(this,GAME_W/2,520,"BACK TO LEVELS",() => this.toChapterSelect(),{
@@ -1205,8 +1228,23 @@ export class HudScene extends Phaser.Scene {
     });
     c.add(levels);
     this.overlay = c;
-    c.setAlpha(0);
+    c.setAlpha(0.01);
     this.tweens.add({targets:c,alpha:1,duration:700});
+    const onVictoryDown = (p: Phaser.Input.Pointer) => {
+      if (this.overlay !== c) return;
+      const q = this.logical(p);
+      // Full button rect from its set size (360x62), NOT getBounds():
+      // getBounds() only returns the label-text rect (~213x36) before the
+      // first render, so edge taps on the visual button would still miss.
+      const hw = levels.width / 2;
+      const hh = levels.height / 2;
+      if (q.x >= levels.x - hw && q.x <= levels.x + hw && q.y >= levels.y - hh && q.y <= levels.y + hh) {
+        this.input.off("pointerdown", onVictoryDown);
+        levels.activate();
+      }
+    };
+    this.input.on("pointerdown", onVictoryDown);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN,() => this.input.off("pointerdown", onVictoryDown));
     this.menu = new PadMenu(this,[levels],{back:() => levels.activate(),menuIsBack:true});
     const born = this.time.now;
     const onKey = (e: KeyboardEvent) => {
