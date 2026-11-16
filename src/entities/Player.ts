@@ -125,6 +125,18 @@ export class Player {
   private climbLadder?: LadderDef;
   /** PRUEBA ch11: hold the climb-top crouch pose until this time. */
   private climbCrouchUntil = 0;
+  /** PRUEBA ch11 fix (2026-11-16, v96, phone bug: ladder-top crouch froze
+   * while UP was held): after a ladder exit, the same ladder cannot be
+   * re-grabbed in the exit direction until this time. Without this, a
+   * re-grab on a frame right after the exit fires the top exit again and
+   * resets climbCrouchUntil, so the 1200ms crouch never ends. The window
+   * (1500ms) outlasts the crouch (1200ms) on purpose, so the crouch is
+   * guaranteed to end. Scoped to the exited ladder and direction — the
+   * opposite direction (e.g. climb back down right after reaching the
+   * top) still works immediately. */
+  private climbNoGrabUntil = 0;
+  private climbNoGrabLadder?: LadderDef;
+  private climbNoGrabUp = true;
   private lastStroke = 0;
   private nextBreath = 0;
   private nextTrail = 0;
@@ -390,6 +402,11 @@ export class Player {
           body.y = lad.yTop - body.height;
           body.setVelocity(0, 0);
           this.exitClimb();
+          // v96: no re-grab of this ladder upward for 1500ms — holding UP
+          // must not re-fire the top exit and reset the crouch timer.
+          this.climbNoGrabLadder = lad;
+          this.climbNoGrabUp = true;
+          this.climbNoGrabUntil = time + 1500;
           this.setAnim("angely_climb", "crouch");
           this.climbCrouchUntil = time + 1200;
           this.sync(time);
@@ -399,6 +416,11 @@ export class Player {
           body.y = lad.yBottom - body.height;
           body.setVelocity(0, 0);
           this.exitClimb();
+          // v96: same grace downward, so holding DOWN cannot re-fire the
+          // bottom exit in a loop either.
+          this.climbNoGrabLadder = lad;
+          this.climbNoGrabUp = false;
+          this.climbNoGrabUntil = time + 1500;
           this.setAnim("angely", "idle");
           this.sync(time);
           return;
@@ -413,7 +435,16 @@ export class Player {
       }
     } else if (this.state === "normal" && !this.swim) {
       const lad = this.ladderAt();
-      if (lad && (input.upHeld || input.downHeld) && body.velocity.y > -100) {
+      // v96: no-re-grab grace after an exit (see field comment). While the
+      // window is open and the held direction matches the exit direction,
+      // the exited ladder cannot be grabbed again — so a top exit's
+      // 1200ms crouch can never be reset by an immediate re-grab.
+      const noGrab =
+        !!lad &&
+        lad === this.climbNoGrabLadder &&
+        time < this.climbNoGrabUntil &&
+        (this.climbNoGrabUp ? input.upHeld : input.downHeld);
+      if (lad && !noGrab && (input.upHeld || input.downHeld) && body.velocity.y > -100) {
         const atTop = this.grounded && body.bottom <= lad.yTop + 8;
         const atBottom = this.grounded && body.bottom >= lad.yBottom - 8;
         const blocked = (atTop && input.upHeld && !input.downHeld) || (atBottom && input.downHeld && !input.upHeld);
