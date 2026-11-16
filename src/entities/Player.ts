@@ -97,10 +97,14 @@ export class Player {
   /** Star Shield aura v9 (Angelo 2026-11-14): 6 small gold stars orbit
    *  Angely in two rings (horizontal + vertical), passing in front of
    *  and behind her, while a real Phaser postFX glow cycles rainbow
-   *  colors around her body. Created once, shown/hidden with the shield.
-   *  NO sprite copy of her body (v8's halo read as a double on phone). */
+   *  colors around her body. Created lazily on the first star pickup and
+   *  REMOVED when the shield ends — never in the constructor: Phaser
+   *  PostFX ignores `active=false` ("Post FX are always active",
+   *  fx/Controller.js), so a glow created at spawn rendered white from
+   *  frame one. NO sprite copy of her body (v8's halo read as a double
+   *  on phone). */
   private shieldStars: Phaser.GameObjects.Sprite[] = [];
-  private shieldGlow: Phaser.FX.Glow;
+  private shieldGlow: Phaser.FX.Glow | null = null;
   private scene: GameScene;
   private sheet?: SpriteKey;
   private scales: Record<string, number>;
@@ -215,10 +219,9 @@ export class Player {
       this.shieldStars.push(star);
     }
     this.sprite = scene.add.sprite(x, y, "angely").setDepth(60);
-    // Real Phaser glow on her own sprite (no body copy — v8's halo sprite
-    // read as a doubled body on the phone). Color cycles per frame in sync().
-    this.shieldGlow = this.sprite.postFX.addGlow(0xffffff, SHIELD_GLOW_OUTER, SHIELD_GLOW_INNER);
-    this.shieldGlow.active = false;
+    // No shield glow here: it is created lazily in grantShield() (see the
+    // field comment — PostFX `active=false` cannot hide it, so creating
+    // it at spawn showed a white halo from frame one).
     this.setAnim("angely", "idle");
   }
 
@@ -239,6 +242,12 @@ export class Player {
   }
   /** Star Shield: nothing can take a heart for 15 seconds. Picking another one refreshes it. */
   grantShield() {
+    // Lazy glow: creating it here — and removing it when the shield ends
+    // — is the only way to keep it off before the first star pickup
+    // (PostFX `active=false` is a no-op; see the field comment).
+    if (!this.shieldGlow) {
+      this.shieldGlow = this.sprite.postFX.addGlow(0xffffff, SHIELD_GLOW_OUTER, SHIELD_GLOW_INNER);
+    }
     this.shieldUntil = this.scene.time.now + SHIELD_MS;
     return SHIELD_MS;
   }
@@ -863,8 +872,9 @@ export class Player {
       // Glow color IS settable per frame (Phaser.FX.Glow.color setter
       // writes glcolor — verified in node_modules/phaser/src/fx/Glow.js).
       const hue = (time / 1000) % 1;
-      this.shieldGlow.color = Phaser.Display.Color.HSVToRGB(hue, 0.9, 1).color;
-      this.shieldGlow.active = true;
+      if (this.shieldGlow) {
+        this.shieldGlow.color = Phaser.Display.Color.HSVToRGB(hue, 0.9, 1).color;
+      }
       const cx = this.x;
       const cy = this.body.bottom - HEIGHT / 2;
       // 3 stars on the horizontal ring (rx 58, ry 15) + 3 on the vertical
@@ -892,9 +902,13 @@ export class Player {
       if (this.shieldWas) {
         this.shieldWas = false;
         s.clearTint();
-        // Shield ended: hide the aura.
+        // Shield ended: hide the aura. PostFX `active=false` cannot hide
+        // the glow, so remove it outright (recreated on the next pickup).
         for (const star of this.shieldStars) star.setVisible(false);
-        this.shieldGlow.active = false;
+        if (this.shieldGlow) {
+          s.postFX.remove(this.shieldGlow);
+          this.shieldGlow = null;
+        }
       }
       s.setAlpha(this.invulnerable && this.alive && Math.floor(time / 70) % 2 ? 0.35 : 1);
     }
