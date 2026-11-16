@@ -749,6 +749,12 @@ export class HudScene extends Phaser.Scene {
     const ay = Phaser.Math.Clamp(dy / JOY_R, -1, 1);
     const magY = Math.abs(ay) < DEAD_ZONE ? 0 : Math.min(1, (Math.abs(ay) - DEAD_ZONE) / 0.5);
     touchState.axisY = Math.sign(ay) * (magY === 0 ? 0 : 0.45 + 0.55 * magY);
+    // v97 ladder-top drift fix: dominant-axis snapping. The game has no
+    // diagonal movement (walk left/right OR climb up/down; JUMP is a
+    // separate button), so the winning axis kills the losing one. Holding
+    // UP can no longer bleed sideways into a walk off the ladder-top ledge.
+    if (Math.abs(ay) > Math.abs(ax)) touchState.axis = 0;
+    else if (Math.abs(ax) > Math.abs(ay)) touchState.axisY = 0;
   }
 
   private onUp(p: Phaser.Input.Pointer) {

@@ -475,7 +475,12 @@ export class Player {
       let speed = this.swim ? SWIM_SPEED : SPEED;
       if (this.state === "attack" && !this.airAttack) speed *= this.attackWeapon === "hammer" ? 0.1 : 0.25;
       if (this.pushing) speed = PUSH_SPEED;
-      const target = input.axis * speed + (time < this.recoilUntil ? this.recoilVx : 0);
+      // v97 ladder-top drift fix: freeze horizontal input while standing up
+      // from the ladder-top crouch — the crouch only holds the pose,
+      // physics keeps running, so a held UP with a sideways thumb tilt
+      // used to walk her off the ledge mid-crouch.
+      const axis = time < this.climbCrouchUntil ? 0 : input.axis;
+      const target = axis * speed + (time < this.recoilUntil ? this.recoilVx : 0);
       const vx = body.velocity.x;
       const braking = target === 0 || Math.sign(target) !== Math.sign(vx);
       const accel = !grounded ? AIR_ACCEL : braking ? GROUND_DECEL * this.grip : GROUND_ACCEL * Math.max(0.45, this.grip);
@@ -488,7 +493,7 @@ export class Player {
         this.motion.stop(time);
         this.stopArmed = false;
       }
-      if (input.axis !== 0 && this.state !== "attack") this.facing = input.axis > 0 ? 1 : -1;
+      if (axis !== 0 && this.state !== "attack") this.facing = axis > 0 ? 1 : -1;
 
       if (this.swim) {
         this.swimUpdate(time, input.jumpHeld);
