@@ -221,13 +221,17 @@ export class HudScene extends Phaser.Scene {
       // Phaser 4 (Beam): GeometryMask is Canvas-only and no-ops under
       // WebGL — same as the Portal fix: Mask filter instead. The shape
       // is NOT added to the display list; the filter captures it directly.
-      // v95 fix: the mask GameObject is captured into a texture sized to
-      // the filtered object (64x64 here) and sampled 1:1 in the object's
-      // own frame — so the circle must be drawn at the object's LOCAL
-      // centre (pr, pr), NOT at world coords (px, py). World coords land
-      // outside the 64x64 mask texture and mask the whole image out
-      // (v95 blocker: face invisible, only the dark backing showed).
-      const maskShape = this.make.graphics().fillStyle(0xffffff, 1).fillCircle(pr, pr, pr);
+      // v95 fix: the Mask filter captures the shape into a DynamicTexture
+      // sized to the object's FRAME (256x256 here, NOT the 64x64 display
+      // size — verified live: dynTex 256x256) and samples it in the
+      // object's UV space. The circle must therefore be centred on the
+      // FRAME (128,128) r128. World coords (40,100) land as a small
+      // off-centre patch (sweep: std 15.7, face still invisible); display
+      // coords (32,32) land in the corner and mask everything out
+      // (std 0.0). Frame-centred is the correct mapping.
+      const fw = this.portraitImg.frame.width;
+      const fh = this.portraitImg.frame.height;
+      const maskShape = this.make.graphics().fillStyle(0xffffff, 1).fillCircle(fw / 2, fh / 2, Math.min(fw, fh) / 2);
       this.portraitImg.enableFilters();
       this.portraitImg.filters!.internal.addMask(maskShape);
     }
