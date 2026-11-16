@@ -790,7 +790,10 @@ export class HudScene extends Phaser.Scene {
   private toast(text: string) {
     if (this.cinema) return;
     this.tweens.killTweensOf(this.toastText);
-    const y = this.bossPanel.visible ? 128 : 124;
+    // v95: the toast sat at y 124, crossing the SPECIAL bar (y 90–110 +
+    // stars) — the 2026-11-15 audit's "tip overlaps the LEVEL banner".
+    // Moved 24 px down so the 24 px text clears the bar.
+    const y = this.bossPanel.visible ? 152 : 148;
     this.toastText.setText(text).setAlpha(0).setY(y + 12);
     this.tweens.add({ targets: this.toastText, alpha: 1, y, duration: 220 });
     this.tweens.add({ targets: this.toastText, alpha: 0, delay: 2600, duration: 400 });
