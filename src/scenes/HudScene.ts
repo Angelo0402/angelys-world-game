@@ -221,7 +221,13 @@ export class HudScene extends Phaser.Scene {
       // Phaser 4 (Beam): GeometryMask is Canvas-only and no-ops under
       // WebGL — same as the Portal fix: Mask filter instead. The shape
       // is NOT added to the display list; the filter captures it directly.
-      const maskShape = this.make.graphics().fillStyle(0xffffff, 1).fillCircle(px, py, pr);
+      // v95 fix: the mask GameObject is captured into a texture sized to
+      // the filtered object (64x64 here) and sampled 1:1 in the object's
+      // own frame — so the circle must be drawn at the object's LOCAL
+      // centre (pr, pr), NOT at world coords (px, py). World coords land
+      // outside the 64x64 mask texture and mask the whole image out
+      // (v95 blocker: face invisible, only the dark backing showed).
+      const maskShape = this.make.graphics().fillStyle(0xffffff, 1).fillCircle(pr, pr, pr);
       this.portraitImg.enableFilters();
       this.portraitImg.filters!.internal.addMask(maskShape);
     }
@@ -1166,7 +1172,20 @@ export class HudScene extends Phaser.Scene {
     // logo and Angely stay in frame and the art's own button stays off-screen
     // (the game's real button below handles the tap). Replaces the dark
     // "ANGELO & ANGELY" text screen.
-    const art = this.add.image(GAME_W/2,0,"the_end_art").setOrigin(0.5,0).setDisplaySize(GAME_W,720).setInteractive();
+    // THE END fix (2026-11-15, v95): the art must NOT be interactive. It has
+    // no input handler, so its only effect was to join hit-testing — and in
+    // Phaser 4 the hit-test sort orders by camera.renderList, which does not
+    // contain the overlay until the first render AFTER it is created. A tap
+    // in that first frame (easy on the phone: the finger is already coming
+    // down as THE END appears, and video teardown can stall the first
+    // render) sorts art-before-button (registration order), topOnly keeps
+    // only the art, and the tap dies silently with no feedback — the exact
+    // phone report (BACK TO LEVELS does nothing, game stuck on THE END).
+    // With the art non-interactive the button is the overlay's ONLY
+    // interactive object, so no sort can misroute the tap. Fall-through is
+    // harmless: Hud.onDown guards on overlay/cinema and Game has no
+    // interactive objects or scene input handlers.
+    const art = this.add.image(GAME_W/2,0,"the_end_art").setOrigin(0.5,0).setDisplaySize(GAME_W,720);
     c.add(art);
     const levels = new Button(this,GAME_W/2,520,"BACK TO LEVELS",() => this.toChapterSelect(),{
       width:360,height:62,fontSize:26,color:0x426eaa,fireOnDown:true
