@@ -256,7 +256,12 @@ function buildSide(info: LevelInfo, r: () => number): LevelDef {
       L.walls.push({ x: wx, y: Y + dy, blocks });
       const lx = wx - BLOCK_W / 2 - 74;
       L.movers.push({ x0: lx, y0: Y - 24, x1: lx, y1: Y - blocks * BLOCK_H - 4, period: 4.6 });
-      L.hearts.push({ x: wx, y: Y + dy - blocks * BLOCK_H - 50 });
+      // Angelo (2026-11-17): the heart floats 50 above the lift wall top —
+      // but on high ground (10-1: wall top y=10) that put it at y=-40,
+      // off-screen and uncollectible. Clamp to y=26: the 34px heart bobs
+      // ±8, so 26 keeps its top on-screen, and it still overlaps Angely
+      // standing on the wall top (needs y < wallTop + 18; wallTop >= 10).
+      L.hearts.push({ x: wx, y: Math.max(Y + dy - blocks * BLOCK_H - 50, 26) });
       // Normally the gem rewards the lift ride at the mover's x. For the
       // dropped 3-2 stack (dy > 0) it sits over the stack top instead: at
       // the mover it floated at y = -80 — off-screen and unreachable, and
@@ -288,7 +293,15 @@ function buildSide(info: LevelInfo, r: () => number): LevelDef {
     mines: (x) => {
       const len = 1100;
       for (let i = 0; i < 4; i++) {
-        L.mines.push({ x: x + 220 + i * 220, y: Y - 150 - (i % 2) * 70, dx: 0, dy: swim ? 150 : 90, period: 2.4 + i * 0.3, phase: i * 0.25 });
+        // Angelo (2026-11-17): a mine whose sweep tops above the screen is
+        // invisible and unfair — the run/swim camera clamps scrollY at 0.
+        // Clamp the bob amplitude so the sweep top stays on-screen (the
+        // urchin is 64px tall, so its centre must stay >= 35). Same x,
+        // same centre, same period/phase — only the invisible part of the
+        // travel is trimmed.
+        const my = Y - 150 - (i % 2) * 70;
+        const mdy = Math.min(swim ? 150 : 90, my - 35);
+        L.mines.push({ x: x + 220 + i * 220, y: my, dx: 0, dy: mdy, period: 2.4 + i * 0.3, phase: i * 0.25 });
       }
       L.platforms.push({ x: x + 550, y: Y - 260, prop: "plat_float" });
       gemSpots.push({ x: x + 550, y: Y - 320 });
@@ -304,7 +317,11 @@ function buildSide(info: LevelInfo, r: () => number): LevelDef {
       const hang = Math.floor((gapTop + 20) / BLOCK_H);
       if (hang > 0) L.walls.push({ x: gx, y: -20, blocks: hang, hang: true });
       const top = hang > 0 ? -20 + hang * BLOCK_H : gapTop;
-      L.mines.push({ x: gx, y: (top + gapBottom) / 2, dx: 0, dy: (gapBottom - top) / 2 - 40, period: 3, phase: 0 });
+      const gy = (top + gapBottom) / 2;
+      // Angelo (2026-11-17): clamp the sweep like the mines piece — the
+      // urchin must never top above the screen (7-1 swept to y=-20).
+      const gdy = Math.min((gapBottom - top) / 2 - 40, gy - 35);
+      L.mines.push({ x: gx, y: gy, dx: 0, dy: gdy, period: 3, phase: 0 });
       gemSpots.push({ x: gx + 200, y: Y - 260 });
       return run(x, 950);
     },
