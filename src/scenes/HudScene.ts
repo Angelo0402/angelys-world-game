@@ -869,10 +869,21 @@ export class HudScene extends Phaser.Scene {
    * overlay clear the overlay===c guard, and controls that don't
    * (pause MUSIC/SFX toggles) mark the pointer handled for THIS down
    * event (scoped to p.downTime, so a stale mark from an earlier tap
-   * can't leak) and the catch skips those. The catch removes itself on
-   * fire, when its overlay is replaced/closed, and on SHUTDOWN — never
-   * double-fire. Rects come from the controls' full width/height, NOT
-   * getBounds() (label-text rect before first render — same trap as v98).
+   * can't leak) and the catch skips those.
+   * v100, item 16: the catch does NOT remove itself on fire anymore.
+   * v99's single-use design was the bug: under a starved scene (~1 FPS
+   * harness, or a frame hitch on the phone) the zones can sit in
+   * _pendingInsertion indefinitely, so ONLY the catch can act — and it
+   * covered exactly ONE tap; tap 3 and RESUME after it died silently.
+   * The catch now stays armed while its overlay is up and re-arms for
+   * every tap; double-fire is still prevented by the __overlayHandledAt
+   * / downTime mark, which the catch itself also sets when it
+   * activates a control (so a zone pointerup for the same press can't
+   * fire the control a second time — the zone's pointerup handler
+   * checks the mark too). The catch still removes itself when its
+   * overlay is replaced/closed, and on SHUTDOWN. Rects come from the
+   * controls' full width/height, NOT getBounds() (label-text rect
+   * before first render — same trap as v98).
    */
   private addOverlayTapCatch(
     c: Phaser.GameObjects.Container,
@@ -887,7 +898,10 @@ export class HudScene extends Phaser.Scene {
       const q = this.logical(p);
       for (const ctl of controls) {
         if (q.x >= ctl.x - ctl.w / 2 && q.x <= ctl.x + ctl.w / 2 && q.y >= ctl.y - ctl.h / 2 && q.y <= ctl.y + ctl.h / 2) {
-          this.input.off("pointerdown", onDown);
+          // v100, item 16: persistent catch — do NOT off() on fire (see
+          // doc above). Mark the pointer handled for THIS down event, so
+          // the zone's later pointerup can't fire the same control again.
+          (p as unknown as { __overlayHandledAt?: number }).__overlayHandledAt = p.downTime;
           ctl.activate();
           return;
         }
@@ -961,6 +975,11 @@ export class HudScene extends Phaser.Scene {
           fired.delete(p.id);
           return;
         }
+        // v100, item 16: the down for this press was already handled —
+        // by this zone's pointerdown, or by the overlay tap catch while
+        // the zone was still unregistered. Firing again would undo a
+        // toggle (MUSIC/SFX) on the same tap.
+        if ((p as unknown as { __overlayHandledAt?: number }).__overlayHandledAt === p.downTime) return;
         fire();
       });
       r.on("pointerupoutside", (p: Phaser.Input.Pointer) => {
@@ -1140,6 +1159,9 @@ export class HudScene extends Phaser.Scene {
           fired.delete(p.id);
           return;
         }
+        // v100, item 16: same guard as the pause zone — the down for
+        // this press was already handled (zone or overlay tap catch).
+        if ((p as unknown as { __overlayHandledAt?: number }).__overlayHandledAt === p.downTime) return;
         fire();
       });
       r.on("pointerupoutside", (p: Phaser.Input.Pointer) => {
@@ -1305,8 +1327,18 @@ export class HudScene extends Phaser.Scene {
     this.overlay = c;
     c.setAlpha(0.01);
     this.tweens.add({targets:c,alpha:1,duration:700});
+    // v100, item 16: same persistent treatment as addOverlayTapCatch —
+    // the v98 catch removed itself on fire (single-use); under a starved
+    // scene the button can sit unregistered past the first tap. The catch
+    // now stays armed while this overlay is up; the overlay===c guard
+    // (which also removes the listener once navigation closes it) stops
+    // any double fire, and the mark covers the Button pointerup path.
     const onVictoryDown = (p: Phaser.Input.Pointer) => {
-      if (this.overlay !== c) return;
+      if (this.overlay !== c) {
+        this.input.off("pointerdown", onVictoryDown);
+        return;
+      }
+      if ((p as unknown as { __overlayHandledAt?: number }).__overlayHandledAt === p.downTime) return;
       const q = this.logical(p);
       // Full button rect from its set size (360x62), NOT getBounds():
       // getBounds() only returns the label-text rect (~213x36) before the
@@ -1314,7 +1346,7 @@ export class HudScene extends Phaser.Scene {
       const hw = levels.width / 2;
       const hh = levels.height / 2;
       if (q.x >= levels.x - hw && q.x <= levels.x + hw && q.y >= levels.y - hh && q.y <= levels.y + hh) {
-        this.input.off("pointerdown", onVictoryDown);
+        (p as unknown as { __overlayHandledAt?: number }).__overlayHandledAt = p.downTime;
         levels.activate();
       }
     };
