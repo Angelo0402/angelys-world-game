@@ -834,7 +834,10 @@ export class HudScene extends Phaser.Scene {
     panel.fillStyle(0x1b0f2e, 0.94).fillRoundedRect(GAME_W / 2 - 300, GAME_H / 2 - height / 2, 600, height, 28);
     panel.lineStyle(4, 0xffd36b, 1).strokeRoundedRect(GAME_W / 2 - 300, GAME_H / 2 - height / 2, 600, height, 28);
     c.add([dim, panel]);
-    c.setAlpha(0);
+    // v99, item 15: fade from 0.01, not 0 — same alpha gate as THE END
+    // (v98): at alpha 0 the container doesn't render and its buttons
+    // aren't hittable until the next game step.
+    c.setAlpha(0.01);
     this.tweens.add({ targets: c, alpha: 1, duration: 200 });
     this.overlay = c;
     this.syncTouchVisibility();
@@ -847,6 +850,51 @@ export class HudScene extends Phaser.Scene {
     this.overlay?.destroy();
     this.overlay = undefined;
     this.syncTouchVisibility();
+  }
+
+  /**
+   * Immediate-tap catch for overlays (v99, item 15 — the v98
+   * onVictoryDown pattern, generalized to pause + game over). An
+   * overlay's buttons are NOT hittable until the next game step after
+   * creation, for the same two reasons as THE END (alpha gate:
+   * setAlpha(0) clears renderFlags bit 2, so willRender is false;
+   * registration gate: setInteractive only queues in _pendingInsertion
+   * until preUpdate). The fade starts at alpha 0.01 (see call sites),
+   * and this scene-level pointerdown catch activates the control whose
+   * FULL rect contains the tap while this overlay is up — POINTER_DOWN
+   * fires even when no object was hit, so it covers the
+   * pre-registration window. Phaser runs game-object pointerdown
+   * handlers BEFORE the plugin-level POINTER_DOWN, so on a settled tap
+   * the control's own handler fires first: controls that close the
+   * overlay clear the overlay===c guard, and controls that don't
+   * (pause MUSIC/SFX toggles) mark the pointer handled for THIS down
+   * event (scoped to p.downTime, so a stale mark from an earlier tap
+   * can't leak) and the catch skips those. The catch removes itself on
+   * fire, when its overlay is replaced/closed, and on SHUTDOWN — never
+   * double-fire. Rects come from the controls' full width/height, NOT
+   * getBounds() (label-text rect before first render — same trap as v98).
+   */
+  private addOverlayTapCatch(
+    c: Phaser.GameObjects.Container,
+    controls: { x: number; y: number; w: number; h: number; activate: () => void }[],
+  ) {
+    const onDown = (p: Phaser.Input.Pointer) => {
+      if (this.overlay !== c) {
+        this.input.off("pointerdown", onDown);
+        return;
+      }
+      if ((p as unknown as { __overlayHandledAt?: number }).__overlayHandledAt === p.downTime) return;
+      const q = this.logical(p);
+      for (const ctl of controls) {
+        if (q.x >= ctl.x - ctl.w / 2 && q.x <= ctl.x + ctl.w / 2 && q.y >= ctl.y - ctl.h / 2 && q.y <= ctl.y + ctl.h / 2) {
+          this.input.off("pointerdown", onDown);
+          ctl.activate();
+          return;
+        }
+      }
+    };
+    this.input.on("pointerdown", onDown);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.input.off("pointerdown", onDown));
   }
 
   private showPause() {
@@ -882,7 +930,7 @@ export class HudScene extends Phaser.Scene {
     } else {
       c.add(this.add.rectangle(0, 0, GAME_W, GAME_H, 0x0b0716, 0.72).setOrigin(0));
     }
-    type ZoneCtl = { x: number; y: number; focus: (on: boolean) => void; activate: () => void };
+    type ZoneCtl = { x: number; y: number; w: number; h: number; focus: (on: boolean) => void; activate: () => void };
     const zone = (fx0: number, fx1: number, fy0: number, fy1: number, fn: () => void): ZoneCtl => {
       const zx = dispX + ((fx0 + fx1) / 2) * dispW;
       const zy = dispY + ((fy0 + fy1) / 2) * dispH;
@@ -900,6 +948,11 @@ export class HudScene extends Phaser.Scene {
         fn();
       };
       r.on("pointerdown", (p: Phaser.Input.Pointer) => {
+        // v99, item 15: mark this pointerdown as handled BY THIS DOWN
+        // EVENT (scoped to p.downTime, so a stale mark from an earlier
+        // tap can't leak) — the scene-level overlay catch runs after the
+        // object handlers and must not fire the same control again.
+        (p as unknown as { __overlayHandledAt?: number }).__overlayHandledAt = p.downTime;
         fired.add(p.id);
         fire();
       });
@@ -917,6 +970,8 @@ export class HudScene extends Phaser.Scene {
       return {
         x: zx,
         y: zy,
+        w: zw,
+        h: zh,
         focus: (on: boolean) => {
           frame.setAlpha(on ? 1 : 0);
         },
@@ -993,10 +1048,13 @@ export class HudScene extends Phaser.Scene {
       Audio.setSfx(!Audio.sfxOn);
       animateToggle(sfxOff, !Audio.sfxOn);
     });
-    c.setAlpha(0);
+    c.setAlpha(0.01);
     this.tweens.add({ targets: c, alpha: 1, duration: 200 });
     this.overlay = c;
     this.syncTouchVisibility();
+    // v99, item 15: immediate-tap catch (registration gate) — same fix
+    // as THE END in v98. Full zone rects (w/h), not getBounds().
+    this.addOverlayTapCatch(c, [resume, restart, select, music, sfx]);
     this.menu = new PadMenu(this, [resume, restart, select, music, sfx], { back: () => resume.activate(), menuIsBack: true });
   }
   private showGameOver(d: { level: number; goal: GoalState; bossHp?: number; bossMax?: number; bossPhase?: number }) {
@@ -1054,7 +1112,7 @@ export class HudScene extends Phaser.Scene {
       c.add(this.add.rectangle(0, 0, GAME_W, GAME_H, 0x0b0716, 0.72).setOrigin(0).setInteractive());
       c.add(this.add.image(GAME_W / 2, panelH / 2, key).setDisplaySize(dispW, dispH));
     }
-    type ZoneCtl = { x: number; y: number; focus: (on: boolean) => void; activate: () => void };
+    type ZoneCtl = { x: number; y: number; w: number; h: number; focus: (on: boolean) => void; activate: () => void };
     const zone = (fx0: number, fx1: number, fy0: number, fy1: number, fn: () => void): ZoneCtl => {
       const zx = dispX + ((fx0 + fx1) / 2) * dispW;
       const zy = dispY + ((fy0 + fy1) / 2) * dispH;
@@ -1071,6 +1129,9 @@ export class HudScene extends Phaser.Scene {
         fn();
       };
       r.on("pointerdown", (p: Phaser.Input.Pointer) => {
+        // v99, item 15: mark this pointerdown as handled BY THIS DOWN
+        // EVENT (scoped to p.downTime) — see the pause zone above.
+        (p as unknown as { __overlayHandledAt?: number }).__overlayHandledAt = p.downTime;
         fired.add(p.id);
         fire();
       });
@@ -1088,6 +1149,8 @@ export class HudScene extends Phaser.Scene {
       return {
         x: zx,
         y: zy,
+        w: zw,
+        h: zh,
         // Focus ring only ever shows with a connected gamepad (PadMenu
         // calls focus only then); touch/mouse play sees just the art.
         focus: (on: boolean) => {
@@ -1131,10 +1194,13 @@ export class HudScene extends Phaser.Scene {
         );
       }
     }
-    c.setAlpha(0);
+    c.setAlpha(0.01);
     this.tweens.add({ targets: c, alpha: 1, duration: 200 });
     this.overlay = c;
     this.syncTouchVisibility();
+    // v99, item 15: immediate-tap catch (registration gate) — same fix
+    // as THE END in v98. Full zone rects (w/h), not getBounds().
+    this.addOverlayTapCatch(c, [again, select]);
     this.menu = new PadMenu(this, [again, select]);
   }
 
@@ -1170,6 +1236,15 @@ export class HudScene extends Phaser.Scene {
       const again = new Button(this, GAME_W / 2, top + 280, "TRY AGAIN", () => this.restartLevel(), { width: 320, height: 64, fontSize: 30 });
       const select = new Button(this, GAME_W / 2, top + 360, "LEVEL SELECT", () => this.toChapterSelect(), { width: 300, height: 52, fontSize: 22, color: 0x7a5aa8 });
       c.add([again, select]);
+      // v99, item 15: same immediate-tap catch as the art overlays —
+      // openOverlay now fades from 0.01, and this covers the
+      // pre-registration window. Full button rects from the Button
+      // sizes (320x64 / 300x52), NOT getBounds() (label-text rect
+      // before first render — same trap as v98).
+      this.addOverlayTapCatch(c, [
+        { x: again.x, y: again.y, w: 320, h: 64, activate: () => again.activate() },
+        { x: select.x, y: select.y, w: 300, h: 52, activate: () => select.activate() },
+      ]);
       this.menu = new PadMenu(this, [again, select]);
     }
   }
