@@ -28,6 +28,11 @@ const BG11_FILES: Record<string, string> = {
   bg11_sky: "assets/runtime/backdrops/bg11_sky.jpg",
   bg11_mid: "assets/runtime/backdrops/bg11_mid.webp",
   bg11_fg: "assets/runtime/backdrops/bg11_fg.webp",
+  // v102: underworld cave backdrop + transparent foreground rocks (approved
+  // 2026-11-17). PNG: the fg layer needs real alpha; the cave scene is
+  // opaque but stays PNG to avoid a lossy re-encode of approved art.
+  bg11_underworld: "assets/runtime/backdrops/bg11_underworld.png",
+  bg11_underworld_fg: "assets/runtime/backdrops/bg11_underworld_fg.png",
 };
 
 // ch11 chest + coin (v93, approved 2026-11-15): real ChatGPT art, replacing

@@ -23,6 +23,17 @@ export const BG11_SKY = { w: 2754, h: 1550, ty: 0.05 };
 export const BG11_MID = { w: 3490, h: 1964, ty: 0.15 };
 export const BG11_FG = { w: 3840, h: 2161, ty: 0.55 };
 
+/** bg11 UNDERWORLD (v102, approved 2026-11-17): cave backdrop shown below
+ * ground instead of the dimmed surface sky. Same source size as the other
+ * bg11 layers (1672x941), same display-size envelope: the cave scene is the
+ * main underground layer (mid factor 0.12, band ty 0.15 -> stalactites +
+ * crystals), the transparent rocks frame the bottom of the screen (fg
+ * factor 0.14, band ty 0.65 -> rock tops start ~260px down the screen, above
+ * the floor line, sides only — the middle stays open). The cave art is
+ * already dark: NO 0x565678 dimming tint on top of it. */
+export const BG11_UNDER = { w: 3490, h: 1964, ty: 0.15 };
+export const BG11_UNDER_FG = { w: 3840, h: 2161, ty: 0.65 };
+
 export type ChapterId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
 export const LAST_CHAPTER: ChapterId = 10;
 export type MusicTrack =

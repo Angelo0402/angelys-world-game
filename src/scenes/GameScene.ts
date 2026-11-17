@@ -7,7 +7,7 @@ import { GraveyardMusic } from "../audio/GraveyardMusic";
 import { ChapterAmbience } from "../audio/ChapterAmbience";
 import { Barks, ENTRY_BARKS, HURT_BARKS, SIGHT_BARKS, STOMP_BARKS } from "../audio/barks";
 import {
-  BG11_FG, BG11_MID, BG11_SKY, CHAPTERS, FONT, GAME_H, GAME_W, GROUND_Y, LAST_LEVEL, LEVELS, MAX_HEARTS, WEAPON_NAMES, WEAPON_ORDER, levelLabel, weaponsBefore,
+  BG11_FG, BG11_MID, BG11_SKY, BG11_UNDER, BG11_UNDER_FG, CHAPTERS, FONT, GAME_H, GAME_W, GROUND_Y, LAST_LEVEL, LEVELS, MAX_HEARTS, WEAPON_NAMES, WEAPON_ORDER, levelLabel, weaponsBefore,
   type ChapterDef, type LevelInfo, type WeaponId,
 } from "../config";
 import { Boss, BOSS_NAME, HOVER_Y } from "../entities/Boss";
@@ -144,6 +144,11 @@ export class GameScene extends Phaser.Scene {
    *  BEHIND gameplay — Angelo 2026-11-14: at depth 30 the fg layer covered the blocks). */
   private mid!: Phaser.GameObjects.Image;
   private fore!: Phaser.GameObjects.Image;
+  /** bg11 only, v102: underworld cave backdrop (depth -80, same slot as
+   * mid) + transparent foreground rocks (depth -40, same slot as fore).
+   * Shown ONLY while the camera is underground; the surface layers hide. */
+  private under!: Phaser.GameObjects.Image;
+  private underFg!: Phaser.GameObjects.Image;
   private look?: DioramaLook;
   private hearts: Pickup[] = [];
   private seenTypes = new Set<string>();
@@ -490,6 +495,15 @@ export class GameScene extends Phaser.Scene {
       // still show through the empty areas; blocks are always visible.
       this.fore = this.add.image(0, 0, "bg11_fg").setOrigin(0).setDepth(-40);
       this.fore.setDisplaySize(BG11_FG.w, BG11_FG.h);
+      // v102: underworld cave layers — created here, placed + shown only
+      // while underground (see placeScreenLayers). Same depths/slots as
+      // mid (-80) and fore (-40) so the draw order is unchanged.
+      this.under = this.add.image(0, 0, "bg11_underworld").setOrigin(0).setDepth(-80);
+      this.under.setDisplaySize(BG11_UNDER.w, BG11_UNDER.h);
+      this.underFg = this.add.image(0, 0, "bg11_underworld_fg").setOrigin(0).setDepth(-40);
+      this.underFg.setDisplaySize(BG11_UNDER_FG.w, BG11_UNDER_FG.h);
+      this.under.setVisible(false);
+      this.underFg.setVisible(false);
       return;
     }
     this.far = this.add.image(0, 0, key).setOrigin(0).setDepth(-100);
@@ -515,13 +529,24 @@ export class GameScene extends Phaser.Scene {
     const ty = climb ? Phaser.Math.Clamp((view.y - this.level.top) / Math.max(1, GAME_H - this.level.top), 0, 1) : 0.6;
     if (this.chapter.id === 11) {
       // bg11: place all three layers, each with its own vertical band (ty)
-      // and drift (from its displayWidth). Dim ALL THREE together while the
-      // camera is underground, so the lower half reads as a cave.
+      // and drift (from its displayWidth). Underground the surface layers
+      // hide and the cave backdrop shows instead (v102) — the old
+      // 0x565678 dimming tint is GONE: the cave art is already dark and
+      // the tint would crush it to black. Surface is untouched.
       const underground = view.centerY > GROUND_Y + 60;
-      const tint = underground ? 0x565678 : 0xffffff;
-      this.placeBgLayer(this.far, BG11_SKY.ty, t, view, tint);
-      this.placeBgLayer(this.mid, BG11_MID.ty, t, view, tint);
-      this.placeBgLayer(this.fore, BG11_FG.ty, t, view, tint);
+      this.far.setVisible(!underground);
+      this.mid.setVisible(!underground);
+      this.fore.setVisible(!underground);
+      this.under.setVisible(underground);
+      this.underFg.setVisible(underground);
+      if (underground) {
+        this.placeBgLayer(this.under, BG11_UNDER.ty, t, view, 0xffffff);
+        this.placeBgLayer(this.underFg, BG11_UNDER_FG.ty, t, view, 0xffffff);
+      } else {
+        this.placeBgLayer(this.far, BG11_SKY.ty, t, view, 0xffffff);
+        this.placeBgLayer(this.mid, BG11_MID.ty, t, view, 0xffffff);
+        this.placeBgLayer(this.fore, BG11_FG.ty, t, view, 0xffffff);
+      }
     } else {
       this.far.setPosition(view.x - (this.far.displayWidth - GAME_W) * t, view.y - extra * ty);
     }
