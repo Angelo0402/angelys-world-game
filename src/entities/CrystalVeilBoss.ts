@@ -570,12 +570,15 @@ export class CrystalVeilBoss {
     if (phase > this.phase) {
       // Clamp at the threshold: a heavy hit must not shave Phase 2 HP.
       this.hp = this.maxHp * 0.6;
-      this.scene.onBossHp(this.hp,this.maxHp,amount);
       this.clearSpikes();
       this.cancelAction();
       this.sprite.clearTint();
       this.sprite.anims.timeScale = 1;
       this.phase = phase;
+      // Item 19 (2026-11-19, v103): report AFTER assigning this.phase —
+      // onBossHp reads boss.phase, so reporting before the assignment sent
+      // veilPhase 1 and the HUD phase-change juice fired one hit late.
+      this.scene.onBossHp(this.hp,this.maxHp,amount);
       this.attackIndex = 0;
       // Phase 2: the beast stands and shatters into the brute. The form
       // swap stays hidden behind the transformation cutscene (Angelo,
