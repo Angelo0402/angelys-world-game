@@ -25,6 +25,10 @@ export class CrystalVeilBoss {
   readonly sprite: Phaser.GameObjects.Sprite;
   private readonly shadow: Phaser.GameObjects.Image;
   private readonly glow: Phaser.GameObjects.Image;
+  /** Item 20 (2026-11-20, v104): thresholds already dropped — the phase-2
+   *  clamp pushes HP back up to 60, which would re-arm a threshold below 60
+   *  and drop its heart twice. Each threshold fires at most once. */
+  private droppedHeartThresholds = new Set<number>();
   private state: State = "intro";
   private dir: 1 | -1 = -1;
   private until = 0;
@@ -561,8 +565,15 @@ export class CrystalVeilBoss {
     if (amount >= 2 && kind !== "stomp") this.scene.hitStop(60); // heavy hits land with a frozen beat
     // Bounded heart drops: one at each quarter of the fight's health, so a
     // long final fight stays survivable without flooding the arena.
-    for (const threshold of [120, 80, 40]) {
-      if (before > threshold && this.hp <= threshold) this.scene.bossHeartDrop(this.x);
+    // Item 20 (2026-11-20, v104): thresholds were [120, 80, 40] — leftovers
+    // from maxHp 160. With maxHp 100 the 120 never fired, and the phase-2
+    // clamp (HP back up to 60) re-armed the 40 so its heart dropped twice.
+    // Quarters of 100 now, one drop per threshold, guarded by the set above.
+    for (const threshold of [75, 50, 25]) {
+      if (!this.droppedHeartThresholds.has(threshold) && before > threshold && this.hp <= threshold) {
+        this.droppedHeartThresholds.add(threshold);
+        this.scene.bossHeartDrop(this.x);
+      }
     }
     Audio.sfx("boss_hit");
     if (!this.hp) { this.scene.onBossHp(this.hp,this.maxHp,amount); this.die(); return true; }
