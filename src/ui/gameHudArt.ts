@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import type { WeaponId } from "../config";
+import { DESIGN_CSS } from "./design";
 
 export const WEAPON_LABELS: Record<WeaponId, string> = {
   sword: "SWORD", bow: "BOW", hammer: "HAMMER",
@@ -24,9 +25,9 @@ export function ensureHudArt(scene: Phaser.Scene) {
     if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 3; ctx.stroke(); }
     tex.refresh();
   };
-  panel("hud_hearts_panel", 222, 52, "rgba(20,8,42,.32)");
-  panel("hud_goal_panel", 300, 54, "rgba(27,15,46,.55)");
-  panel("hud_boss_panel", 520, 64, "rgba(13,6,24,.75)", "#b57cff");
+  panel("hud_hearts_panel", 222, 52, "rgba(14,10,36,.45)");
+  panel("hud_goal_panel", 300, 54, "rgba(23,18,51,.6)");
+  panel("hud_boss_panel", 520, 64, "rgba(14,10,36,.8)", DESIGN_CSS.veilLine);
   const texture = (key: string, draw: (ctx: CanvasRenderingContext2D) => void) => {
     if (scene.textures.exists(key)) return;
     const tex = scene.textures.createCanvas(key, 256, 256)!;
@@ -133,11 +134,15 @@ export function ensureHudArt(scene: Phaser.Scene) {
   });
   texture("hud_weapon_slot", ctx => {
     ctx.beginPath(); ctx.roundRect(-49, -49, 98, 98, 26);
-    ctx.fillStyle = "rgba(21,10,35,.73)"; ctx.fill();
-    ctx.strokeStyle = "#ffdc79"; ctx.lineWidth = 3; ctx.stroke();
+    ctx.fillStyle = "rgba(14,10,36,.8)"; ctx.fill();
+    ctx.strokeStyle = DESIGN_CSS.gold; ctx.lineWidth = 3; ctx.stroke();
     ctx.beginPath(); ctx.roundRect(-45, -45, 90, 90, 23);
     ctx.strokeStyle = "rgba(255,232,167,.25)"; ctx.lineWidth = .7; ctx.stroke();
   });
+  // DESIGN TEST: bare gold ring — the glyph on top is a Lucide SVG image
+  // (pause / volume), loaded by BootScene. Falls back to the old combined
+  // hud_pause / hud_sound textures when the SVG did not load.
+  texture("hud_ring", (ctx) => ring(ctx, true, false));
   texture("hud_gem", ctx => {
     ctx.beginPath(); ctx.moveTo(0, -48); ctx.lineTo(35, 0); ctx.lineTo(0, 48); ctx.lineTo(-35, 0); ctx.closePath();
     const grad = ctx.createLinearGradient(-35, -40, 35, 40);

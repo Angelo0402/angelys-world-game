@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { Audio } from "../audio/AudioManager";
-import { FONT } from "../config";
+import { DESIGN, DESIGN_CSS, FONT_DISPLAY } from "./design";
 import type { NavItem } from "./padMenu";
 
 interface ButtonOpts {
@@ -32,18 +32,19 @@ export class Button extends Phaser.GameObjects.Container implements NavItem {
     super(scene, x, y);
     this.bw = opts.width ?? 260;
     this.bh = opts.height ?? 60;
-    this.color = opts.color ?? 0xff8a3d;
+    // DESIGN TEST: the one accent is Angely's bow pink (was orange).
+    this.color = opts.color ?? DESIGN.bow;
     this.disabled = !!opts.disabled;
     this.onClick = onClick;
     this.fireOnDown = !!opts.fireOnDown;
     this.bg = scene.add.graphics();
     this.label = scene.add
       .text(0, 0, text, {
-        fontFamily: FONT,
+        fontFamily: FONT_DISPLAY,
         fontSize: `${opts.fontSize ?? 26}px`,
         fontStyle: "bold",
         color: opts.textColor ?? "#ffffff",
-        stroke: "#2a1640",
+        stroke: DESIGN_CSS.ink,
         strokeThickness: 5,
       })
       .setOrigin(0.5);
@@ -99,24 +100,24 @@ export class Button extends Phaser.GameObjects.Container implements NavItem {
     const g = this.bg;
     g.clear();
     const c = this.disabled ? 0x5a5470 : this.color;
-    g.fillStyle(0x1b0f2e, 0.55).fillRoundedRect(-w / 2 + 3, -h / 2 + 6, w, h, h / 2.4);
+    g.fillStyle(DESIGN.veilDeep, 0.55).fillRoundedRect(-w / 2 + 3, -h / 2 + 6, w, h, h / 2.4);
     g.fillStyle(c, 1).fillRoundedRect(-w / 2, -h / 2 + (pressed ? 4 : 0), w, h, h / 2.4);
     g.fillStyle(0xffffff, pressed ? 0.12 : 0.28).fillRoundedRect(-w / 2 + 6, -h / 2 + 4 + (pressed ? 4 : 0), w - 12, h * 0.38, h / 3.2);
-    g.lineStyle(3, 0x2a1640, 1).strokeRoundedRect(-w / 2, -h / 2 + (pressed ? 4 : 0), w, h, h / 2.4);
-    if (this.focused) g.lineStyle(4, 0xfff4a8, 1).strokeRoundedRect(-w / 2 - 6, -h / 2 - 6, w + 12, h + 12, h / 2.2);
+    g.lineStyle(3, DESIGN.ink, 1).strokeRoundedRect(-w / 2, -h / 2 + (pressed ? 4 : 0), w, h, h / 2.4);
+    if (this.focused) g.lineStyle(4, DESIGN.gold, 1).strokeRoundedRect(-w / 2 - 6, -h / 2 - 6, w + 12, h + 12, h / 2.2);
     this.label.setY(pressed ? 4 : 0);
     this.label.setAlpha(this.disabled ? 0.6 : 1);
   }
 }
 
-export function titleText(scene: Phaser.Scene, x: number, y: number, text: string, size: number, color = "#fff4d6") {
+export function titleText(scene: Phaser.Scene, x: number, y: number, text: string, size: number, color: string = DESIGN_CSS.cream) {
   return scene.add
     .text(x, y, text, {
-      fontFamily: FONT,
+      fontFamily: FONT_DISPLAY,
       fontSize: `${size}px`,
       fontStyle: "bold",
       color,
-      stroke: "#2a1640",
+      stroke: DESIGN_CSS.ink,
       strokeThickness: Math.max(4, size / 7),
       shadow: { offsetX: 0, offsetY: size / 14, color: "#000000", blur: 0, fill: true, stroke: true },
     })

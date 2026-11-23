@@ -6,20 +6,27 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
-    <meta name="theme-color" content="#120d1f" />
+    <meta name="theme-color" content="#0E0A24" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" type="image/png" href="./icon.png" />
     <title>Angely's World</title>
     <style>
+      /* DESIGN TEST (PRUEBA): Fontshare Chillax + Satoshi, bundled as woff2
+         so the APK works offline. Falls back to system fonts if a file is missing. */
+      @font-face { font-family: "Chillax"; src: url("./assets/fonts/chillax-600.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+      @font-face { font-family: "Chillax"; src: url("./assets/fonts/chillax-700.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+      @font-face { font-family: "Satoshi"; src: url("./assets/fonts/satoshi-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+      @font-face { font-family: "Satoshi"; src: url("./assets/fonts/satoshi-500.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+      @font-face { font-family: "Satoshi"; src: url("./assets/fonts/satoshi-700.woff2") format("woff2"); font-weight: 700; font-display: swap; }
       html,
       body {
         margin: 0;
         padding: 0;
         width: 100%;
         height: 100%;
-        background: #120d1f;
+        background: #0e0a24;
         overflow: hidden;
         touch-action: none;
         -webkit-user-select: none;
@@ -44,16 +51,16 @@
         align-items: center;
         justify-content: center;
         gap: 18px;
-        background: radial-gradient(circle at 50% 40%, #3b2a6b, #120d1f 70%);
-        color: #fff4d6;
-        font-family: "Trebuchet MS", system-ui, sans-serif;
+        background: radial-gradient(circle at 50% 40%, #251c4f, #0e0a24 70%);
+        color: #f6edd8;
+        font-family: "Satoshi", "Trebuchet MS", system-ui, sans-serif;
         text-align: center;
         padding: 24px;
       }
       #rotate .phone {
         width: 54px;
         height: 92px;
-        border: 5px solid #ffd36b;
+        border: 5px solid #f0b23e;
         border-radius: 12px;
         animation: tilt 2s ease-in-out infinite;
       }

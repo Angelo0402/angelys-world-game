@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { buildFeelTextures, buildSharedTextures, createAnimations, queueAssets } from "../assets/manifest";
 import { FONT, GAME_H, GAME_W, LAST_CHAPTER, LEVELS } from "../config";
+import { DESIGN, DESIGN_CSS } from "../ui/design";
 import { fitCamera } from "../render";
 import { coverImage } from "../ui/screen";
 
@@ -14,11 +15,11 @@ export class BootScene extends Phaser.Scene {
     const cx = GAME_W / 2;
     const cy = GAME_H / 2;
     this.add
-      .text(cx, cy - 50, "ANGELY'S WORLD", { fontFamily: FONT, fontSize: "44px", fontStyle: "bold", color: "#fff4d6", stroke: "#2a1640", strokeThickness: 8 })
+      .text(cx, cy - 50, "ANGELY'S WORLD", { fontFamily: FONT, fontSize: "44px", fontStyle: "bold", color: DESIGN_CSS.cream, stroke: DESIGN_CSS.ink, strokeThickness: 8 })
       .setOrigin(0.5).setDepth(10);
     // Loading star (Angelo, 2026-11-06): no 0-100% bar anymore -- a small
     // spinning gold star in the bottom-left while the game loads.
-    const star = this.add.star(48, GAME_H - 48, 5, 10, 22, 0xffd94d).setDepth(10).setName("v65-boot-loading-star");
+    const star = this.add.star(48, GAME_H - 48, 5, 10, 22, DESIGN.gold).setDepth(10).setName("v65-boot-loading-star");
     this.tweens.add({ targets: star, angle: 360, duration: 1400, repeat: -1 });
     this.tweens.add({ targets: star, scale: 0.85, duration: 700, yoyo: true, repeat: -1 });
     // Boot art (ChatGPT, 2026-10-25): queued first so it appears early,
@@ -42,6 +43,12 @@ export class BootScene extends Phaser.Scene {
       this.load.video(key, `assets/video/${key}.mp4`, false);
     }
     this.load.image("the_end_art", "assets/the_end_art.png");
+    // DESIGN TEST (PRUEBA): Lucide icons as SVG textures (MIT, lucide-static
+    // 0.469.0, bundled in public/assets/icons). Rasterized at 96px; if one
+    // fails to load the HUD falls back to the code-drawn glyphs.
+    for (const key of ["pause", "play", "volume-2", "volume-x", "lock"]) {
+      this.load.svg(`icon_${key}`, `assets/icons/lucide-${key}.svg`, { width: 96, height: 96 });
+    }
     // Per-chapter Game Over art (2026-10-26): painted panels, one per
     // chapter, shown by HudScene.showGameOver. Keys gameover_ch1..ch10.
     for (let ch = 1; ch <= 10; ch++) {
@@ -62,6 +69,31 @@ export class BootScene extends Phaser.Scene {
       const m = /^(\d+)-(\d+)$/.exec(lv);
       index = m ? LEVELS.findIndex((l) => l.chapter === Number(m[1]) && l.stage === Number(m[2])) : Number(lv);
     } else if (ch >= 1 && ch <= LAST_CHAPTER) index = (ch - 1) * 2;
+    // DESIGN TEST: wait for the bundled Chillax/Satoshi faces (max 2.5s)
+    // so the title screen renders in the new type instead of flashing the
+    // fallback. A load failure never blocks the game.
+    void this.waitForFonts().then(() => this.startNext(index));
+  }
+
+  private async waitForFonts(): Promise<void> {
+    try {
+      if (!document.fonts?.load) return;
+      await Promise.race([
+        Promise.all([
+          document.fonts.load('600 20px Chillax'),
+          document.fonts.load('700 20px Chillax'),
+          document.fonts.load('400 20px Satoshi'),
+          document.fonts.load('500 20px Satoshi'),
+          document.fonts.load('700 20px Satoshi'),
+        ]),
+        new Promise((resolve) => setTimeout(resolve, 2500)),
+      ]);
+    } catch {
+      // Fallback fonts — the game starts anyway.
+    }
+  }
+
+  private startNext(index: number) {
     if (index >= 0 && index < LEVELS.length) {
       this.scene.start("Game", { level: index });
       return;

@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { Audio } from "../audio/AudioManager";
 import { CHAPTERS, FONT, GAME_H, GAME_W, levelLabel, levelsOf, type ChapterId } from "../config";
+import { DESIGN, DESIGN_CSS, FONT_DISPLAY, REDUCED_MOTION } from "../ui/design";
 import { loadSave, updateSave } from "../save";
 import { Button, titleText } from "../ui/Button";
 import { coverImage, requestFullscreenLandscape, useTouchUi } from "../ui/screen";
@@ -17,7 +18,7 @@ export class TitleScene extends Phaser.Scene {
     fitCamera(this);
     Audio.music("music_title");
     Audio.duck(false);
-    this.cameras.main.fadeIn(500, 18, 13, 31);
+    this.cameras.main.fadeIn(500, 14, 10, 36);
     if (data?.select) {
       // Tap-through guard (2026-11-03, fixed 2026-11-03): taps that open this screen fire on
       // pointerdown (pause LEVELS zone, victory BACK TO LEVELS). That finger
@@ -51,13 +52,13 @@ export class TitleScene extends Phaser.Scene {
         this.time.delayedCall(50, recheck);
       }
       // Solid fallback first: the selector must remain visible if a texture fails.
-      this.add.rectangle(0, 0, GAME_W, GAME_H, 0x1b0f2e).setOrigin(0);
+      this.add.rectangle(0, 0, GAME_W, GAME_H, DESIGN.veil).setOrigin(0);
       try {
         if (this.textures.exists("title_bg")) coverImage(this, "title_bg").setTint(0x9a94c0);
       } catch (error) {
         console.warn("[chapterSelect] title_bg failed:", error);
       }
-      this.add.rectangle(0, 0, GAME_W, GAME_H, 0x120d1f, 0.15).setOrigin(0);
+      this.add.rectangle(0, 0, GAME_W, GAME_H, DESIGN.veilDeep, 0.15).setOrigin(0);
       try {
         this.showChapterSelect();
       } catch (error) {
@@ -79,7 +80,7 @@ export class TitleScene extends Phaser.Scene {
     // Don't show gamepad prompt on touch devices (mobile) - it covers the UI
     if (useTouchUi(this)) return;
     const label = this.add
-      .text(GAME_W / 2, y, "", { fontFamily: FONT, fontSize: top ? "12px" : "14px", color: "#e8dcff", stroke: "#1b0f2e", strokeThickness: 4 })
+      .text(GAME_W / 2, y, "", { fontFamily: FONT, fontSize: top ? "12px" : "14px", color: DESIGN_CSS.sand, stroke: DESIGN_CSS.ink, strokeThickness: 4 })
       .setOrigin(0.5, top ? 0 : 1)
       .setDepth(50);
     const render = () => {
@@ -103,17 +104,20 @@ export class TitleScene extends Phaser.Scene {
     // Seam fills only when the art does NOT cover the full canvas width
     // (wide title art leaves no gap, and the fills read as black side boxes).
     if (seam < GAME_W / 2 - 2) {
-      edge.fillGradientStyle(0x120d1f, 0x120d1f, 0x120d1f, 0x120d1f, 0, 0.85, 0, 0.85).fillRect(GAME_W / 2 - seam - 60, 0, 80, GAME_H);
-      edge.fillGradientStyle(0x120d1f, 0x120d1f, 0x120d1f, 0x120d1f, 0.85, 0, 0.85, 0).fillRect(GAME_W / 2 + seam - 20, 0, 80, GAME_H);
-      edge.fillStyle(0x120d1f, 0.85).fillRect(0, 0, GAME_W / 2 - seam - 60 + 1, GAME_H).fillRect(GAME_W / 2 + seam + 60 - 1, 0, GAME_W, GAME_H);
+      edge.fillGradientStyle(DESIGN.veilDeep, DESIGN.veilDeep, DESIGN.veilDeep, DESIGN.veilDeep, 0, 0.85, 0, 0.85).fillRect(GAME_W / 2 - seam - 60, 0, 80, GAME_H);
+      edge.fillGradientStyle(DESIGN.veilDeep, DESIGN.veilDeep, DESIGN.veilDeep, DESIGN.veilDeep, 0.85, 0, 0.85, 0).fillRect(GAME_W / 2 + seam - 20, 0, 80, GAME_H);
+      edge.fillStyle(DESIGN.veilDeep, 0.85).fillRect(0, 0, GAME_W / 2 - seam - 60 + 1, GAME_H).fillRect(GAME_W / 2 + seam + 60 - 1, 0, GAME_W, GAME_H);
       edge.setAlpha(0.55);
     }
     art.setScale(base * 1.05);
     this.tweens.add({ targets: art, scale: base, duration: 2600, ease: "Cubic.out" });
-    this.tweens.add({ targets: art, scale: base * 1.02, duration: 7000, delay: 2600, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+    // DESIGN TEST: the slow breathing zoom is decorative — skip it on reduced motion.
+    if (!REDUCED_MOTION) {
+      this.tweens.add({ targets: art, scale: base * 1.02, duration: 7000, delay: 2600, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+    }
 
     const shade = this.add.graphics();
-    for (let i = 0; i < 16; i++) shade.fillStyle(0x120d1f, (i / 16) * 0.55).fillRect(0, GAME_H - 128 + i * 8, GAME_W, 8);
+    for (let i = 0; i < 16; i++) shade.fillStyle(DESIGN.veilDeep, (i / 16) * 0.55).fillRect(0, GAME_H - 128 + i * 8, GAME_W, 8);
 
     this.add.particles(0, 0, "dot", {
       x: { min: 0, max: GAME_W },
@@ -135,7 +139,7 @@ export class TitleScene extends Phaser.Scene {
       requestFullscreenLandscape(this);
       menu.destroy();
       const toSelect = () => {
-        this.cameras.main.fadeOut(260, 18, 13, 31);
+        this.cameras.main.fadeOut(260, 14, 10, 36);
         this.cameras.main.once("camerafadeoutcomplete", () => this.scene.restart({ select: true }));
       };
       // v60 (Angelo, 2026-11-05 playtest): the intro video on PLAY is gone --
@@ -144,12 +148,20 @@ export class TitleScene extends Phaser.Scene {
     }, { width: 260, height: 62, fontSize: 32 });
     play.setAlpha(0).setScale(0.6);
     this.tweens.add({ targets: play, alpha: 1, scale: 1, duration: 520, delay: 900, ease: "Back.out" });
-    this.tweens.add({ targets: play, scale: 1.05, duration: 900, delay: 1500, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+    // DESIGN TEST: the idle pulse is decorative — skip it on reduced motion.
+    if (!REDUCED_MOTION) {
+      this.tweens.add({ targets: play, scale: 1.05, duration: 900, delay: 1500, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+    }
 
     const hint = this.add
-      .text(GAME_W / 2, GAME_H - 30, "", { fontFamily: FONT, fontSize: "16px", color: "#fff4d6", stroke: "#1b0f2e", strokeThickness: 4 })
+      .text(GAME_W / 2, GAME_H - 30, "", { fontFamily: FONT, fontSize: "16px", color: DESIGN_CSS.cream, stroke: DESIGN_CSS.ink, strokeThickness: 4 })
       .setOrigin(0.5)
       .setAlpha(0);
+    // DESIGN TEST label: this build is a throwaway test — say so on screen.
+    this.add
+      .text(GAME_W - 12, 10, "PRUEBA · nuevo diseño", { fontFamily: FONT, fontSize: "13px", fontStyle: "bold", color: DESIGN_CSS.gold, stroke: DESIGN_CSS.ink, strokeThickness: 3 })
+      .setOrigin(1, 0)
+      .setAlpha(0.85);
     const renderHint = () =>
       hint.setText(
         Gamepad.connected
@@ -171,12 +183,15 @@ export class TitleScene extends Phaser.Scene {
     // Header banner (v64, Angelo 2026-11-06): the old bare title now sits on a
     // gold-framed banner, like the reference menu — code-drawn, no new art.
     const banner = this.add.graphics();
-    banner.fillStyle(0x2a1640, 0.95).fillRoundedRect(GAME_W / 2 - 270, 6, 540, 44, 18);
-    banner.lineStyle(3, 0xffd36b, 1).strokeRoundedRect(GAME_W / 2 - 270, 6, 540, 44, 18);
-    banner.lineStyle(1, 0xffd36b, 0.4).strokeRoundedRect(GAME_W / 2 - 262, 12, 524, 32, 12);
-    const sparkL = this.add.star(GAME_W / 2 - 296, 28, 4, 4, 11, 0xffd36b);
-    const sparkR = this.add.star(GAME_W / 2 + 296, 28, 4, 4, 11, 0xffd36b);
-    this.tweens.add({ targets: [sparkL, sparkR], angle: 180, duration: 2400, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+    banner.fillStyle(DESIGN.veilPanel, 0.95).fillRoundedRect(GAME_W / 2 - 270, 6, 540, 44, 18);
+    banner.lineStyle(3, DESIGN.gold, 1).strokeRoundedRect(GAME_W / 2 - 270, 6, 540, 44, 18);
+    banner.lineStyle(1, DESIGN.gold, 0.4).strokeRoundedRect(GAME_W / 2 - 262, 12, 524, 32, 12);
+    const sparkL = this.add.star(GAME_W / 2 - 296, 28, 4, 4, 11, DESIGN.gold);
+    const sparkR = this.add.star(GAME_W / 2 + 296, 28, 4, 4, 11, DESIGN.gold);
+    // DESIGN TEST: the sparkle spin is decorative — skip it on reduced motion.
+    if (!REDUCED_MOTION) {
+      this.tweens.add({ targets: [sparkL, sparkR], angle: 180, duration: 2400, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+    }
     // Depth above the scrolling list: scrolled cards must slide UNDER the
     // header, not over it.
     banner.setDepth(5);
@@ -194,7 +209,7 @@ export class TitleScene extends Phaser.Scene {
       picked = true;
       Audio.sfx("button");
       requestFullscreenLandscape(this);
-      this.cameras.main.fadeOut(300, 18, 13, 31);
+      this.cameras.main.fadeOut(300, 14, 10, 36);
       this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("Splash", { level: index }));
     };
     // Geometry masks render as an opaque black wall on some Android GPUs.
@@ -228,15 +243,15 @@ export class TitleScene extends Phaser.Scene {
       const locked = stages[0].index > save.level;
       const card = this.add.container(x, y);
       const frame = this.add.graphics();
-      const gold = id === 5 ? 0xd2a4ff : 0xffd36b;
+      const gold = id === 5 ? 0xd2a4ff : DESIGN.gold;
       const border = locked ? 0x5a5470 : gold;
-      frame.fillStyle(0x241640, 0.92).fillRoundedRect(-CW / 2, -CH / 2, CW, CH, 24);
+      frame.fillStyle(DESIGN.veilPanel, 0.92).fillRoundedRect(-CW / 2, -CH / 2, CW, CH, 24);
       frame.lineStyle(4, border, 1).strokeRoundedRect(-CW / 2, -CH / 2, CW, CH, 24);
       frame.lineStyle(1, border, 0.4).strokeRoundedRect(-CW / 2 + 7, -CH / 2 + 7, CW - 14, CH - 14, 18);
       // Corner studs, like the reference's gold-trimmed frames.
       const stud = (sx: number, sy: number) => {
         frame.fillStyle(border, 1).fillCircle(sx, sy, 5);
-        frame.fillStyle(0x241640, 1).fillCircle(sx, sy, 2);
+        frame.fillStyle(DESIGN.veilPanel, 1).fillCircle(sx, sy, 2);
       };
       stud(-CW / 2 + 14, -CH / 2 + 14);
       stud(CW / 2 - 14, -CH / 2 + 14);
@@ -280,27 +295,25 @@ export class TitleScene extends Phaser.Scene {
       const cleared = stages.filter((s) => s.index < save.level).length;
       const prog = this.add.graphics();
       const progX = CW / 2 - 16 - 84, progY = -CH / 2 + 16;
-      prog.fillStyle(0x1b0f2e, 0.9).fillRoundedRect(progX, progY, 84, 26, 10);
+      prog.fillStyle(DESIGN.veilDeep, 0.9).fillRoundedRect(progX, progY, 84, 26, 10);
       prog.lineStyle(2, locked ? 0x5a5470 : gold, 0.9).strokeRoundedRect(progX, progY, 84, 26, 10);
       const progText = this.add.text(progX + 42, progY + 13, `★ ${cleared}/${stages.length}`, {
         fontFamily: FONT, fontSize: "15px", fontStyle: "bold",
-        color: locked ? "#aaa2c0" : "#ffe08a", stroke: "#120c28", strokeThickness: 3,
+        color: locked ? "#aaa2c0" : DESIGN_CSS.gold, stroke: DESIGN_CSS.veilDeep, strokeThickness: 3,
       }).setOrigin(0.5);
       card.add([prog, progText]);
       if (locked) {
-        const lock = this.add.graphics();
-        drawLock(lock, tx, 0, 1.1);
-        card.add(lock);
+        addLock(this, card, tx, 0, 1.1);
       }
       // chapter info on right
       const infoX = -CW / 2 + 16 + TW + 28;
       const num = this.add.text(infoX, -CH / 2 + 36, `CHAPTER ${id}`, {
         fontFamily: FONT, fontSize: "20px", fontStyle: "bold",
-        color: id === 5 ? "#e4c5ff" : "#ffe08a", stroke: "#120c28", strokeThickness: 3,
+        color: id === 5 ? "#e4c5ff" : DESIGN_CSS.gold, stroke: DESIGN_CSS.veilDeep, strokeThickness: 3,
       }).setOrigin(0, 0.5);
       const name = this.add.text(infoX, -CH / 2 + 68, ch.name, {
-        fontFamily: FONT, fontSize: "28px", fontStyle: "bold",
-        color: locked ? "#bbb4d0" : "#ffffff", stroke: "#120c28", strokeThickness: 5,
+        fontFamily: FONT_DISPLAY, fontSize: "28px", fontStyle: "bold",
+        color: locked ? "#bbb4d0" : "#ffffff", stroke: DESIGN_CSS.veilDeep, strokeThickness: 5,
       }).setOrigin(0, 0.5);
       const rule = this.add.graphics();
       rule.lineStyle(2, locked ? 0x5a5470 : gold, 0.8).lineBetween(infoX, -CH / 2 + 88, infoX + Math.min(name.width, 320), -CH / 2 + 88);
@@ -314,41 +327,39 @@ export class TitleScene extends Phaser.Scene {
         const g = this.add.graphics();
         const draw = (focus: boolean) => {
           g.clear();
-          g.fillStyle(open ? (l.boss ? 0x5a2a8a : 0x3a2560) : 0x241a36, 0.95).fillRoundedRect(-pw / 2, -ph / 2, pw, ph, 14);
-          g.lineStyle(focus ? 4 : 2, focus ? 0xfff4a8 : open ? gold : 0x4a4460, 1).strokeRoundedRect(-pw / 2, -ph / 2, pw, ph, 14);
+          g.fillStyle(open ? (l.boss ? DESIGN.veilLine : DESIGN.veilPanel) : DESIGN.ink, 0.95).fillRoundedRect(-pw / 2, -ph / 2, pw, ph, 14);
+          g.lineStyle(focus ? 4 : 2, focus ? DESIGN.gold : open ? gold : 0x4a4460, 1).strokeRoundedRect(-pw / 2, -ph / 2, pw, ph, 14);
         };
         draw(false);
         const kind = l.boss ? "BOSS" : l.mode === "climb" ? "VERTICAL" : l.mode === "swim" ? "SWIM" : l.goal === "gems" ? "GEMS" : l.goal === "coins" ? "COINS" : "";
         const label = this.add.text(0, -12, levelLabel(l), {
           fontFamily: FONT, fontSize: "18px", fontStyle: "bold",
-          color: open ? (l.boss ? "#e0b8ff" : "#ffe08a") : "#aaa2c0", stroke: "#241a36", strokeThickness: 3,
+          color: open ? (l.boss ? "#e0b8ff" : DESIGN_CSS.gold) : "#aaa2c0", stroke: DESIGN_CSS.ink, strokeThickness: 3,
         }).setOrigin(0.5);
         const nm = this.add.text(0, 12, l.name, {
           fontFamily: FONT, fontSize: "15px", fontStyle: "bold",
-          color: open ? "#ffffff" : "#aaa2c0", stroke: "#241a36", strokeThickness: 2,
+          color: open ? "#ffffff" : "#aaa2c0", stroke: DESIGN_CSS.ink, strokeThickness: 2,
         }).setOrigin(0.5);
         // Kind tag as a small corner chip (reference style), not inline text.
         const chipParts: Phaser.GameObjects.GameObject[] = [];
         if (kind) {
-          const chipColor = l.boss ? 0x8a3fd1 : l.goal === "gems" || l.goal === "coins" ? 0xc79a1d : 0x1d7a8a;
+          const chipColor = l.boss ? DESIGN.bowDeep : l.goal === "gems" || l.goal === "coins" ? DESIGN.goldDeep : DESIGN.veilLine;
           const chipW = kind.length * 9 + 14;
           const chip = this.add.graphics();
           chip.fillStyle(chipColor, 1).fillRoundedRect(pw / 2 - chipW - 6, -ph / 2 + 5, chipW, 18, 8);
           const chipText = this.add.text(pw / 2 - 6 - chipW / 2, -ph / 2 + 14, kind, {
-            fontFamily: FONT, fontSize: "11px", fontStyle: "bold", color: "#ffffff", stroke: "#241a36", strokeThickness: 2,
+            fontFamily: FONT, fontSize: "11px", fontStyle: "bold", color: "#ffffff", stroke: DESIGN_CSS.ink, strokeThickness: 2,
           }).setOrigin(0.5);
           chipParts.push(chip, chipText);
         }
         pill.add([g, label, nm, ...chipParts]);
         if (open && l.index < save.level) {
           // Bottom-right: the top-right corner now belongs to the kind chip.
-          const star = this.add.text(pw / 2 - 16, ph / 2 - 15, "★", { fontFamily: FONT, fontSize: "22px", color: "#ffd36b" }).setOrigin(0.5);
+          const star = this.add.text(pw / 2 - 16, ph / 2 - 15, "★", { fontFamily: FONT, fontSize: "22px", color: DESIGN_CSS.gold }).setOrigin(0.5);
           pill.add(star);
         }
         if (!open) {
-          const lk = this.add.graphics();
-          drawLock(lk, pw / 2 - 20, 0, 0.5);
-          pill.add(lk);
+          addLock(this, pill, pw / 2 - 20, 0, 0.5);
         }
         card.add(pill);
         if (!open) return;
@@ -385,7 +396,7 @@ export class TitleScene extends Phaser.Scene {
     const home = new Button(this, 56, 28, "HOME", () => {
       Audio.sfx("button");
       this.scene.restart({ select: false });
-    }, { width: 96, height: 40, fontSize: 16, color: 0x5a3a8a });
+    }, { width: 96, height: 40, fontSize: 16, color: DESIGN.veilPanel });
     nav.push(home);
     if (save.level > 0 || save.weapons.length) {
       const reset = new Button(this, 78, GAME_H - 28, "RESET", () => {
@@ -393,18 +404,29 @@ export class TitleScene extends Phaser.Scene {
           updateSave({ level: 0, weapons: [], cleared: false, finaleSeen: false });
           this.scene.restart({ select: true });
         }
-      }, { width: 118, height: 32, fontSize: 14, color: 0x7a5aa8 });
+      }, { width: 118, height: 32, fontSize: 14, color: DESIGN.veilLine });
       nav.push(reset);
     }
     new PadMenu(this, nav, { initial, back: () => this.scene.restart({ select: false }) });
   }
 }
 
+/** Lucide lock SVG as an image, with the old code-drawn lock as fallback. */
+export function addLock(scene: Phaser.Scene, parent: Phaser.GameObjects.Container, x: number, y: number, s = 1) {
+  if (scene.textures.exists("icon_lock")) {
+    parent.add(scene.add.image(x, y, "icon_lock").setDisplaySize(44 * s, 44 * s));
+    return;
+  }
+  const g = scene.add.graphics();
+  drawLock(g, x, y, s);
+  parent.add(g);
+}
+
 export function drawLock(g: Phaser.GameObjects.Graphics, x: number, y: number, s = 1) {
-  g.lineStyle(7 * s, 0xffd36b, 1);
+  g.lineStyle(7 * s, DESIGN.gold, 1);
   g.beginPath();
   g.arc(x, y - 8 * s, 14 * s, Math.PI, 0);
   g.strokePath();
-  g.fillStyle(0xffd36b, 1).fillRoundedRect(x - 22 * s, y - 8 * s, 44 * s, 34 * s, 6 * s);
-  g.fillStyle(0x2a1640, 1).fillCircle(x, y + 6 * s, 5 * s).fillRect(x - 2 * s, y + 6 * s, 4 * s, 10 * s);
+  g.fillStyle(DESIGN.gold, 1).fillRoundedRect(x - 22 * s, y - 8 * s, 44 * s, 34 * s, 6 * s);
+  g.fillStyle(DESIGN.ink, 1).fillCircle(x, y + 6 * s, 5 * s).fillRect(x - 2 * s, y + 6 * s, 4 * s, 10 * s);
 }

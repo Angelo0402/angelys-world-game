@@ -324,4 +324,6 @@ export function weaponsBefore(index: number): WeaponId[] {
   return LEVELS.filter((l) => l.index < index && l.weapon).map((l) => l.weapon!);
 }
 
-export const FONT = '"Trebuchet MS", "Segoe UI", system-ui, sans-serif';
+import { FONT_UI } from "./ui/design";
+
+export const FONT = FONT_UI;

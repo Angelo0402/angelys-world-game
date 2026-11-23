@@ -3,6 +3,7 @@ import { applyOrigin, scaleForHeight } from "../assets/manifest";
 import { SPRITES } from "../assets/sprites.gen";
 import { Audio } from "../audio/AudioManager";
 import { CHAPTERS, FONT, GAME_H, GAME_W, LEVELS, MAX_HEARTS, levelLabel, type WeaponId } from "../config";
+import { DESIGN, DESIGN_CSS, EASE_POP, REDUCED_MOTION } from "../ui/design";
 import { resetTouch, touchState } from "../input/controls";
 import { Gamepad } from "../input/gamepad";
 import { PadMenu } from "../ui/padMenu";
@@ -38,8 +39,11 @@ export class HudScene extends Phaser.Scene {
   private killText!: Phaser.GameObjects.Text;
   private lockIcon!: Phaser.GameObjects.Graphics;
   /** PRUEBA ch11: coin counter (top-right) — banked coins, future shop currency. */
+  private coinBox!: Phaser.GameObjects.Container;
   private coinIcon!: Phaser.GameObjects.Graphics;
   private coinText!: Phaser.GameObjects.Text;
+  /** DESIGN TEST: Lucide lock image for the goal panel (fallback: drawLock). */
+  private lockImg?: Phaser.GameObjects.Image;
   private bossPanel!: Phaser.GameObjects.Container;
   private bossFill!: Phaser.GameObjects.Rectangle;
   private bossChip!: Phaser.GameObjects.Rectangle;
@@ -128,7 +132,7 @@ export class HudScene extends Phaser.Scene {
     this.dialogue = new Dialogue(this);
 
     this.toastText = this.add
-      .text(GAME_W / 2, 112, "", { fontFamily: FONT, fontSize: "24px", fontStyle: "bold", color: "#fff4d6", stroke: "#2a1640", strokeThickness: 6, align: "center" })
+      .text(GAME_W / 2, 112, "", { fontFamily: FONT, fontSize: "24px", fontStyle: "bold", color: DESIGN_CSS.cream, stroke: DESIGN_CSS.ink, strokeThickness: 6, align: "center" })
       .setOrigin(0.5)
       .setDepth(150)
       .setAlpha(0);
@@ -215,8 +219,8 @@ export class HudScene extends Phaser.Scene {
     const px = 40, py = 100, pr = 32;
     if (this.textures.exists("hud_portrait_neutral")) {
       const ring = this.add.graphics();
-      ring.fillStyle(0x1a0b33, 1).fillCircle(px, py, pr + 3);
-      ring.lineStyle(4, 0xffd75a, 1).strokeCircle(px, py, pr + 3);
+      ring.fillStyle(DESIGN.veilDeep, 1).fillCircle(px, py, pr + 3);
+      ring.lineStyle(4, DESIGN.gold, 1).strokeCircle(px, py, pr + 3);
       this.portraitImg = this.add.image(px, py, "hud_portrait_neutral").setDisplaySize(pr * 2, pr * 2);
       // Phaser 4 (Beam): GeometryMask is Canvas-only and no-ops under
       // WebGL — same as the Portal fix: Mask filter instead. The shape
@@ -243,48 +247,74 @@ export class HudScene extends Phaser.Scene {
       this.hearts.push(h);
     }
     this.shieldText = this.add
-      .text(318, 102, "", { fontFamily: FONT, fontSize: "15px", fontStyle: "bold", color: "#fff27a", stroke: "#2a1640", strokeThickness: 4 })
+      .text(318, 102, "", { fontFamily: FONT, fontSize: "15px", fontStyle: "bold", color: DESIGN_CSS.gold, stroke: DESIGN_CSS.ink, strokeThickness: 4 })
       .setOrigin(0, 0.5)
       .setVisible(false);
 
     const kp = this.add.image(GAME_W / 2, 39, "hud_goal_panel").setDisplaySize(300, 54);
     this.killText = this.add
-      .text(GAME_W / 2 + 18, 39, "", { fontFamily: FONT, fontSize: "26px", fontStyle: "bold", color: "#fff4d6", stroke: "#2a1640", strokeThickness: 5 })
+      .text(GAME_W / 2 + 18, 39, "", { fontFamily: FONT, fontSize: "26px", fontStyle: "bold", color: DESIGN_CSS.cream, stroke: DESIGN_CSS.ink, strokeThickness: 5 })
       .setOrigin(0.5);
     this.lockIcon = this.add.graphics();
     const lvl = this.add
       .text(GAME_W / 2, 74, `LEVEL ${levelLabel(LEVELS[this.levelIndex])}  •  ${LEVELS[this.levelIndex].name.toUpperCase()}`, {
-        fontFamily: FONT, fontSize: "14px", fontStyle: "bold", color: "#e8dcff", stroke: "#1b0f2e", strokeThickness: 4,
+        fontFamily: FONT, fontSize: "14px", fontStyle: "bold", color: DESIGN_CSS.sand, stroke: DESIGN_CSS.ink, strokeThickness: 4,
       })
       .setOrigin(0.5, 0);
     this.gemIcon = this.add.image(GAME_W / 2 - 122, 39, "hud_gem").setDisplaySize(44, 54).setVisible(false);
-    this.killPanel = this.add.container(0, 0, [kp, this.killText, this.lockIcon, this.gemIcon, lvl]);
+    if (this.textures.exists("icon_lock")) {
+      this.lockImg = this.add.image(GAME_W / 2 - 122, 36, "icon_lock").setDisplaySize(26, 26).setVisible(false);
+    }
+    this.killPanel = this.add.container(0, 0, [kp, this.killText, this.lockIcon, this.gemIcon, lvl, ...(this.lockImg ? [this.lockImg] : [])]);
 
     // PRUEBA ch11: coin counter, top-right (nothing else lives there). Gold
     // disc drawn in code + count. Joins cinemaTop via buildTopBar order.
+    // DESIGN TEST: icon + count live in one container so a pickup can pop
+    // the whole counter (transform only, one easing).
+    this.coinBox = this.add.container(GAME_W - 130, 39);
     this.coinIcon = this.add.graphics();
-    this.coinIcon.fillStyle(0xffd75a, 1).fillCircle(GAME_W - 130, 39, 15);
-    this.coinIcon.fillStyle(0xffb52e, 1).fillCircle(GAME_W - 130, 39, 11);
-    this.coinIcon.fillStyle(0xffe27a, 1).fillCircle(GAME_W - 130, 39, 7);
+    this.coinIcon.fillStyle(DESIGN.gold, 1).fillCircle(0, 0, 15);
+    this.coinIcon.fillStyle(DESIGN.goldDeep, 1).fillCircle(0, 0, 11);
+    this.coinIcon.fillStyle(0xffe27a, 1).fillCircle(0, 0, 7);
     this.coinText = this.add
-      .text(GAME_W - 108, 39, "0", { fontFamily: FONT, fontSize: "24px", fontStyle: "bold", color: "#ffd75a", stroke: "#2a1640", strokeThickness: 5 })
+      .text(22, 0, "0", { fontFamily: FONT, fontSize: "24px", fontStyle: "bold", color: DESIGN_CSS.gold, stroke: DESIGN_CSS.ink, strokeThickness: 5 })
       .setOrigin(0, 0.5);
+    this.coinBox.add([this.coinIcon, this.coinText]);
 
+    // DESIGN TEST: Lucide pause icon on the gold ring (fallback: the old
+    // combined hud_pause texture when the SVG did not load).
     const pause = this.add.container(78, 40);
-    pause.add(hudDisc(this, "hud_pause", 28)).setSize(64, 64).setInteractive({ useHandCursor: true });
+    if (this.textures.exists("icon_pause") && this.textures.exists("hud_ring")) {
+      pause.add(hudDisc(this, "hud_ring", 28));
+      pause.add(this.add.image(0, 0, "icon_pause").setDisplaySize(32, 32));
+    } else {
+      pause.add(hudDisc(this, "hud_pause", 28));
+    }
+    pause.setSize(64, 64).setInteractive({ useHandCursor: true });
     pause.on("pointerup", () => {
       if (this.overlay || this.cinema) return;
       Audio.sfx("button");
       this.game.events.emit("pause-request");
     });
 
+    // DESIGN TEST: Lucide volume icons on the gold ring (fallback: the old
+    // combined hud_sound / hud_sound_off textures).
     const mute = this.add.container(146, 40);
-    const mg = hudDisc(this, "hud_sound", 24);
+    const useLucideSound = this.textures.exists("icon_volume_2") && this.textures.exists("hud_ring");
+    const mg = hudDisc(this, useLucideSound ? "hud_ring" : "hud_sound", 24);
+    mute.add(mg);
+    let sndIcon: Phaser.GameObjects.Image | null = null;
+    if (useLucideSound) {
+      sndIcon = this.add.image(0, 0, "icon_volume_2").setDisplaySize(28, 28);
+      mute.add(sndIcon);
+    }
     const drawMute = () => {
-      mg.setTexture(!Audio.musicOn && !Audio.sfxOn ? "hud_sound_off" : "hud_sound");
+      const off = !Audio.musicOn && !Audio.sfxOn;
+      if (sndIcon) sndIcon.setTexture(off ? "icon_volume_x" : "icon_volume_2");
+      else mg.setTexture(off ? "hud_sound_off" : "hud_sound");
     };
     drawMute();
-    mute.add(mg).setSize(56, 56).setInteractive({ useHandCursor: true });
+    mute.setSize(56, 56).setInteractive({ useHandCursor: true });
     mute.on("pointerup", () => {
       const on = !(Audio.musicOn || Audio.sfxOn);
       Audio.setMusic(on);
@@ -308,20 +338,20 @@ export class HudScene extends Phaser.Scene {
   private buildSpecialBar() {
     const { x, y, w, h } = SPECIAL_BAR;
     const g = this.add.graphics();
-    g.fillStyle(0x1b0f2e, 0.85).fillRoundedRect(-w / 2, -h / 2, w, h, 10);
-    g.lineStyle(2, 0xffd75a, 1).strokeRoundedRect(-w / 2, -h / 2, w, h, 10);
+    g.fillStyle(DESIGN.veilDeep, 0.85).fillRoundedRect(-w / 2, -h / 2, w, h, 10);
+    g.lineStyle(2, DESIGN.gold, 1).strokeRoundedRect(-w / 2, -h / 2, w, h, 10);
     this.specialFill = this.add.graphics();
     this.specialGlow = this.add.graphics();
-    this.specialGlow.fillStyle(0xffd75a, 1).fillRoundedRect(-w / 2, -h / 2, w, h, 10);
+    this.specialGlow.fillStyle(DESIGN.gold, 1).fillRoundedRect(-w / 2, -h / 2, w, h, 10);
     this.specialGlow.setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
     // Two gold stars, one at each end -- the "SPECIAL" label sits in the middle.
     this.specialStars = [-1, 1].map((k) =>
       this.add
-        .text(k * (w / 2 - 16), 0, "★", { fontFamily: FONT, fontSize: "16px", color: "#ffd75a", stroke: "#2a1640", strokeThickness: 3 })
+        .text(k * (w / 2 - 16), 0, "★", { fontFamily: FONT, fontSize: "16px", color: DESIGN_CSS.gold, stroke: DESIGN_CSS.ink, strokeThickness: 3 })
         .setOrigin(0.5),
     );
     this.specialLabel = this.add
-      .text(0, 0, "SPECIAL", { fontFamily: FONT, fontSize: "12px", fontStyle: "bold", color: "#ffe9a8", stroke: "#2a1640", strokeThickness: 3 })
+      .text(0, 0, "SPECIAL", { fontFamily: FONT, fontSize: "12px", fontStyle: "bold", color: DESIGN_CSS.cream, stroke: DESIGN_CSS.ink, strokeThickness: 3 })
       .setOrigin(0.5);
     this.specialBar = this.add.container(x, y, [g, this.specialFill, this.specialGlow, ...this.specialStars, this.specialLabel]);
   }
@@ -354,7 +384,7 @@ export class HudScene extends Phaser.Scene {
     const name = (this.bossName = this.add
       .text(GAME_W / 2, 16, "", { fontFamily: FONT, fontSize: "18px", fontStyle: "bold", color: "#e0b8ff", stroke: "#12081f", strokeThickness: 5 })
       .setOrigin(0.5, 0));
-    const back = (this.bossBack = this.add.rectangle(GAME_W / 2 - 230, 50, 460, 16, 0x2a1640).setOrigin(0, 0.5));
+    const back = (this.bossBack = this.add.rectangle(GAME_W / 2 - 230, 50, 460, 16, DESIGN.ink).setOrigin(0, 0.5));
     this.bossChip = this.add.rectangle(GAME_W / 2 - 230, 50, 460, 16, 0xffffff).setOrigin(0, 0.5);
     this.bossFill = this.add.rectangle(GAME_W / 2 - 230, 50, 460, 16, 0xb57cff).setOrigin(0, 0.5);
     const frame = this.add.rectangle(GAME_W / 2, 50, 462, 18).setStrokeStyle(2, 0xffffff, 0.6);
@@ -473,7 +503,7 @@ export class HudScene extends Phaser.Scene {
     const g = hudDisc(this, "hud_weapon_slot", 42);
     this.weaponIcon = this.add.image(0, -4, "hud_weapon_sword");
     this.weaponKey = this.add
-      .text(36, 36, "", { fontFamily: FONT, fontSize: "16px", fontStyle: "bold", color: "#ffffff", backgroundColor: "#7a5aa8", padding: { x: 5, y: 1 } })
+      .text(36, 36, "", { fontFamily: FONT, fontSize: "16px", fontStyle: "bold", color: "#ffffff", backgroundColor: DESIGN_CSS.veilLine, padding: { x: 5, y: 1 } })
       .setOrigin(1, 1);
     this.weaponSlot = this.add.container(52, 172, [g, this.weaponIcon, this.weaponKey]).setVisible(false);
     this.weaponSlot.setSize(92, 92).setInteractive({ useHandCursor: true });
@@ -500,7 +530,7 @@ export class HudScene extends Phaser.Scene {
     this.lastHearts = n;
     this.hearts.forEach((h, i) => {
       const full = i < n;
-      h.setTint(full ? 0xffffff : 0x3a3450).setAlpha(full ? 1 : 0.6);
+      h.setTint(full ? 0xffffff : DESIGN.veilLine).setAlpha(full ? 1 : 0.6);
       if (!full && h.getData("full") !== false) {
         this.tweens.add({ targets: h, scale: { from: h.scale * 1.5, to: h.scale }, duration: 250 });
       }
@@ -555,13 +585,21 @@ export class HudScene extends Phaser.Scene {
 
   /** PRUEBA ch11: banked coin count (top-right). */
   private setCoins(n: number) {
+    const prev = Number(this.coinText.text) || 0;
     this.coinText.setText(String(Math.max(0, n)));
+    // DESIGN TEST: the counter pops when a coin lands (transform only,
+    // one easing). Skipped on reduced motion.
+    if (n > prev && !REDUCED_MOTION && this.coinBox) {
+      this.tweens.killTweensOf(this.coinBox);
+      this.tweens.add({ targets: this.coinBox, scale: { from: 1.25, to: 1 }, duration: 220, ease: EASE_POP });
+    }
   }
 
   private setGoal(g: GoalState) {
     const info = LEVELS[this.levelIndex];
     const shown = Math.min(g.have, g.need);
     this.lockIcon.clear();
+    this.lockImg?.setVisible(false);
     this.gemIcon.setVisible(false);
     const x = GAME_W / 2 - 122;
     if (g.kind === "reach") {
@@ -570,17 +608,20 @@ export class HudScene extends Phaser.Scene {
       this.lockIcon.fillStyle(0x9ff5ff, 1).fillTriangle(x - 10, 46, x + 12, 39, x - 10, 30);
       return;
     }
-    this.killText.setFontSize(26).setX(GAME_W / 2 + 18).setColor("#fff4d6");
+    this.killText.setFontSize(26).setX(GAME_W / 2 + 18).setColor(DESIGN_CSS.cream);
     this.killText.setText(`${g.kind === "gems" ? "GEMS" : g.kind === "coins" ? "COINS" : "ENEMIES"} ${String(shown).padStart(2, "0")} / ${g.need}`);
     const k = g.have;
     const goal = g.need;
     if (k < goal) {
       if (g.kind === "gems") {
         this.gemIcon.setPosition(x, 39).setVisible(true);
-      } else drawLock(this.lockIcon, x, 36, 0.55);
+      } else if (this.lockImg) {
+      // DESIGN TEST: Lucide lock image (the graphics lock stays as fallback).
+      this.lockImg.setPosition(x, 36).setVisible(true);
+    } else drawLock(this.lockIcon, x, 36, 0.55);
     } else {
       this.lockIcon.fillStyle(0x9ff5ff, 1).fillCircle(x, 39, 13);
-      this.lockIcon.lineStyle(4, 0x2a1640, 1).beginPath().moveTo(x - 6, 39).lineTo(x - 1, 45).lineTo(x + 7, 32).strokePath();
+      this.lockIcon.lineStyle(4, DESIGN.ink, 1).beginPath().moveTo(x - 6, 39).lineTo(x - 1, 45).lineTo(x + 7, 32).strokePath();
       this.killText.setColor("#9ff5ff");
     }
     if (k > 0) this.tweens.add({ targets: this.killText, scale: { from: 1.15, to: 1 }, duration: 160 });
@@ -622,7 +663,7 @@ export class HudScene extends Phaser.Scene {
     this.specialCharge = charge;
     const full = charge >= 8;
     this.drawSpecialFill(charge);
-    this.specialLabel.setColor(full ? "#ffe27a" : "#ffe9a8");
+    this.specialLabel.setColor(full ? DESIGN_CSS.gold : DESIGN_CSS.cream);
     if (full && !this.specialPulse) {
       this.specialPulse = this.tweens.add({ targets: this.specialBar, scale: { from: 1, to: 1.05 }, duration: 320, yoyo: true, repeat: -1, ease: "Sine.inOut" });
       this.specialGlowTween = this.tweens.add({ targets: this.specialGlow, alpha: { from: 0.25, to: 0.65 }, duration: 420, yoyo: true, repeat: -1, ease: "Sine.inOut" });
@@ -659,7 +700,7 @@ export class HudScene extends Phaser.Scene {
   private joystick(x: number, y: number) {
     const c = this.add.container(x, y);
     const g = this.add.graphics();
-    g.fillStyle(0x1a1a1a, 0.45).fillCircle(0, 0, JOY_R);
+    g.fillStyle(DESIGN.veilDeep, 0.45).fillCircle(0, 0, JOY_R);
     c.add(g);
     return c;
   }
@@ -667,7 +708,7 @@ export class HudScene extends Phaser.Scene {
   private knob(x: number, y: number) {
     const c = this.add.container(x, y);
     const g = this.add.graphics();
-    g.fillStyle(0xd9d9d9, 0.85).fillCircle(0, 0, KNOB_R);
+    g.fillStyle(DESIGN.cream, 0.85).fillCircle(0, 0, KNOB_R);
     c.add(g);
     return c;
   }
@@ -680,8 +721,8 @@ export class HudScene extends Phaser.Scene {
         fontFamily: FONT,
         fontSize: `${Math.max(10, Math.round(r * (label.length > 7 ? 0.21 : label.length > 5 ? 0.26 : 0.3)))}px`,
         fontStyle: "bold",
-        color: "#fff8e8",
-        stroke: "#2a1640",
+        color: DESIGN_CSS.cream,
+        stroke: DESIGN_CSS.ink,
         strokeThickness: 4,
       })
       .setOrigin(0.5);
@@ -829,10 +870,10 @@ export class HudScene extends Phaser.Scene {
     this.joyId = this.jumpId = this.attackId = -1;
     this.resetJoy();
     const c = this.add.container(0, 0).setDepth(100);
-    const dim = this.add.rectangle(0, 0, GAME_W, GAME_H, 0x0b0716, 0.72).setOrigin(0).setInteractive();
+    const dim = this.add.rectangle(0, 0, GAME_W, GAME_H, DESIGN.veilDeep, 0.72).setOrigin(0).setInteractive();
     const panel = this.add.graphics();
-    panel.fillStyle(0x1b0f2e, 0.94).fillRoundedRect(GAME_W / 2 - 300, GAME_H / 2 - height / 2, 600, height, 28);
-    panel.lineStyle(4, 0xffd36b, 1).strokeRoundedRect(GAME_W / 2 - 300, GAME_H / 2 - height / 2, 600, height, 28);
+    panel.fillStyle(DESIGN.veilPanel, 0.94).fillRoundedRect(GAME_W / 2 - 300, GAME_H / 2 - height / 2, 600, height, 28);
+    panel.lineStyle(4, DESIGN.gold, 1).strokeRoundedRect(GAME_W / 2 - 300, GAME_H / 2 - height / 2, 600, height, 28);
     c.add([dim, panel]);
     // v99, item 15: fade from 0.01, not 0 — same alpha gate as THE END
     // (v98): at alpha 0 the container doesn't render and its buttons
@@ -925,7 +966,7 @@ export class HudScene extends Phaser.Scene {
     this.resetJoy();
     const c = this.add.container(0, 0).setDepth(100);
     // Pilares oscuros + bloqueo de input por debajo.
-    c.add(this.add.rectangle(0, 0, GAME_W, GAME_H, 0x0b0716, 1).setOrigin(0).setInteractive());
+    c.add(this.add.rectangle(0, 0, GAME_W, GAME_H, DESIGN.veilDeep, 1).setOrigin(0).setInteractive());
     // Arte: cover (llena la pantalla; recorte simétrico arriba/abajo,
     // ningún botón) o dim clásico si falta la textura.
     let dispX = 0;
@@ -942,7 +983,7 @@ export class HudScene extends Phaser.Scene {
       dispY = (GAME_H - dispH) / 2;
       c.add(img);
     } else {
-      c.add(this.add.rectangle(0, 0, GAME_W, GAME_H, 0x0b0716, 0.72).setOrigin(0));
+      c.add(this.add.rectangle(0, 0, GAME_W, GAME_H, DESIGN.veilDeep, 0.72).setOrigin(0));
     }
     type ZoneCtl = { x: number; y: number; w: number; h: number; focus: (on: boolean) => void; activate: () => void };
     const zone = (fx0: number, fx1: number, fy0: number, fy1: number, fn: () => void): ZoneCtl => {
@@ -951,7 +992,7 @@ export class HudScene extends Phaser.Scene {
       const zw = (fx1 - fx0) * dispW;
       const zh = (fy1 - fy0) * dispH;
       const r = this.add.rectangle(zx, zy, zw, zh, 0xffffff, 0).setInteractive({ useHandCursor: true });
-      const frame = this.add.rectangle(zx, zy, zw, zh).setStrokeStyle(4, 0xffd36b).setAlpha(0);
+      const frame = this.add.rectangle(zx, zy, zw, zh).setStrokeStyle(4, DESIGN.gold).setAlpha(0);
       // Menú táctil (2026-11-02, fix pausa v51): disparar en pointerdown,
       // no solo pointerup — en el WebView del teléfono el pointerup se
       // pierde y los botones quedaban muertos. El Set evita doble
@@ -1024,7 +1065,7 @@ export class HudScene extends Phaser.Scene {
       g.fillStyle(0xd21f2b, 1).fillRoundedRect(-bw / 2 + 7, -bh / 2 + 7, bw - 14, bh - 14, 11);
       g.fillStyle(0xe85a5a, 1).fillRoundedRect(-bw / 2 + 7, -bh / 2 + 7, bw - 14, (bh - 14) / 2, { tl: 11, tr: 11, bl: 0, br: 0 });
       const t = this.add
-        .text(0, 0, label, { fontFamily: FONT, fontSize: "24px", fontStyle: "bold", color: "#ffffff", stroke: "#2a1640", strokeThickness: 5 })
+        .text(0, 0, label, { fontFamily: FONT, fontSize: "24px", fontStyle: "bold", color: "#ffffff", stroke: DESIGN_CSS.ink, strokeThickness: 5 })
         .setOrigin(0.5);
       const grp = this.add.container(cx, cy, [g, t]);
       c.add(grp);
@@ -1128,7 +1169,7 @@ export class HudScene extends Phaser.Scene {
       dispH = panelH;
       dispX = GAME_W / 2 - dispW / 2;
       dispY = 0;
-      c.add(this.add.rectangle(0, 0, GAME_W, GAME_H, 0x0b0716, 0.72).setOrigin(0).setInteractive());
+      c.add(this.add.rectangle(0, 0, GAME_W, GAME_H, DESIGN.veilDeep, 0.72).setOrigin(0).setInteractive());
       c.add(this.add.image(GAME_W / 2, panelH / 2, key).setDisplaySize(dispW, dispH));
     }
     type ZoneCtl = { x: number; y: number; w: number; h: number; focus: (on: boolean) => void; activate: () => void };
@@ -1138,7 +1179,7 @@ export class HudScene extends Phaser.Scene {
       const zw = (fx1 - fx0) * dispW;
       const zh = (fy1 - fy0) * dispH;
       const r = this.add.rectangle(zx, zy, zw, zh, 0xffffff, 0).setInteractive({ useHandCursor: true });
-      const frame = this.add.rectangle(zx, zy, zw, zh).setStrokeStyle(4, 0xffd36b).setAlpha(0);
+      const frame = this.add.rectangle(zx, zy, zw, zh).setStrokeStyle(4, DESIGN.gold).setAlpha(0);
       // Menú táctil (2026-11-02, fix pausa v51): mismo fix que la pausa —
       // disparar en pointerdown, no solo pointerup. El Set evita doble
       // disparo cuando down y up llegan los dos.
@@ -1197,10 +1238,10 @@ export class HudScene extends Phaser.Scene {
       again = zone(0.45, 0.65, 0.70, 0.79, () => this.restartLevel());
       select = zone(0.69, 0.82, 0.70, 0.79, () => this.toChapterSelect());
       if (hasBoss) {
-        c.add(this.add.rectangle(GAME_W / 2, GAME_H - 18, GAME_W, 36, 0x0b0716, 0.6).setOrigin(0.5));
+        c.add(this.add.rectangle(GAME_W / 2, GAME_H - 18, GAME_W, 36, DESIGN.veilDeep, 0.6).setOrigin(0.5));
         c.add(
           this.add
-            .text(GAME_W / 2, GAME_H - 18, bossLine(), { fontFamily: FONT, fontSize: "19px", fontStyle: "bold", color: "#ffd36b" })
+            .text(GAME_W / 2, GAME_H - 18, bossLine(), { fontFamily: FONT, fontSize: "19px", fontStyle: "bold", color: DESIGN_CSS.gold })
             .setOrigin(0.5),
         );
       }
@@ -1211,7 +1252,7 @@ export class HudScene extends Phaser.Scene {
       if (hasBoss) {
         c.add(
           this.add
-            .text(GAME_W / 2, dispH + (GAME_H - dispH) / 2, bossLine(), { fontFamily: FONT, fontSize: "19px", fontStyle: "bold", color: "#ffd36b" })
+            .text(GAME_W / 2, dispH + (GAME_H - dispH) / 2, bossLine(), { fontFamily: FONT, fontSize: "19px", fontStyle: "bold", color: DESIGN_CSS.gold })
             .setOrigin(0.5),
         );
       }
@@ -1230,11 +1271,11 @@ export class HudScene extends Phaser.Scene {
     {
       const c = this.openOverlay(420);
       const top = GAME_H / 2 - 210;
-      c.add(this.add.text(GAME_W / 2, top + 42, "ANGELY'S WORLD", { fontFamily: FONT, fontSize: "20px", fontStyle: "bold", color: "#ffd36b" }).setOrigin(0.5));
+      c.add(this.add.text(GAME_W / 2, top + 42, "ANGELY'S WORLD", { fontFamily: FONT, fontSize: "20px", fontStyle: "bold", color: DESIGN_CSS.gold }).setOrigin(0.5));
       c.add(titleText(this, GAME_W / 2, top + 100, "GAME OVER", 64, "#ff7a7a"));
       c.add(
         this.add
-          .text(GAME_W / 2, top + 165, `Level ${levelLabel(info)}: ${info.name}  •  ${CHAPTERS[info.chapter].name}`, { fontFamily: FONT, fontSize: "20px", color: "#fff4d6" })
+          .text(GAME_W / 2, top + 165, `Level ${levelLabel(info)}: ${info.name}  •  ${CHAPTERS[info.chapter].name}`, { fontFamily: FONT, fontSize: "20px", color: DESIGN_CSS.cream })
           .setOrigin(0.5),
       );
       const g = d.goal;
@@ -1253,10 +1294,10 @@ export class HudScene extends Phaser.Scene {
       if (info.chapter === 10 && d.bossHp !== undefined && d.bossMax) {
         const pct = Math.floor((1 - d.bossHp / d.bossMax) * 100);
         const phase = d.bossPhase ?? 1;
-        c.add(this.add.text(GAME_W / 2, top + 232, `Llegaste a la fase ${phase}. Estuviste ${pct}% de la pelea.`, { fontFamily: FONT, fontSize: "19px", fontStyle: "bold", color: "#ffd36b" }).setOrigin(0.5));
+        c.add(this.add.text(GAME_W / 2, top + 232, `Llegaste a la fase ${phase}. Estuviste ${pct}% de la pelea.`, { fontFamily: FONT, fontSize: "19px", fontStyle: "bold", color: DESIGN_CSS.gold }).setOrigin(0.5));
       }
       const again = new Button(this, GAME_W / 2, top + 280, "TRY AGAIN", () => this.restartLevel(), { width: 320, height: 64, fontSize: 30 });
-      const select = new Button(this, GAME_W / 2, top + 360, "LEVEL SELECT", () => this.toChapterSelect(), { width: 300, height: 52, fontSize: 22, color: 0x7a5aa8 });
+      const select = new Button(this, GAME_W / 2, top + 360, "LEVEL SELECT", () => this.toChapterSelect(), { width: 300, height: 52, fontSize: 22, color: DESIGN.veilLine });
       c.add([again, select]);
       // v99, item 15: same immediate-tap catch as the art overlays —
       // openOverlay now fades from 0.01, and this covers the
@@ -1321,7 +1362,7 @@ export class HudScene extends Phaser.Scene {
     const art = this.add.image(GAME_W/2,0,"the_end_art").setOrigin(0.5,0).setDisplaySize(GAME_W,720);
     c.add(art);
     const levels = new Button(this,GAME_W/2,520,"BACK TO LEVELS",() => this.toChapterSelect(),{
-      width:360,height:62,fontSize:26,color:0x426eaa,fireOnDown:true
+      width:360,height:62,fontSize:26,color: DESIGN.veilPanel,fireOnDown:true
     });
     c.add(levels);
     this.overlay = c;
