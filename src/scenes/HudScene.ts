@@ -300,17 +300,17 @@ export class HudScene extends Phaser.Scene {
     // DESIGN TEST: Lucide volume icons on the gold ring (fallback: the old
     // combined hud_sound / hud_sound_off textures).
     const mute = this.add.container(146, 40);
-    const useLucideSound = this.textures.exists("icon_volume_2") && this.textures.exists("hud_ring");
+    const useLucideSound = this.textures.exists("icon_volume-2") && this.textures.exists("hud_ring");
     const mg = hudDisc(this, useLucideSound ? "hud_ring" : "hud_sound", 24);
     mute.add(mg);
     let sndIcon: Phaser.GameObjects.Image | null = null;
     if (useLucideSound) {
-      sndIcon = this.add.image(0, 0, "icon_volume_2").setDisplaySize(28, 28);
+      sndIcon = this.add.image(0, 0, "icon_volume-2").setDisplaySize(28, 28);
       mute.add(sndIcon);
     }
     const drawMute = () => {
       const off = !Audio.musicOn && !Audio.sfxOn;
-      if (sndIcon) sndIcon.setTexture(off ? "icon_volume_x" : "icon_volume_2");
+      if (sndIcon) sndIcon.setTexture(off ? "icon_volume-x" : "icon_volume-2");
       else mg.setTexture(off ? "hud_sound_off" : "hud_sound");
     };
     drawMute();
